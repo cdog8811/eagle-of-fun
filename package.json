@@ -1,0 +1,29 @@
+{
+  "name": "eagle-of-fun",
+  "version": "1.0.0",
+  "description": "A Flappy Bird-style meme game by the America.Fun community",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "type-check": "tsc --noEmit"
+  },
+  "keywords": [
+    "game",
+    "phaser",
+    "flappy-bird",
+    "meme",
+    "crypto"
+  ],
+  "author": "America.Fun Community",
+  "license": "MIT",
+  "dependencies": {
+    "phaser": "^3.80.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.11"
+  }
+}
