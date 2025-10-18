@@ -20,6 +20,14 @@ export class LeaderboardScene extends Phaser.Scene {
     // Background - clean white
     this.cameras.main.setBackgroundColor('#FFFFFF');
 
+    // Play Leaderboard music
+    if (this.cache.audio.exists('leaderboard-music')) {
+      this.sound.play('leaderboard-music', {
+        volume: 0.4,
+        loop: true
+      });
+    }
+
     // America.Fun Logo - bigger with pulse
     const logo = this.add.image(width - 150, height - 80, 'america-logo');
     logo.setScale(0.3);
@@ -81,10 +89,12 @@ export class LeaderboardScene extends Phaser.Scene {
 
     // Buttons - professional, better positioned
     this.createButton(width / 2 - 250, height - 100, 'PLAY AGAIN', () => {
+      this.sound.stopAll();
       this.scene.start('GameScene');
     });
 
     this.createButton(width / 2 + 250, height - 100, 'MAIN MENU', () => {
+      this.sound.stopAll();
       this.scene.start('StartScene');
     });
 
@@ -97,6 +107,7 @@ export class LeaderboardScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     this.input.keyboard?.on('keydown-ESC', () => {
+      this.sound.stopAll();
       this.scene.start('StartScene');
     });
   }

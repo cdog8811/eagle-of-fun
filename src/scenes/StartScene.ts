@@ -3,6 +3,7 @@ import { GameConfig } from '../config/GameConfig';
 
 export class StartScene extends Phaser.Scene {
   private fallingCoins: Phaser.GameObjects.Graphics[] = [];
+  private musicStarted: boolean = false;
 
   constructor() {
     super({ key: 'StartScene' });
@@ -14,6 +15,31 @@ export class StartScene extends Phaser.Scene {
 
     // Clean white background
     this.cameras.main.setBackgroundColor('#FFFFFF');
+
+    // Resume audio context on first interaction (required by browsers)
+    this.input.on('pointerdown', () => {
+      if (!this.musicStarted) {
+        this.musicStarted = true;
+        console.log('StartScene: User clicked, resuming AudioContext');
+        if (this.sound.context) {
+          this.sound.context.resume().then(() => {
+            console.log('AudioContext resumed, state:', this.sound.context.state);
+            // Start menu music after AudioContext is resumed
+            if (this.cache.audio.exists('menu-music')) {
+              console.log('Playing menu music');
+              const music = this.sound.play('menu-music', {
+                volume: 0.5,
+                loop: true
+              });
+              console.log('Menu music playing:', music);
+              console.log('Sound manager volume:', this.sound.volume);
+            } else {
+              console.log('menu-music not found in cache');
+            }
+          });
+        }
+      }
+    });
 
     // Minimal floating elements
     this.createMinimalElements();
@@ -59,14 +85,20 @@ export class StartScene extends Phaser.Scene {
     const buttonSpacing = 90;
 
     this.createButton(width / 2, buttonY, '▶️ Start Flight', () => {
-      this.scene.start('GameScene');
+      // Stop menu music before starting intro
+      this.sound.stopByKey('menu-music');
+      this.scene.start('IntroScene');
     });
 
     this.createButton(width / 2, buttonY + buttonSpacing, '🏆 Leaderboard', () => {
+      // Stop menu music before going to leaderboard
+      this.sound.stopByKey('menu-music');
       this.scene.start('LeaderboardScene');
     });
 
     this.createButton(width / 2, buttonY + buttonSpacing * 2, 'ℹ️ How to Play', () => {
+      // Stop menu music before going to how to play
+      this.sound.stopByKey('menu-music');
       this.scene.start('HowToPlayScene');
     });
 
@@ -131,6 +163,7 @@ export class StartScene extends Phaser.Scene {
 
     // Elegant hover effect
     button.on('pointerover', () => {
+      this.sound.play('hover-button', { volume: 0.3 });
       bg.clear();
       bg.fillStyle(0xE63946, 1);
       bg.fillRoundedRect(-200, -35, 400, 70, 6);
@@ -156,6 +189,7 @@ export class StartScene extends Phaser.Scene {
     });
 
     button.on('pointerdown', () => {
+      this.sound.play('menu-button', { volume: 0.4 });
       this.tweens.add({
         targets: button,
         scaleX: 0.98,

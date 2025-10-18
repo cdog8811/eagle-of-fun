@@ -18,6 +18,14 @@ export class GameOverScene extends Phaser.Scene {
     // Background - clean white
     this.cameras.main.setBackgroundColor('#FFFFFF');
 
+    // Play Game Over music
+    if (this.cache.audio.exists('game-over-music')) {
+      this.sound.play('game-over-music', {
+        volume: 0.4,
+        loop: false
+      });
+    }
+
     // Dynamic spacing system - mehr Platz
     const spacing = 50;
     let currentY = 100;
@@ -129,11 +137,13 @@ export class GameOverScene extends Phaser.Scene {
 
     this.createButton(width / 2 - 250, buttonGroupY, 'TRY AGAIN', () => {
       this.cleanupInput();
+      this.sound.stopAll();
       this.scene.start('GameScene');
     });
 
     this.createButton(width / 2 + 250, buttonGroupY, 'LEADERBOARD', () => {
       this.cleanupInput();
+      this.sound.stopAll();
       this.scene.start('LeaderboardScene');
     });
 
@@ -165,6 +175,7 @@ export class GameOverScene extends Phaser.Scene {
 
     this.input.keyboard?.on('keydown-ESC', () => {
       this.cleanupInput();
+      this.sound.stopAll();
       this.scene.start('StartScene');
     });
   }
@@ -286,6 +297,7 @@ export class GameOverScene extends Phaser.Scene {
 
     // Navigate to leaderboard after 1.5 seconds
     this.time.delayedCall(1500, () => {
+      this.sound.stopAll();
       this.scene.start('LeaderboardScene');
     });
 

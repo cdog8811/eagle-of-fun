@@ -12,19 +12,75 @@ export class PreloadScene extends Phaser.Scene {
   preload(): void {
     this.createLoadingScreen();
 
-    // Load game images
-    this.load.image('player-eagle', 'assets/images/player-eagle.png');
+    // === PLAYER ===
+    // Load eagle sprite sheet for animations (4 frames, 2x2 grid, 512x512 each)
+    // Total image size: 1024x1024
+    this.load.spritesheet('eagle', 'assets/images/eagle-spreat-sheet.png', {
+      frameWidth: 512,
+      frameHeight: 512
+    });
+
+    // === INTRO ===
+    this.load.image('ogle-pixel', 'assets/images/Ogle-Pixel.png');
+
+    // === POWER-UPS ===
+    this.load.image('mod-belle', 'assets/images/MOD-Belle-pixel.png');
+    this.load.image('america-hat', 'assets/images/america-hat-pixel.png');
+
+    // === NPC ===
+    this.load.image('vesper', 'assets/images/vesper0x.png');
+
+    // === COINS ===
+    this.load.image('coin-bonk', 'assets/images/bonk-coin.png');
     this.load.image('coin-aol', 'assets/images/token_aol.png');
+    this.load.image('coin-usd1', 'assets/images/usd1-coin.png');
     this.load.image('coin-burger', 'assets/images/Token_Burger.png');
-    this.load.image('jeet', 'assets/images/jeet.png');
+
+    // === ENEMIES ===
+    this.load.image('jeet', 'assets/images/jeet.png'); // Jeeter (Phase 1)
+    this.load.image('paper-hands', 'assets/images/PaperHands-Pixel.png'); // Paper Hands Pete (Phase 2)
+    this.load.image('red-candles', 'assets/images/redcandles-pixel.png'); // Red Candles (Phase 3)
+    this.load.image('gary', 'assets/images/gary-pixel.png'); // Gary/SEC (Phase 4)
+    this.load.image('bear-boss', 'assets/images/bearmarket-pixel.png'); // Bear Market Boss (Phase 5)
+
+    // === UI ===
     this.load.image('america-logo', 'assets/images/americalogo.png');
 
-    // Load audio (will be replaced with actual assets)
-    // this.load.audio('theme', 'assets/audio/theme.mp3');
-    // this.load.audio('flap', 'assets/audio/flap.mp3');
-    // this.load.audio('coin', 'assets/audio/coin.mp3');
-    // this.load.audio('gameOver', 'assets/audio/game-over.mp3');
-    // this.load.audio('buyback', 'assets/audio/buyback.mp3');
+    // === BACKGROUNDS ===
+    this.load.image('bg-phase1', 'assets/images/libertyoffreedom-background.jpg');
+    this.load.image('bg-phase2', 'assets/images/city-sky-background.jpg');
+    this.load.image('bg-phase3', 'assets/images/grandcanyon-background.jpg');
+
+    // === AUDIO ===
+    // Menu & UI
+    this.load.audio('menu-music', 'assets/audio/Eagle of Fun _ America.Fun Anthem.mp3');
+    this.load.audio('ui-confirm', 'assets/audio/confirm-tap-394001.mp3');
+    this.load.audio('hover-button', 'assets/audio/hover-button-287656.mp3');
+    this.load.audio('menu-button', 'assets/audio/menu-button-88360.mp3');
+
+    // Game Music
+    this.load.audio('background-music', 'assets/audio/Eagle of Fun.mp3');
+    this.load.audio('background-music-2', 'assets/audio/Eagle of Fun Kopie.mp3');
+    this.load.audio('countdown', 'assets/audio/ElevenLabs_2025-10-17T21_04_28_Drill Sergeant_pvc_sp100_s50_sb75_v3.mp3');
+    this.load.audio('level-up', 'assets/audio/new-level.mp3');
+
+    // Scene Music
+    this.load.audio('game-over-music', 'assets/audio/Game Over, America.Fun.mp3');
+    this.load.audio('leaderboard-music', 'assets/audio/Hall of Degens Theme.mp3');
+
+    // Voice Acting
+    this.load.audio('ogle-voice', 'assets/audio/ElevenLabs_2025-10-17T20_59_40_Bradford_pvc_sp100_s50_sb75_v3.mp3');
+
+    // Sound Effects
+    this.load.audio('wing-flap', 'assets/audio/Rapid_Flaps_(Boost)__#1-1760733918824.mp3');
+    this.load.audio('coin-collect', 'assets/audio/get-coin-351945.mp3');
+    this.load.audio('game-start', 'assets/audio/confirm-tap-394001.mp3');
+    this.load.audio('shield-activate', 'assets/audio/arcade-bleep-sound-6071.mp3');
+    this.load.audio('shield-active-loop', 'assets/audio/Shield_Active_subtle-1760734141916.mp3');
+    this.load.audio('crash', 'assets/audio/car-crash-sound-376882.mp3');
+    this.load.audio('belle-collect', 'assets/audio/arcade-ui-2-229500.mp3');
+    this.load.audio('keyboard-typing', 'assets/audio/keyboard-typing-sound-250308.mp3');
+    this.load.audio('whoosh', 'assets/audio/whoosh-09-410876.mp3');
 
     // Load progress
     this.load.on('progress', (value: number) => {

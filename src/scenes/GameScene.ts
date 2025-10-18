@@ -5,39 +5,73 @@ import { Eagle } from '../sprites/Eagle';
 export class GameScene extends Phaser.Scene {
   private eagle!: Eagle;
   private coins: Phaser.GameObjects.Container[] = [];
-  private jeeters: Phaser.GameObjects.Container[] = [];
+  private enemies: Phaser.GameObjects.Container[] = [];
   private powerups: Phaser.GameObjects.Container[] = [];
+  private fakeCoins: Phaser.GameObjects.Container[] = [];
+  private lawsuitPapers: Phaser.GameObjects.Container[] = [];
 
   // Score & Timer
   private score: number = 0;
   private gameTime: number = 0;
   private scoreText!: Phaser.GameObjects.Text;
   private timerText!: Phaser.GameObjects.Text;
-  private levelText!: Phaser.GameObjects.Text;
+  private phaseText!: Phaser.GameObjects.Text;
+  private burgerCountText?: Phaser.GameObjects.Text;
+
+  // Coin counters
+  private bonkCount: number = 0;
+  private aolCount: number = 0;
+  private burgerCount: number = 0;
+  private usd1Count: number = 0;
+  private bonkCountText?: Phaser.GameObjects.Text;
+  private aolCountText?: Phaser.GameObjects.Text;
+  private burgerCountDisplayText?: Phaser.GameObjects.Text;
+  private usd1CountText?: Phaser.GameObjects.Text;
 
   // Game state
   private gameStartTime: number = 0;
   private isGameOver: boolean = false;
   private isPaused: boolean = false;
   private hasStarted: boolean = false;
+  private countdownStarted: boolean = false;
+  private backgroundMusicStarted: boolean = false;
+  private currentBackgroundMusic?: Phaser.Sound.BaseSound;
+
+  // === PHASE SYSTEM ===
+  private currentPhase: number = 1;
+  private phaseStartTime: number = 0;
+  private phaseTimer?: Phaser.Time.TimerEvent;
+  private showingPhaseAnnouncement: boolean = false;
 
   // Timers
   private coinSpawnTimer?: Phaser.Time.TimerEvent;
-  private jeeterSpawnTimer?: Phaser.Time.TimerEvent;
+  private enemySpawnTimer?: Phaser.Time.TimerEvent;
   private gameTimer?: Phaser.Time.TimerEvent;
   private taglineTimer?: Phaser.Time.TimerEvent;
+  private powerupSpawnTimer?: Phaser.Time.TimerEvent;
 
   // Speeds & Progression
   private coinSpeed: number = 300;
-  private jeeterSpeed: number = 250;
-  private currentLevel: number = 1;
+  private enemySpeed: number = 250;
 
-  // Powerups
-  private burgerCount: number = 0;
+  // === POWERUPS ===
+  private aolCombo: number = 0; // Track consecutive AOL pickups
+  private burgerMultiplierActive: boolean = false;
   private magnetActive: boolean = false;
   private shieldActive: boolean = false;
+  private solanaSurgeActive: boolean = false;
+  private belleModActive: boolean = false;
+  private controlBlocked: boolean = false;
+  private bullMarketActive: boolean = false;
+  private extraLives: number = 0;
+
   private magnetTimer?: Phaser.Time.TimerEvent;
   private shieldTimer?: Phaser.Time.TimerEvent;
+  private burgerMultiplierTimer?: Phaser.Time.TimerEvent;
+  private solanaSurgeTimer?: Phaser.Time.TimerEvent;
+  private belleModTimer?: Phaser.Time.TimerEvent;
+  private controlBlockTimer?: Phaser.Time.TimerEvent;
+  private bullMarketTimer?: Phaser.Time.TimerEvent;
 
   // Combo System
   private comboCount: number = 0;
@@ -46,11 +80,24 @@ export class GameScene extends Phaser.Scene {
 
   // HUD
   private magnetIcon?: Phaser.GameObjects.Text;
-  private shieldIcon?: Phaser.GameObjects.Text;
-  private burgerCountText?: Phaser.GameObjects.Text;
+  private magnetTimerText?: Phaser.GameObjects.Text;
+  private shieldIcon?: Phaser.GameObjects.Image;
+  private shieldTimerText?: Phaser.GameObjects.Text;
+  private belleIcon?: Phaser.GameObjects.Text;
+  private belleTimerText?: Phaser.GameObjects.Text;
+  private bullMarketIcon?: Phaser.GameObjects.Text;
+  private bullMarketTimerText?: Phaser.GameObjects.Text;
+
+  // Background image
+  private backgroundImage?: Phaser.GameObjects.Image;
 
   // Shield visual
   private shieldGraphics?: Phaser.GameObjects.Graphics;
+  private shieldLoopSound?: Phaser.Sound.BaseSound;
+
+  // Belle MOD visuals
+  private belleSprite?: Phaser.GameObjects.Image;
+  private belleAura?: Phaser.GameObjects.Graphics;
 
   // Pause
   private pauseText?: Phaser.GameObjects.Text;
@@ -78,26 +125,55 @@ export class GameScene extends Phaser.Scene {
     this.isGameOver = false;
     this.isPaused = false;
     this.hasStarted = false;
+    this.countdownStarted = false;
+
+    // Phase system
+    this.currentPhase = 1;
+    this.phaseStartTime = 0;
+
+    // Speeds
     this.coinSpeed = 300;
-    this.jeeterSpeed = 250;
-    this.currentLevel = 1;
-    this.burgerCount = 0;
+    this.enemySpeed = 250;
+
+    // Power-ups
+    this.aolCombo = 0;
+    this.burgerMultiplierActive = false;
     this.magnetActive = false;
     this.shieldActive = false;
+    this.solanaSurgeActive = false;
+    this.controlBlocked = false;
+    this.backgroundMusicStarted = false;
+
+    // Arrays
     this.coins = [];
-    this.jeeters = [];
+    this.enemies = [];
     this.powerups = [];
+    this.fakeCoins = [];
+    this.lawsuitPapers = [];
+
+    // Graphics
     this.shieldGraphics = undefined;
+
+    // Combo
     this.comboCount = 0;
     this.lastCoinTime = 0;
   }
 
-  create(): void {
+  create(data?: { autoStart?: boolean }): void {
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
 
     // Background - clean white
     this.cameras.main.setBackgroundColor('#FFFFFF');
+
+    // Check if we should auto-start (coming from IntroScene)
+    const shouldAutoStart = data?.autoStart || false;
+
+    // Add background image (Phase 1 initially)
+    this.backgroundImage = this.add.image(width / 2, height / 2, 'bg-phase1');
+    this.backgroundImage.setDisplaySize(width, height);
+    this.backgroundImage.setDepth(0);
+    this.backgroundImage.setAlpha(0.8); // Slightly transparent for better contrast
 
     // America.Fun Logo - bottom right corner, bigger with pulse animation
     const logo = this.add.image(width - 150, height - 80, 'america-logo');
@@ -141,80 +217,207 @@ export class GameScene extends Phaser.Scene {
     };
 
     // Timer - left side
-    this.timerText = this.add.text(80, hudY, 'TIME: 0', hudStyle);
+    this.timerText = this.add.text(80, hudY, 'TIME: 0s', hudStyle);
     this.timerText.setOrigin(0, 0.5);
     this.timerText.setDepth(1000);
 
-    // Level - left-center
-    this.levelText = this.add.text(width * 0.28, hudY, 'LEVEL: 1', hudStyle);
-    this.levelText.setOrigin(0, 0.5);
-    this.levelText.setDepth(1000);
+    // Phase - left-center
+    this.phaseText = this.add.text(width * 0.28, hudY, 'PHASE: 1', hudStyle);
+    this.phaseText.setOrigin(0, 0.5);
+    this.phaseText.setDepth(1000);
 
-    // Burgers - right-center
-    this.burgerCountText = this.add.text(width * 0.55, hudY, 'BURGERS: 0/5', hudStyle);
-    this.burgerCountText.setOrigin(0, 0.5);
-    this.burgerCountText.setDepth(1000);
-
-    // Score - right side
-    this.scoreText = this.add.text(width - 80, hudY, 'SCORE: 0', hudStyle);
-    this.scoreText.setOrigin(1, 0.5);
+    // Score - right-center
+    this.scoreText = this.add.text(width * 0.60, hudY, 'SCORE: 0', hudStyle);
+    this.scoreText.setOrigin(0, 0.5);
     this.scoreText.setDepth(1000);
 
-    // Powerup Icons - below HUD, centered
-    this.magnetIcon = this.add.text(width / 2 - 60, 110, 'MAGNET', {
+    // AOL Combo (für Buyback Mode) - right side
+    this.burgerCountText = this.add.text(width - 80, hudY, 'AOL: 0/3', hudStyle);
+    this.burgerCountText.setOrigin(1, 0.5);
+    this.burgerCountText.setDepth(1000);
+
+    // ========== COIN COUNTERS - SECOND ROW ==========
+    const coinCounterY = 100;
+    const coinStyle = {
       fontSize: '24px',
-      color: '#00AAFF',
+      color: '#FFFFFF',
       fontFamily: 'Arial',
-      fontStyle: 'bold'
+      fontStyle: 'bold',
+      stroke: '#000000',
+      strokeThickness: 3
+    };
+
+    // Background for coin counters
+    const coinBg = this.add.graphics();
+    coinBg.fillStyle(0x0033A0, 0.85);
+    coinBg.fillRoundedRect(40, 80, width - 80, 45, 8);
+    coinBg.setDepth(998);
+
+    // Calculate spacing for 4 coins
+    const coinStartX = 100;
+    const coinSpacing = (width - 200) / 4;
+
+    // BONK Count
+    this.bonkCountText = this.add.text(coinStartX, coinCounterY, '🐕 $BONK: 0', coinStyle);
+    this.bonkCountText.setOrigin(0, 0.5);
+    this.bonkCountText.setDepth(1000);
+
+    // AOL Count
+    this.aolCountText = this.add.text(coinStartX + coinSpacing, coinCounterY, '🟣 $AOL: 0', coinStyle);
+    this.aolCountText.setOrigin(0, 0.5);
+    this.aolCountText.setDepth(1000);
+
+    // BURGER Count
+    this.burgerCountDisplayText = this.add.text(coinStartX + coinSpacing * 2, coinCounterY, '🍔 $BURGER: 0', coinStyle);
+    this.burgerCountDisplayText.setOrigin(0, 0.5);
+    this.burgerCountDisplayText.setDepth(1000);
+
+    // USD1 Count
+    this.usd1CountText = this.add.text(coinStartX + coinSpacing * 3, coinCounterY, '💵 $USD1: 0', coinStyle);
+    this.usd1CountText.setOrigin(0, 0.5);
+    this.usd1CountText.setDepth(1000);
+
+    // ========== POWER-UP PANEL - BOTTOM (Minimalist Design) ==========
+    const powerupIconY = height - 65;
+    const powerupTimerY = height - 40;
+
+    // Clean white background like StartScene
+    const powerupBg = this.add.graphics();
+    powerupBg.fillStyle(0xFFFFFF, 0.95);
+    powerupBg.fillRoundedRect(width / 2 - 500, height - 100, 1000, 80, 10);
+    powerupBg.lineStyle(3, 0xE63946, 1); // Red border like HUD
+    powerupBg.strokeRoundedRect(width / 2 - 500, height - 100, 1000, 80, 10);
+    powerupBg.setDepth(999);
+
+    // Magnet/Buyback Mode
+    this.magnetIcon = this.add.text(width / 2 - 300, powerupIconY, '🧲 BUYBACK', {
+      fontSize: '22px',
+      color: '#E63946',
+      fontFamily: 'Arial',
+      fontStyle: 'bold',
+      letterSpacing: 1
     }).setOrigin(0.5);
     this.magnetIcon.setVisible(false);
     this.magnetIcon.setDepth(1000);
 
-    this.shieldIcon = this.add.text(width / 2 + 60, 110, 'SHIELD', {
-      fontSize: '24px',
-      color: '#00AAFF',
+    this.magnetTimerText = this.add.text(width / 2 - 300, powerupTimerY, '10s', {
+      fontSize: '16px',
+      color: '#666666',
       fontFamily: 'Arial',
       fontStyle: 'bold'
     }).setOrigin(0.5);
+    this.magnetTimerText.setVisible(false);
+    this.magnetTimerText.setDepth(1000);
+
+    // Shield/America Hat
+    this.shieldIcon = this.add.image(width / 2 - 100, powerupIconY - 5, 'america-hat');
+    this.shieldIcon.setScale(0.3);
+    this.shieldIcon.setOrigin(0.5);
     this.shieldIcon.setVisible(false);
     this.shieldIcon.setDepth(1000);
 
+    this.shieldTimerText = this.add.text(width / 2 - 100, powerupTimerY, '8s', {
+      fontSize: '16px',
+      color: '#666666',
+      fontFamily: 'Arial',
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
+    this.shieldTimerText.setVisible(false);
+    this.shieldTimerText.setDepth(1000);
+
+    // Belle MOD
+    this.belleIcon = this.add.text(width / 2 + 100, powerupIconY, '💎 BELLE', {
+      fontSize: '22px',
+      color: '#E63946',
+      fontFamily: 'Arial',
+      fontStyle: 'bold',
+      letterSpacing: 1
+    }).setOrigin(0.5);
+    this.belleIcon.setVisible(false);
+    this.belleIcon.setDepth(1000);
+
+    this.belleTimerText = this.add.text(width / 2 + 100, powerupTimerY, '15s', {
+      fontSize: '16px',
+      color: '#666666',
+      fontFamily: 'Arial',
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
+    this.belleTimerText.setVisible(false);
+    this.belleTimerText.setDepth(1000);
+
+    // Bull Market Mode
+    this.bullMarketIcon = this.add.text(width / 2 + 300, powerupIconY, '🐂 BULL', {
+      fontSize: '22px',
+      color: '#E63946',
+      fontFamily: 'Arial',
+      fontStyle: 'bold',
+      letterSpacing: 1
+    }).setOrigin(0.5);
+    this.bullMarketIcon.setVisible(false);
+    this.bullMarketIcon.setDepth(1000);
+
+    this.bullMarketTimerText = this.add.text(width / 2 + 300, powerupTimerY, '10s', {
+      fontSize: '16px',
+      color: '#666666',
+      fontFamily: 'Arial',
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
+    this.bullMarketTimerText.setVisible(false);
+    this.bullMarketTimerText.setDepth(1000);
+
     // Tagline will be shown during gameplay, not at bottom
 
-    // Instructions - will be destroyed after countdown
-    let instructions: Phaser.GameObjects.Text | null = this.add.text(width / 2, height / 2 + 150, 'Press SPACE to start\n\nP = Pause', {
-      fontSize: '36px',
-      color: GameConfig.colors.secondary,
-      fontFamily: 'Arial',
-      letterSpacing: 2,
-      align: 'center'
-    }).setOrigin(0.5);
-    instructions.setDepth(500);
+    // Instructions - will be destroyed after countdown (only if not auto-starting)
+    let instructions: Phaser.GameObjects.Text | null = null;
+
+    if (!shouldAutoStart) {
+      instructions = this.add.text(width / 2, height / 2 + 150, 'Press SPACE to start\n\nP = Pause', {
+        fontSize: '36px',
+        color: GameConfig.colors.secondary,
+        fontFamily: 'Arial',
+        letterSpacing: 2,
+        align: 'center'
+      }).setOrigin(0.5);
+      instructions.setDepth(500);
+    }
 
     // Input handlers
     this.input.on('pointerdown', () => {
-      if (!this.hasStarted) {
+      if (!this.hasStarted && !this.countdownStarted) {
+        this.sound.play('ui-confirm', { volume: 0.3 });
+        this.countdownStarted = true;
         this.startCountdown();
         if (instructions) {
           instructions.destroy();
           instructions = null;
         }
-      } else if (!this.isPaused && this.hasStarted) {
+      } else if (!this.isPaused && this.hasStarted && !this.controlBlocked) {
         this.eagle.flap();
       }
     });
 
     this.input.keyboard?.on('keydown-SPACE', () => {
-      if (!this.hasStarted) {
+      if (!this.hasStarted && !this.countdownStarted) {
+        this.sound.play('ui-confirm', { volume: 0.3 });
+        this.countdownStarted = true;
         this.startCountdown();
         if (instructions) {
           instructions.destroy();
           instructions = null;
         }
-      } else if (!this.isPaused && this.hasStarted) {
+      } else if (!this.isPaused && this.hasStarted && !this.controlBlocked) {
         this.eagle.flap();
       }
     });
+
+    // Auto-start countdown if coming from IntroScene
+    if (shouldAutoStart) {
+      // Start countdown immediately
+      this.countdownStarted = true;
+      this.time.delayedCall(100, () => {
+        this.startCountdown();
+      });
+    }
 
     // Pause key
     this.input.keyboard?.on('keydown-P', () => {
@@ -258,8 +461,8 @@ export class GameScene extends Phaser.Scene {
       ease: 'Power2'
     });
 
-    // Fade out and destroy after 5 seconds
-    this.time.delayedCall(5000, () => {
+    // Fade out and destroy after 2 seconds
+    this.time.delayedCall(2000, () => {
       this.tweens.add({
         targets: taglineText,
         alpha: 0,
@@ -274,6 +477,11 @@ export class GameScene extends Phaser.Scene {
     const height = this.cameras.main.height;
 
     // Physics already paused in create() - will resume after countdown
+
+    // Play countdown sound (3-2-1 with voice) - only if available
+    if (this.sound.get('countdown')) {
+      this.sound.play('countdown', { volume: 0.6 });
+    }
 
     // Countdown: 3, 2, 1, GO!
     const countdownText = this.add.text(width / 2, height / 2, '3', {
@@ -323,7 +531,42 @@ export class GameScene extends Phaser.Scene {
 
   private startGame(): void {
     this.gameStartTime = Date.now();
+    this.phaseStartTime = Date.now();
     this.hasStarted = true;
+
+    // Play game start sound - only if available
+    if (this.sound.get('game-start')) {
+      this.sound.play('game-start', { volume: 0.5 });
+    }
+
+    // Start background music - first track plays once, then transitions to second track loop
+    if (!this.backgroundMusicStarted) {
+      console.log('GameScene startGame: Checking for background-music');
+      console.log('Cache exists:', this.cache.audio.exists('background-music'));
+      if (this.cache.audio.exists('background-music')) {
+        console.log('Playing background music');
+        this.currentBackgroundMusic = this.sound.add('background-music', {
+          volume: 0.5,  // Increased volume
+          loop: false   // Don't loop, will transition to second track
+        });
+
+        // When first track ends, play second track on loop
+        this.currentBackgroundMusic.once('complete', () => {
+          if (this.cache.audio.exists('background-music-2')) {
+            this.currentBackgroundMusic = this.sound.play('background-music-2', {
+              volume: 0.5,
+              loop: true
+            });
+          }
+        });
+
+        this.currentBackgroundMusic.play();
+        console.log('Background music started:', this.currentBackgroundMusic);
+        this.backgroundMusicStarted = true;
+      } else {
+        console.log('background-music not in cache');
+      }
+    }
 
     // Resume physics after countdown
     this.physics.resume();
@@ -333,15 +576,19 @@ export class GameScene extends Phaser.Scene {
       delay: 1000,
       callback: () => {
         this.gameTime++;
-        this.timerText.setText(`TIME: ${this.gameTime}`);
+        this.timerText.setText(`TIME: ${this.gameTime}s`);
+        this.checkPhaseProgression();
       },
       callbackScope: this,
       loop: true
     });
 
+    // Start Phase 1
+    this.startPhase(1);
+
     // Spawn coins regularly - balanced frequency
     this.coinSpawnTimer = this.time.addEvent({
-      delay: 1500,  // Reduced from 800ms - less coins
+      delay: 1500,
       callback: this.spawnCoin,
       callbackScope: this,
       loop: true
@@ -350,20 +597,28 @@ export class GameScene extends Phaser.Scene {
     // Spawn first coin after 1 second
     this.time.delayedCall(1000, () => this.spawnCoin());
 
-    // Spawn jeeters (enemies) regularly - less aggressive
-    this.jeeterSpawnTimer = this.time.addEvent({
-      delay: 4000,  // Increased from 2500ms - less enemies
-      callback: this.spawnJeeter,
+    // Spawn enemies based on current phase
+    this.enemySpawnTimer = this.time.addEvent({
+      delay: GameConfig.phases[0].spawnRate,
+      callback: this.spawnEnemy,
       callbackScope: this,
       loop: true
     });
 
-    // Spawn first jeeter after 5 seconds - give player time
-    this.time.delayedCall(5000, () => this.spawnJeeter());
+    // Spawn first enemy after 5 seconds - give player time
+    this.time.delayedCall(5000, () => this.spawnEnemy());
+
+    // Spawn power-ups occasionally
+    this.powerupSpawnTimer = this.time.addEvent({
+      delay: 15000, // Every 15 seconds
+      callback: this.spawnPowerup,
+      callbackScope: this,
+      loop: true
+    });
 
     // Show taglines every 30 seconds during gameplay
     this.taglineTimer = this.time.addEvent({
-      delay: 30000,  // 30 seconds
+      delay: 30000,
       callback: this.showTaglineInGame,
       callbackScope: this,
       loop: true
@@ -386,11 +641,16 @@ export class GameScene extends Phaser.Scene {
 
       // Pause specific timers
       if (this.coinSpawnTimer) this.coinSpawnTimer.paused = true;
-      if (this.jeeterSpawnTimer) this.jeeterSpawnTimer.paused = true;
+      if (this.enemySpawnTimer) this.enemySpawnTimer.paused = true;
       if (this.gameTimer) this.gameTimer.paused = true;
+      if (this.powerupSpawnTimer) this.powerupSpawnTimer.paused = true;
       if (this.taglineTimer) this.taglineTimer.paused = true;
+      if (this.phaseTimer) this.phaseTimer.paused = true;
       if (this.magnetTimer) this.magnetTimer.paused = true;
       if (this.shieldTimer) this.shieldTimer.paused = true;
+      if (this.burgerMultiplierTimer) this.burgerMultiplierTimer.paused = true;
+      if (this.solanaSurgeTimer) this.solanaSurgeTimer.paused = true;
+      if (this.controlBlockTimer) this.controlBlockTimer.paused = true;
 
       // Show pause text only - no overlay
       const width = this.cameras.main.width;
@@ -413,17 +673,197 @@ export class GameScene extends Phaser.Scene {
 
       // Resume specific timers
       if (this.coinSpawnTimer) this.coinSpawnTimer.paused = false;
-      if (this.jeeterSpawnTimer) this.jeeterSpawnTimer.paused = false;
+      if (this.enemySpawnTimer) this.enemySpawnTimer.paused = false;
       if (this.gameTimer) this.gameTimer.paused = false;
+      if (this.powerupSpawnTimer) this.powerupSpawnTimer.paused = false;
       if (this.taglineTimer) this.taglineTimer.paused = false;
+      if (this.phaseTimer) this.phaseTimer.paused = false;
       if (this.magnetTimer) this.magnetTimer.paused = false;
       if (this.shieldTimer) this.shieldTimer.paused = false;
+      if (this.burgerMultiplierTimer) this.burgerMultiplierTimer.paused = false;
+      if (this.solanaSurgeTimer) this.solanaSurgeTimer.paused = false;
+      if (this.controlBlockTimer) this.controlBlockTimer.paused = false;
 
       // Hide pause text
       this.pauseText?.destroy();
     }
   }
 
+  // ========== PHASE SYSTEM ==========
+  private startPhase(phaseId: number): void {
+    if (phaseId > GameConfig.phases.length) {
+      phaseId = GameConfig.phases.length; // WAGMI Mode (endless)
+    }
+
+    const phase = GameConfig.phases[phaseId - 1];
+    this.currentPhase = phaseId;
+    this.phaseStartTime = Date.now();
+
+    // Play level up sound (except for phase 1)
+    if (phaseId > 1) {
+      this.sound.play('level-up', { volume: 0.6 });
+    }
+
+    // Update HUD
+    this.phaseText.setText(`PHASE: ${phaseId}`);
+
+    // Update speeds
+    const baseSpeed = 300;
+    this.coinSpeed = baseSpeed * phase.speedMultiplier;
+    this.enemySpeed = (baseSpeed * 0.8) * phase.speedMultiplier;
+
+    // Update enemy spawn rate
+    if (this.enemySpawnTimer) {
+      this.enemySpawnTimer.delay = phase.spawnRate;
+    }
+
+    // Change background image based on phase - ALWAYS for each phase change
+    if (this.backgroundImage) {
+      let bgKey = 'bg-phase1'; // Default
+
+      // Determine which background to use
+      if (phaseId <= 2) {
+        bgKey = 'bg-phase1'; // Phase 1-2: Liberty of Freedom
+      } else if (phaseId <= 4) {
+        bgKey = 'bg-phase2'; // Phase 3-4: City Sky
+      } else {
+        bgKey = 'bg-phase3'; // Phase 5-6: Grand Canyon
+      }
+
+      console.log(`[PHASE ${phaseId}] Changing background from current to ${bgKey}`);
+
+      // Stop any existing background tweens
+      this.tweens.killTweensOf(this.backgroundImage);
+
+      // Smooth fade transition
+      this.tweens.add({
+        targets: this.backgroundImage,
+        alpha: 0,
+        duration: 300,
+        onComplete: () => {
+          if (this.backgroundImage) {
+            console.log(`[PHASE ${phaseId}] Setting texture to ${bgKey}`);
+            this.backgroundImage.setTexture(bgKey);
+            this.tweens.add({
+              targets: this.backgroundImage,
+              alpha: 0.8,
+              duration: 300,
+              onComplete: () => {
+                console.log(`[PHASE ${phaseId}] Background change complete!`);
+              }
+            });
+          }
+        }
+      });
+    } else {
+      console.warn(`[PHASE ${phaseId}] Background image not found!`);
+    }
+
+    // Change background color (fallback)
+    this.cameras.main.setBackgroundColor(phase.background);
+
+    // Show phase announcement
+    this.showPhaseAnnouncement(phase);
+  }
+
+  private checkPhaseProgression(): void {
+    const phase = GameConfig.phases[this.currentPhase - 1];
+
+    // If endless phase (WAGMI Mode), don't progress
+    if (phase.duration === -1) return;
+
+    const phaseElapsed = Math.floor((Date.now() - this.phaseStartTime) / 1000);
+
+    if (phaseElapsed >= phase.duration) {
+      // Move to next phase
+      this.startPhase(this.currentPhase + 1);
+    }
+  }
+
+  private showPhaseAnnouncement(phase: any): void {
+    // Prevent showing multiple announcements at once
+    if (this.showingPhaseAnnouncement) return;
+
+    this.showingPhaseAnnouncement = true;
+
+    const width = this.cameras.main.width;
+    const height = this.cameras.main.height;
+
+    // Phase announcement
+    const phaseText = this.add.text(width / 2, height / 2, `${phase.name}\n${phase.description}`, {
+      fontSize: '64px',
+      color: '#E63946',
+      fontFamily: 'Arial',
+      fontStyle: 'bold',
+      align: 'center',
+      stroke: '#FFFFFF',
+      strokeThickness: 8
+    }).setOrigin(0.5);
+    phaseText.setDepth(2000);
+    phaseText.setAlpha(0);
+
+    // Fade in
+    this.tweens.add({
+      targets: phaseText,
+      alpha: 1,
+      scale: 1.2,
+      duration: 500,
+      ease: 'Back.easeOut'
+    });
+
+    // Hold for 2 seconds then fade out
+    this.time.delayedCall(2000, () => {
+      this.tweens.add({
+        targets: phaseText,
+        alpha: 0,
+        y: height / 2 - 100,
+        duration: 800,
+        ease: 'Power2',
+        onComplete: () => {
+          phaseText.destroy();
+          this.showingPhaseAnnouncement = false; // Reset flag when animation completes
+        }
+      });
+    });
+
+    // Special effects for WAGMI Mode
+    if (phase.id === 6) {
+      this.activateWAGMIMode();
+    }
+  }
+
+  private activateWAGMIMode(): void {
+    const width = this.cameras.main.width;
+    const height = this.cameras.main.height;
+
+    // Flash effect
+    const flash = this.add.graphics();
+    flash.setDepth(1999);
+
+    let colorIndex = 0;
+    const colors = [0xFF0000, 0xFFFFFF, 0x0000FF];
+
+    const flashInterval = this.time.addEvent({
+      delay: 200,
+      callback: () => {
+        flash.clear();
+        flash.fillStyle(colors[colorIndex % 3], 0.3);
+        flash.fillRect(0, 0, width, height);
+        colorIndex++;
+      },
+      repeat: 8
+    });
+
+    this.time.delayedCall(2000, () => {
+      flash.destroy();
+      flashInterval.remove();
+    });
+
+    // WAGMI announcement
+    this.showMemePopup('🇺🇸 WAGMI MODE - FREEDOM ACHIEVED 🦅', '#FBB13C');
+  }
+
+  // ========== SPAWN METHODS ==========
   private spawnCoin(): void {
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
@@ -434,25 +874,37 @@ export class GameScene extends Phaser.Scene {
     // Create coin container
     const coin = this.add.container(width + 100, y);
 
-    // Randomly choose coin type - Burgers are rarer but worth more
-    const coinType = Phaser.Math.Between(0, 100);
+    // Choose coin type based on spawn chances from GameConfig
+    const roll = Phaser.Math.Between(1, 100);
     let coinImage: Phaser.GameObjects.Image;
     let points: number;
     let type: string;
+    let coinKey: string;
 
-    if (coinType < 70) {
-      // 70% chance for AOL coin (common)
-      coinImage = this.add.image(0, 0, 'coin-aol');
-      coinImage.setScale(0.15); // Made bigger
-      points = 3;
+    if (roll <= GameConfig.coins.BONK.spawnChance) {
+      // BONK (40%)
+      coinKey = 'coin-bonk';
+      points = GameConfig.coins.BONK.points;
+      type = 'bonk';
+    } else if (roll <= GameConfig.coins.BONK.spawnChance + GameConfig.coins.AOL.spawnChance) {
+      // AOL (30%)
+      coinKey = 'coin-aol';
+      points = GameConfig.coins.AOL.points;
       type = 'aol';
+    } else if (roll <= GameConfig.coins.BONK.spawnChance + GameConfig.coins.AOL.spawnChance + GameConfig.coins.USD1.spawnChance) {
+      // USD1 (20%)
+      coinKey = 'coin-usd1';
+      points = GameConfig.coins.USD1.points;
+      type = 'usd1';
     } else {
-      // 30% chance for BURGER coin (rare, more valuable)
-      coinImage = this.add.image(0, 0, 'coin-burger');
-      coinImage.setScale(0.12); // Made bigger
-      points = 5;
+      // BURGER (10%)
+      coinKey = 'coin-burger';
+      points = GameConfig.coins.BURGER.points;
       type = 'burger';
     }
+
+    coinImage = this.add.image(0, 0, coinKey);
+    coinImage.setScale(0.12);
 
     coin.add(coinImage);
     coin.setData('points', points);
@@ -460,49 +912,188 @@ export class GameScene extends Phaser.Scene {
     coin.setData('collected', false);
     coin.setSize(100, 100);
 
+    // Subtle rotation animation
+    this.tweens.add({
+      targets: coin,
+      angle: 360,
+      duration: 3000,
+      repeat: -1,
+      ease: 'Linear'
+    });
+
     this.coins.push(coin);
   }
 
-  private spawnJeeter(): void {
+  private spawnEnemy(): void {
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
+
+    // Get current phase
+    const phase = GameConfig.phases[this.currentPhase - 1];
+
+    // Choose random enemy from current phase's enemy list
+    const enemyTypes = phase.enemies;
+    const randomEnemyType = enemyTypes[Phaser.Math.Between(0, enemyTypes.length - 1)];
+
+    // Get enemy config
+    const enemyConfig = (GameConfig.enemies as any)[randomEnemyType];
+    if (!enemyConfig) return;
 
     // Random Y position
     const y = Phaser.Math.Between(150, height - 150);
 
-    // Create jeeter container
-    const jeeter = this.add.container(width + 100, y);
+    // Create enemy container
+    const enemy = this.add.container(width + 100, y);
 
-    // Use jeet.png as enemy
-    const jeeterImage = this.add.image(0, 0, 'jeet');
-    jeeterImage.setScale(0.25); // Made bigger
-    jeeterImage.setFlipX(true); // Flip to face left
+    // Create enemy sprite
+    const enemyImage = this.add.image(0, 0, enemyConfig.sprite);
+    enemyImage.setScale(enemyConfig.scale);
+    enemyImage.setFlipX(true); // Face left
 
-    jeeter.add(jeeterImage);
-    jeeter.setSize(120, 120);
+    enemy.add(enemyImage);
+    enemy.setSize(enemyConfig.size.width, enemyConfig.size.height);
+    enemy.setData('type', randomEnemyType);
+    enemy.setData('config', enemyConfig);
 
-    this.jeeters.push(jeeter);
+    // Special behavior for Paper Hands Pete - occasionally drops fake coins
+    if (randomEnemyType === 'paperHands') {
+      this.time.delayedCall(Phaser.Math.Between(2000, 4000), () => {
+        if (enemy.active) {
+          this.spawnFakeCoin(enemy.x, enemy.y);
+        }
+      });
+    }
+
+    // Special behavior for Gary - throws lawsuit papers
+    if (randomEnemyType === 'gary') {
+      this.time.delayedCall(Phaser.Math.Between(1000, 3000), () => {
+        if (enemy.active) {
+          this.spawnLawsuitPaper(enemy.x, enemy.y);
+        }
+      });
+    }
+
+    this.enemies.push(enemy);
   }
 
-  private spawnShieldPowerup(): void {
+  private spawnFakeCoin(x: number, y: number): void {
+    // Create fake coin that looks like real coin but causes penalty
+    const fakeCoin = this.add.container(x, y);
+
+    const coinImage = this.add.image(0, 0, 'coin-usd1');
+    coinImage.setScale(0.12);
+    coinImage.setTint(0x888888); // Gray tint to show it's fake
+
+    fakeCoin.add(coinImage);
+    fakeCoin.setData('penalty', -10);
+    fakeCoin.setData('collected', false);
+    fakeCoin.setSize(100, 100);
+
+    // Wobble animation to indicate it's fake
+    this.tweens.add({
+      targets: fakeCoin,
+      angle: { from: -15, to: 15 },
+      duration: 300,
+      yoyo: true,
+      repeat: -1
+    });
+
+    this.fakeCoins.push(fakeCoin);
+  }
+
+  private spawnLawsuitPaper(x: number, y: number): void {
+    // Create lawsuit paper projectile
+    const paper = this.add.container(x, y);
+
+    // Create paper visual (simple rectangle for now)
+    const paperGraphics = this.add.graphics();
+    paperGraphics.fillStyle(0xFFFFFF, 1);
+    paperGraphics.fillRect(-20, -30, 40, 60);
+    paperGraphics.lineStyle(2, 0x000000, 1);
+    paperGraphics.strokeRect(-20, -30, 40, 60);
+
+    // Add text
+    const text = this.add.text(0, 0, '📄', {
+      fontSize: '32px'
+    }).setOrigin(0.5);
+
+    paper.add([paperGraphics, text]);
+    paper.setSize(40, 60);
+    paper.setData('type', 'lawsuit');
+
+    // Floating down animation
+    this.tweens.add({
+      targets: paper,
+      y: paper.y + 400,
+      duration: 3000,
+      ease: 'Sine.easeInOut',
+      onComplete: () => {
+        paper.destroy();
+        const index = this.lawsuitPapers.indexOf(paper);
+        if (index > -1) this.lawsuitPapers.splice(index, 1);
+      }
+    });
+
+    this.lawsuitPapers.push(paper);
+  }
+
+  private spawnPowerup(): void {
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
     const y = Phaser.Math.Between(150, height - 150);
 
+    // Check if we should spawn Vesper (every 500 points)
+    if (this.score > 0 && this.score % 500 === 0 && !this.bullMarketActive) {
+      this.spawnVesper();
+      return;
+    }
+
+    // Randomly choose powerup type (excluding buyback which is triggered by AOL combo)
+    const powerupTypes = ['shield', 'solanaSurge', 'belleMod'];
+    const randomType = powerupTypes[Phaser.Math.Between(0, powerupTypes.length - 1)];
+
     const powerup = this.add.container(width + 100, y);
 
-    // Shield icon
-    const shield = this.add.text(0, 0, '🛡️', {
-      fontSize: '64px'
-    }).setOrigin(0.5);
+    let icon: string | Phaser.GameObjects.Image;
+    let glowColor: number;
+
+    switch (randomType) {
+      case 'shield':
+        icon = this.add.image(0, 0, 'america-hat');
+        icon.setScale(0.15);
+        glowColor = 0xFF0000; // Red glow for America
+        break;
+      case 'solanaSurge':
+        icon = '⚡';
+        glowColor = 0xFF00FF;
+        break;
+      case 'belleMod':
+        icon = this.add.image(0, 0, 'mod-belle');
+        icon.setScale(0.15);
+        glowColor = 0xFFD700; // Gold glow for MOD
+        break;
+      default:
+        icon = this.add.image(0, 0, 'america-hat');
+        icon.setScale(0.15);
+        glowColor = 0xFF0000;
+    }
 
     // Glow effect
     const glow = this.add.graphics();
-    glow.fillStyle(0x00AAFF, 0.3);
+    glow.fillStyle(glowColor, 0.3);
     glow.fillCircle(0, 0, 50);
 
-    powerup.add([glow, shield]);
-    powerup.setData('type', 'shield');
+    // Add icon (either text or image)
+    if (typeof icon === 'string') {
+      const iconText = this.add.text(0, 0, icon, {
+        fontSize: '64px'
+      }).setOrigin(0.5);
+      powerup.add([glow, iconText]);
+    } else {
+      powerup.add([glow, icon]);
+    }
+
+    powerup.setData('type', randomType);
     powerup.setSize(100, 100);
 
     // Pulse animation
@@ -517,22 +1108,28 @@ export class GameScene extends Phaser.Scene {
     this.powerups.push(powerup);
   }
 
+  // ========== POWER-UP ACTIVATION ==========
   private activateMagnet(): void {
     if (this.magnetActive) return;
 
     this.magnetActive = true;
-    this.burgerCount = 0;
-    this.updateBurgerCount();
+    this.aolCombo = 0;
+    this.updateAOLCombo();
 
     this.magnetIcon?.setVisible(true);
+    this.magnetTimerText?.setVisible(true);
 
     // Visual feedback
-    const text = this.add.text(this.cameras.main.width / 2, 200, 'MAGNET ACTIVATED!', {
-      fontSize: '48px',
+    const text = this.add.text(this.cameras.main.width / 2, 200, '🧲 BUYBACK ACTIVATED!\nCoins fly to you like liquidity 💸', {
+      fontSize: '42px',
       color: '#FBB13C',
       fontFamily: 'Arial',
-      fontStyle: 'bold'
+      fontStyle: 'bold',
+      align: 'center',
+      stroke: '#FFFFFF',
+      strokeThickness: 4
     }).setOrigin(0.5);
+    text.setDepth(2000);
 
     this.tweens.add({
       targets: text,
@@ -543,9 +1140,11 @@ export class GameScene extends Phaser.Scene {
     });
 
     // Deactivate after 5 seconds
-    this.magnetTimer = this.time.delayedCall(5000, () => {
+    const duration = GameConfig.powerUps.buybackMode.duration;
+    this.magnetTimer = this.time.delayedCall(duration, () => {
       this.magnetActive = false;
       this.magnetIcon?.setVisible(false);
+      this.magnetTimerText?.setVisible(false);
     });
   }
 
@@ -554,17 +1153,30 @@ export class GameScene extends Phaser.Scene {
 
     this.shieldActive = true;
     this.shieldIcon?.setVisible(true);
+    this.shieldTimerText?.setVisible(true);
+
+    // Play shield activation sound
+    this.sound.play('shield-activate', { volume: 0.5 });
+
+    // Start shield active loop sound
+    if (this.cache.audio.exists('shield-active-loop')) {
+      this.shieldLoopSound = this.sound.add('shield-active-loop', {
+        volume: 0.3,
+        loop: true
+      });
+      this.shieldLoopSound.play();
+    }
 
     // Visual feedback
-    const text = this.add.text(this.cameras.main.width / 2, 200, 'SHIELD ACTIVATED!', {
+    const text = this.add.text(this.cameras.main.width / 2, 200, '🇺🇸 AMERICA HAT PROTECTION ACTIVATED!', {
       fontSize: '48px',
-      color: '#00AAFF',
+      color: '#FF0000',
       fontFamily: 'Arial',
       fontStyle: 'bold',
       stroke: '#FFFFFF',
       strokeThickness: 4
     }).setOrigin(0.5);
-    text.setDepth(500);
+    text.setDepth(2000);
 
     this.tweens.add({
       targets: text,
@@ -576,15 +1188,16 @@ export class GameScene extends Phaser.Scene {
 
     // Create beautiful shield graphics that follows eagle
     this.shieldGraphics = this.add.graphics();
-    this.shieldGraphics.setDepth(99); // Just below eagle
+    this.shieldGraphics.setDepth(99);
 
     // Pulse animation for shield
+    const duration = GameConfig.powerUps.freedomShield.duration;
     this.tweens.add({
       targets: this.shieldGraphics,
       alpha: 0.6,
       duration: 500,
       yoyo: true,
-      repeat: 19, // 10 seconds
+      repeat: (duration / 500) - 1,
       onComplete: () => {
         if (this.shieldGraphics) {
           this.shieldGraphics.destroy();
@@ -593,21 +1206,259 @@ export class GameScene extends Phaser.Scene {
       }
     });
 
-    // Deactivate after 10 seconds
-    this.shieldTimer = this.time.delayedCall(10000, () => {
+    // Deactivate after duration
+    this.shieldTimer = this.time.delayedCall(duration, () => {
       this.shieldActive = false;
       this.shieldIcon?.setVisible(false);
+      this.shieldTimerText?.setVisible(false);
       if (this.shieldGraphics) {
         this.shieldGraphics.destroy();
         this.shieldGraphics = undefined;
       }
+      // Stop shield loop sound
+      if (this.shieldLoopSound) {
+        this.shieldLoopSound.stop();
+        this.shieldLoopSound = undefined;
+      }
     });
   }
 
-  private updateBurgerCount(): void {
-    this.burgerCountText?.setText(`BURGERS: ${this.burgerCount}/5`);
+  private activateSolanaSurge(): void {
+    if (this.solanaSurgeActive) return;
 
-    // Burger animation
+    this.solanaSurgeActive = true;
+
+    const width = this.cameras.main.width;
+    const height = this.cameras.main.height;
+
+    // Lightning flash effect
+    const flash = this.add.graphics();
+    flash.fillStyle(0x9945FF, 0.6); // Solana purple
+    flash.fillRect(0, 0, width, height);
+    flash.setDepth(1999);
+
+    this.tweens.add({
+      targets: flash,
+      alpha: 0,
+      duration: 300,
+      repeat: 2,
+      yoyo: true,
+      onComplete: () => flash.destroy()
+    });
+
+    // Lightning bolts animation
+    for (let i = 0; i < 5; i++) {
+      const bolt = this.add.graphics();
+      bolt.lineStyle(6, 0xFFFF00, 1);
+
+      const startX = Phaser.Math.Between(0, width);
+      const startY = 0;
+      const endX = startX + Phaser.Math.Between(-100, 100);
+      const endY = height;
+      const midX = (startX + endX) / 2 + Phaser.Math.Between(-50, 50);
+      const midY = height / 2;
+
+      bolt.beginPath();
+      bolt.moveTo(startX, startY);
+      bolt.lineTo(midX, midY);
+      bolt.lineTo(endX, endY);
+      bolt.strokePath();
+      bolt.setDepth(2000);
+      bolt.setAlpha(0.8);
+
+      this.time.delayedCall(i * 100, () => {
+        this.tweens.add({
+          targets: bolt,
+          alpha: 0,
+          duration: 400,
+          onComplete: () => bolt.destroy()
+        });
+      });
+    }
+
+    // Visual feedback text
+    const text = this.add.text(width / 2, 200, '⚡ SOLANA SURGE!\nSpeed Boost Activated', {
+      fontSize: '48px',
+      color: '#9945FF',
+      fontFamily: 'Arial',
+      fontStyle: 'bold',
+      align: 'center',
+      stroke: '#FFFFFF',
+      strokeThickness: 4
+    }).setOrigin(0.5);
+    text.setDepth(2001);
+
+    this.tweens.add({
+      targets: text,
+      alpha: 0,
+      y: 150,
+      duration: 1500,
+      onComplete: () => text.destroy()
+    });
+
+    // Temporarily increase speeds
+    const originalCoinSpeed = this.coinSpeed;
+    const originalEnemySpeed = this.enemySpeed;
+
+    const boost = GameConfig.powerUps.solanaSurge.speedBoost;
+    this.coinSpeed *= boost;
+    this.enemySpeed *= boost;
+
+    // Deactivate after duration
+    const duration = GameConfig.powerUps.solanaSurge.duration;
+    this.solanaSurgeTimer = this.time.delayedCall(duration, () => {
+      this.solanaSurgeActive = false;
+      this.coinSpeed = originalCoinSpeed;
+      this.enemySpeed = originalEnemySpeed;
+    });
+  }
+
+  private activateBelleMod(): void {
+    if (this.belleModActive) return;
+
+    this.belleModActive = true;
+    this.belleIcon?.setVisible(true);
+    this.belleTimerText?.setVisible(true);
+
+    // Play Belle collection sound
+    this.sound.play('belle-collect', { volume: 0.6 });
+
+    const width = this.cameras.main.width;
+    const height = this.cameras.main.height;
+
+    // Visual feedback text
+    const text = this.add.text(width / 2, 200, 'Κρόνος Belle is watching 👁️', {
+      fontSize: '48px',
+      color: '#FFD700',
+      fontFamily: 'Arial',
+      fontStyle: 'bold',
+      stroke: '#000000',
+      strokeThickness: 4
+    }).setOrigin(0.5);
+    text.setDepth(2000);
+
+    this.tweens.add({
+      targets: text,
+      alpha: 0,
+      y: 150,
+      duration: 1500,
+      onComplete: () => text.destroy()
+    });
+
+    // Create Belle sprite companion (follows eagle, slightly offset)
+    this.belleSprite = this.add.image(0, 0, 'mod-belle');
+    this.belleSprite.setScale(0.2);
+    this.belleSprite.setDepth(150);
+
+    // Create protection aura
+    this.belleAura = this.add.graphics();
+    this.belleAura.setDepth(99);
+
+    // Pulse animation for aura
+    const duration = GameConfig.powerUps.belleMod.duration;
+    this.tweens.add({
+      targets: this.belleAura,
+      alpha: 0.4,
+      duration: 600,
+      yoyo: true,
+      repeat: (duration / 600) - 1,
+      onComplete: () => {
+        if (this.belleAura) {
+          this.belleAura.destroy();
+          this.belleAura = undefined;
+        }
+      }
+    });
+
+    // Floating animation for Belle
+    this.tweens.add({
+      targets: this.belleSprite,
+      y: '+=10',
+      duration: 800,
+      yoyo: true,
+      repeat: (duration / 800) - 1
+    });
+
+    // Deactivate after duration
+    this.belleModTimer = this.time.delayedCall(duration, () => {
+      this.belleModActive = false;
+      this.belleIcon?.setVisible(false);
+      this.belleTimerText?.setVisible(false);
+      if (this.belleSprite) {
+        this.belleSprite.destroy();
+        this.belleSprite = undefined;
+      }
+      if (this.belleAura) {
+        this.belleAura.destroy();
+        this.belleAura = undefined;
+      }
+    });
+  }
+
+  private blockControls(duration: number): void {
+    this.controlBlocked = true;
+
+    // Visual feedback
+    const text = this.add.text(this.cameras.main.width / 2, 300, '⚠️ CONTROLS BLOCKED!\nUnregistered Security!', {
+      fontSize: '36px',
+      color: '#FF0000',
+      fontFamily: 'Arial',
+      fontStyle: 'bold',
+      align: 'center',
+      stroke: '#FFFFFF',
+      strokeThickness: 4
+    }).setOrigin(0.5);
+    text.setDepth(2000);
+
+    this.tweens.add({
+      targets: text,
+      alpha: 0,
+      duration: duration,
+      onComplete: () => text.destroy()
+    });
+
+    // Unblock after duration
+    this.controlBlockTimer = this.time.delayedCall(duration, () => {
+      this.controlBlocked = false;
+    });
+  }
+
+  private activateBurgerMultiplier(): void {
+    if (this.burgerMultiplierActive) return;
+
+    this.burgerMultiplierActive = true;
+
+    // Visual feedback
+    const text = this.add.text(this.cameras.main.width / 2, 200, '🍔 BURGER MULTIPLIER!\nScore x2 for 5 seconds', {
+      fontSize: '48px',
+      color: '#FBB13C',
+      fontFamily: 'Arial',
+      fontStyle: 'bold',
+      align: 'center',
+      stroke: '#FFFFFF',
+      strokeThickness: 4
+    }).setOrigin(0.5);
+    text.setDepth(2000);
+
+    this.tweens.add({
+      targets: text,
+      alpha: 0,
+      y: 150,
+      duration: 1500,
+      onComplete: () => text.destroy()
+    });
+
+    // Deactivate after duration
+    const duration = GameConfig.coins.BURGER.multiplierDuration;
+    this.burgerMultiplierTimer = this.time.delayedCall(duration, () => {
+      this.burgerMultiplierActive = false;
+    });
+  }
+
+  private updateAOLCombo(): void {
+    this.burgerCountText?.setText(`AOL: ${this.aolCombo}/3`);
+
+    // Animation
     this.tweens.add({
       targets: this.burgerCountText,
       scale: 1.15,
@@ -637,144 +1488,6 @@ export class GameScene extends Phaser.Scene {
       ease: 'Power2',
       onComplete: () => comboText.destroy()
     });
-  }
-
-  private checkLevelProgression(): void {
-    let newLevel = this.currentLevel;
-    let levelName = '';
-    let speedMultiplier = 1;
-    let background = '#FFFFFF';
-
-    // Dynamic level system based on score
-    if (this.score >= 1000) {
-      // Level 5: Freedom Mode
-      newLevel = 5;
-      levelName = 'FREEDOM MODE!';
-      speedMultiplier = 1.7;
-      background = '#FFE6E6'; // Light red tint
-      this.activateFreedomMode();
-    } else if (this.score >= 700) {
-      // Level 4: Market Volatility
-      newLevel = 4;
-      levelName = 'MARKET VOLATILITY!';
-      speedMultiplier = 1.5;
-      background = '#FFF0E6';
-    } else if (this.score >= 400) {
-      // Level 3: High Pressure
-      newLevel = 3;
-      levelName = 'HIGH PRESSURE!';
-      speedMultiplier = 1.35;
-      background = '#FFF5E6';
-    } else if (this.score >= 200) {
-      // Level 2: Speed Increasing
-      newLevel = 2;
-      levelName = 'SPEED INCREASING!';
-      speedMultiplier = 1.2;
-      background = '#F0F8FF';
-      // Spawn shield powerup
-      if (this.currentLevel < 2) {
-        this.time.delayedCall(1000, () => this.spawnShieldPowerup());
-      }
-    }
-
-    // Check if level actually changed
-    if (newLevel > this.currentLevel) {
-      this.currentLevel = newLevel;
-
-      // Update speeds
-      this.coinSpeed = 300 * speedMultiplier;
-      this.jeeterSpeed = 250 * speedMultiplier;
-
-      // Update level text
-      this.levelText.setText(`LEVEL: ${Math.floor(newLevel)}`);
-
-      // Show level up animation
-      this.showLevelUpAnimation(Math.floor(newLevel), levelName);
-
-      // Change background
-      this.changeBackground(background);
-
-      // Adjust spawn rates for higher levels
-      if (this.coinSpawnTimer) {
-        this.coinSpawnTimer.delay = Math.max(800, 1500 - (newLevel * 100));
-      }
-      if (this.jeeterSpawnTimer) {
-        this.jeeterSpawnTimer.delay = Math.max(2000, 4000 - (newLevel * 200));
-      }
-    }
-  }
-
-  private showLevelUpAnimation(level: number, levelName: string): void {
-    const width = this.cameras.main.width;
-    const height = this.cameras.main.height;
-
-    // Big level announcement
-    const levelText = this.add.text(width / 2, height / 2, `LEVEL ${level}\n${levelName}`, {
-      fontSize: '72px',
-      color: '#E63946',
-      fontFamily: 'Arial',
-      fontStyle: 'bold',
-      align: 'center',
-      stroke: '#FFFFFF',
-      strokeThickness: 8
-    }).setOrigin(0.5);
-    levelText.setDepth(2000);
-    levelText.setAlpha(0);
-
-    // Fade in and scale up
-    this.tweens.add({
-      targets: levelText,
-      alpha: 1,
-      scale: 1.2,
-      duration: 300,
-      ease: 'Back.easeOut'
-    });
-
-    // Hold for a moment then fade out
-    this.time.delayedCall(1500, () => {
-      this.tweens.add({
-        targets: levelText,
-        alpha: 0,
-        y: height / 2 - 100,
-        duration: 800,
-        ease: 'Power2',
-        onComplete: () => levelText.destroy()
-      });
-    });
-  }
-
-  private activateFreedomMode(): void {
-    // Freedom Mode special effects (only once)
-    if (this.currentLevel >= 5) return;
-
-    const width = this.cameras.main.width;
-    const height = this.cameras.main.height;
-
-    // Flash effect - Red, White, Blue sequence
-    const flash = this.add.graphics();
-    flash.setDepth(1999);
-
-    let colorIndex = 0;
-    const colors = [0xFF0000, 0xFFFFFF, 0x0000FF]; // Red, White, Blue
-
-    const flashInterval = this.time.addEvent({
-      delay: 200,
-      callback: () => {
-        flash.clear();
-        flash.fillStyle(colors[colorIndex % 3], 0.4);
-        flash.fillRect(0, 0, width, height);
-        colorIndex++;
-      },
-      repeat: 8
-    });
-
-    this.time.delayedCall(2000, () => {
-      flash.destroy();
-      flashInterval.remove();
-    });
-
-    // Freedom mode announcement
-    this.showMemePopup('🇺🇸 FREEDOM MODE ACTIVATED! 🦅', '#E63946');
   }
 
   private showMemePopup(text: string, color: string = '#E63946'): void {
@@ -811,19 +1524,54 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  private changeBackground(color: string): void {
-    this.tweens.addCounter({
-      from: 0,
-      to: 1,
-      duration: 1000,
-      onUpdate: (tween) => {
-        const value = tween.getValue();
-        // Smooth color transition would go here
-      },
-      onComplete: () => {
-        this.cameras.main.setBackgroundColor(color);
+  private updatePowerupTimers(): void {
+    // Update Magnet/Buyback timer
+    if (this.magnetActive && this.magnetTimer && this.magnetTimerText) {
+      const remaining = Math.ceil((this.magnetTimer.delay - this.magnetTimer.elapsed) / 1000);
+      this.magnetTimerText.setText(`${remaining}s`);
+
+      // Blink warning when < 3 seconds
+      if (remaining <= 3) {
+        this.magnetTimerText.setColor(remaining % 2 === 0 ? '#FF0000' : '#666666');
+        this.magnetIcon?.setColor(remaining % 2 === 0 ? '#FF0000' : '#E63946');
       }
-    });
+    }
+
+    // Update Shield timer
+    if (this.shieldActive && this.shieldTimer && this.shieldTimerText) {
+      const remaining = Math.ceil((this.shieldTimer.delay - this.shieldTimer.elapsed) / 1000);
+      this.shieldTimerText.setText(`${remaining}s`);
+
+      // Blink warning when < 3 seconds
+      if (remaining <= 3) {
+        this.shieldTimerText.setColor(remaining % 2 === 0 ? '#FF0000' : '#666666');
+        this.shieldIcon?.setAlpha(remaining % 2 === 0 ? 0.5 : 1);
+      }
+    }
+
+    // Update Belle MOD timer
+    if (this.belleModActive && this.belleModTimer && this.belleTimerText) {
+      const remaining = Math.ceil((this.belleModTimer.delay - this.belleModTimer.elapsed) / 1000);
+      this.belleTimerText.setText(`${remaining}s`);
+
+      // Blink warning when < 3 seconds
+      if (remaining <= 3) {
+        this.belleTimerText.setColor(remaining % 2 === 0 ? '#FF0000' : '#666666');
+        this.belleIcon?.setColor(remaining % 2 === 0 ? '#FF0000' : '#E63946');
+      }
+    }
+
+    // Update Bull Market timer
+    if (this.bullMarketActive && this.bullMarketTimer && this.bullMarketTimerText) {
+      const remaining = Math.ceil((this.bullMarketTimer.delay - this.bullMarketTimer.elapsed) / 1000);
+      this.bullMarketTimerText.setText(`${remaining}s`);
+
+      // Blink warning when < 3 seconds
+      if (remaining <= 3) {
+        this.bullMarketTimerText.setColor(remaining % 2 === 0 ? '#FF0000' : '#666666');
+        this.bullMarketIcon?.setColor(remaining % 2 === 0 ? '#FF0000' : '#E63946');
+      }
+    }
   }
 
   update(): void {
@@ -838,6 +1586,9 @@ export class GameScene extends Phaser.Scene {
 
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
+
+    // Update power-up timers
+    this.updatePowerupTimers();
 
     // Update shield graphics to follow eagle
     if (this.shieldActive && this.shieldGraphics) {
@@ -864,6 +1615,31 @@ export class GameScene extends Phaser.Scene {
         const py = this.eagle.y + Math.sin(angle) * 82;
         this.shieldGraphics.fillStyle(0xFFFFFF, 0.9);
         this.shieldGraphics.fillCircle(px, py, 3);
+      }
+    }
+
+    // Update Belle MOD companion and aura
+    if (this.belleModActive) {
+      // Position Belle sprite next to eagle (offset left-up)
+      if (this.belleSprite) {
+        this.belleSprite.setPosition(this.eagle.x - 80, this.eagle.y - 60);
+      }
+
+      // Draw protection aura
+      if (this.belleAura) {
+        this.belleAura.clear();
+
+        // Golden glow aura
+        this.belleAura.fillStyle(0xFFD700, 0.15);
+        this.belleAura.fillCircle(this.eagle.x, this.eagle.y, 110);
+
+        // Golden ring
+        this.belleAura.lineStyle(5, 0xFFD700, 0.7);
+        this.belleAura.strokeCircle(this.eagle.x, this.eagle.y, 95);
+
+        // Inner gold ring
+        this.belleAura.lineStyle(3, 0xFFF59D, 1);
+        this.belleAura.strokeCircle(this.eagle.x, this.eagle.y, 85);
       }
     }
 
@@ -915,6 +1691,9 @@ export class GameScene extends Phaser.Scene {
         // Mark as collected to prevent double collection
         coin.setData('collected', true);
 
+        // Play coin collection sound
+        this.sound.play('coin-collect', { volume: 0.4 });
+
         // Collect coin - with safety checks
         const points = coin.getData('points') || 0;
         const type = coin.getData('type') || 'aol';
@@ -938,7 +1717,18 @@ export class GameScene extends Phaser.Scene {
 
           this.lastCoinTime = currentTime;
 
-          this.score += points + bonusPoints;
+          // Apply burger multiplier if active
+          let finalPoints = points + bonusPoints;
+          if (this.burgerMultiplierActive) {
+            finalPoints *= 2;
+          }
+
+          // Apply bull market bonus (×2 coin value)
+          if (this.bullMarketActive) {
+            finalPoints *= 2;
+          }
+
+          this.score += finalPoints;
           this.scoreText.setText(`SCORE: ${this.score}`);
 
           // Score blink animation
@@ -952,24 +1742,69 @@ export class GameScene extends Phaser.Scene {
           console.error('Invalid points value:', points);
         }
 
-        // Track burger count for magnet powerup
-        if (type === 'burger') {
-          this.burgerCount++;
-          this.updateBurgerCount();
+        // Track AOL combo for Buyback Mode
+        if (type === 'aol') {
+          this.aolCombo++;
+          this.aolCount++;
+          this.updateAOLCombo();
+          if (this.aolCountText) {
+            this.aolCountText.setText(`🟣 $AOL: ${this.aolCount}`);
+          }
 
-          if (this.burgerCount >= 5) {
+          if (this.aolCombo >= 3) {
             this.activateMagnet();
+          }
+        } else {
+          // Reset AOL combo if other coin collected
+          this.aolCombo = 0;
+          this.updateAOLCombo();
+        }
+
+        // Update coin counters
+        if (type === 'bonk') {
+          this.bonkCount++;
+          if (this.bonkCountText) {
+            this.bonkCountText.setText(`🐕 $BONK: ${this.bonkCount}`);
+          }
+        } else if (type === 'burger') {
+          this.burgerCount++;
+          if (this.burgerCountDisplayText) {
+            this.burgerCountDisplayText.setText(`🍔 $BURGER: ${this.burgerCount}`);
+          }
+          this.activateBurgerMultiplier();
+        } else if (type === 'usd1') {
+          this.usd1Count++;
+          if (this.usd1CountText) {
+            this.usd1CountText.setText(`💵 $USD1: ${this.usd1Count}`);
           }
         }
 
-        // Check level progression
-        this.checkLevelProgression();
-
         // Show coin collection feedback with points
-        const coinName = type === 'aol' ? '$AOL' : '$BURGER';
+        let coinName = '';
+        let coinColor = '';
+
+        switch (type) {
+          case 'bonk':
+            coinName = '$BONK';
+            coinColor = '#FF6B00';
+            break;
+          case 'aol':
+            coinName = '$AOL';
+            coinColor = '#9370DB';
+            break;
+          case 'usd1':
+            coinName = '$USD1';
+            coinColor = '#4CAF50';
+            break;
+          case 'burger':
+            coinName = '$BURGER';
+            coinColor = '#FBB13C';
+            break;
+        }
+
         const feedbackText = this.add.text(coin.x, coin.y, `${coinName} +${points}`, {
           fontSize: '32px',
-          color: type === 'aol' ? '#E63946' : '#FBB13C',
+          color: coinColor,
           fontFamily: 'Arial',
           fontStyle: 'bold',
           stroke: '#FFFFFF',
@@ -1029,51 +1864,197 @@ export class GameScene extends Phaser.Scene {
 
       if (distance < 80) {
         const type = powerup.getData('type');
-        if (type === 'shield') {
-          this.activateShield();
+
+        switch (type) {
+          case 'shield':
+            this.activateShield();
+            break;
+          case 'solanaSurge':
+            this.activateSolanaSurge();
+            break;
+          case 'belleMod':
+            this.activateBelleMod();
+            break;
+          case 'vesper':
+            this.activateBullMarket();
+            break;
         }
+
         powerup.destroy();
         this.powerups.splice(i, 1);
       }
     }
 
-    // Update jeeters - move towards player
-    for (let i = this.jeeters.length - 1; i >= 0; i--) {
-      const jeeter = this.jeeters[i];
+    // Update fake coins
+    for (let i = this.fakeCoins.length - 1; i >= 0; i--) {
+      const fakeCoin = this.fakeCoins[i];
+
+      if (!fakeCoin || !fakeCoin.active || fakeCoin.getData('collected')) continue;
+
+      fakeCoin.x -= this.coinSpeed * (this.game.loop.delta / 1000);
+
+      if (fakeCoin.x < -100) {
+        fakeCoin.destroy();
+        this.fakeCoins.splice(i, 1);
+        continue;
+      }
+
+      // Check collision with eagle
+      const distance = Phaser.Math.Distance.Between(
+        fakeCoin.x,
+        fakeCoin.y,
+        this.eagle.x,
+        this.eagle.y
+      );
+
+      if (distance < 80) {
+        fakeCoin.setData('collected', true);
+
+        // Check if shield or Belle MOD is active
+        if (this.shieldActive || this.belleModActive) {
+          // Shield or Belle MOD protects against fake coins
+          const feedbackMessage = this.belleModActive ? 'DELETED!' : 'BLOCKED!';
+          const feedbackColor = this.belleModActive ? '#FFD700' : '#00FF00';
+          const feedbackText = this.add.text(fakeCoin.x, fakeCoin.y, feedbackMessage, {
+            fontSize: '32px',
+            color: feedbackColor,
+            fontFamily: 'Arial',
+            fontStyle: 'bold',
+            stroke: '#FFFFFF',
+            strokeThickness: 4
+          }).setOrigin(0.5);
+          feedbackText.setDepth(500);
+
+          this.tweens.add({
+            targets: feedbackText,
+            y: feedbackText.y - 60,
+            alpha: 0,
+            duration: 600,
+            ease: 'Power2',
+            onComplete: () => feedbackText.destroy()
+          });
+
+          this.fakeCoins.splice(i, 1);
+          fakeCoin.destroy();
+          continue;
+        }
+
+        // Show death feedback for fake coin
+        const feedbackText = this.add.text(fakeCoin.x, fakeCoin.y, 'FAKE!', {
+          fontSize: '40px',
+          color: '#FF0000',
+          fontFamily: 'Arial',
+          fontStyle: 'bold',
+          stroke: '#FFFFFF',
+          strokeThickness: 5
+        }).setOrigin(0.5);
+        feedbackText.setDepth(500);
+
+        this.tweens.add({
+          targets: feedbackText,
+          y: feedbackText.y - 80,
+          alpha: 0,
+          duration: 800,
+          ease: 'Power2',
+          onComplete: () => feedbackText.destroy()
+        });
+
+        // Strong visual shake effect
+        this.cameras.main.shake(400, 0.01);
+
+        this.fakeCoins.splice(i, 1);
+        fakeCoin.destroy();
+
+        // Game over - fake coin is deadly
+        this.gameOver();
+      }
+    }
+
+    // Update lawsuit papers
+    for (let i = this.lawsuitPapers.length - 1; i >= 0; i--) {
+      const paper = this.lawsuitPapers[i];
+
+      if (!paper || !paper.active) continue;
+
+      paper.x -= (this.coinSpeed * 0.5) * (this.game.loop.delta / 1000);
+
+      if (paper.x < -100) {
+        paper.destroy();
+        this.lawsuitPapers.splice(i, 1);
+        continue;
+      }
+
+      // Check collision with eagle
+      const distance = Phaser.Math.Distance.Between(
+        paper.x,
+        paper.y,
+        this.eagle.x,
+        this.eagle.y
+      );
+
+      if (distance < 80) {
+        // Block controls temporarily
+        const duration = GameConfig.enemies.gary.controlBlockDuration;
+        this.blockControls(duration);
+
+        // Visual effect
+        this.cameras.main.shake(300, 0.008);
+
+        paper.destroy();
+        this.lawsuitPapers.splice(i, 1);
+      }
+    }
+
+    // Update enemies - move towards player
+    for (let i = this.enemies.length - 1; i >= 0; i--) {
+      const enemy = this.enemies[i];
 
       // Skip if destroyed
-      if (!jeeter || !jeeter.active) continue;
+      if (!enemy || !enemy.active) continue;
 
-      jeeter.x -= this.jeeterSpeed * (this.game.loop.delta / 1000);
+      const enemyConfig = enemy.getData('config');
+      const enemyType = enemy.getData('type');
 
-      // Remove off-screen jeeters
-      if (jeeter.x < -100) {
-        jeeter.destroy();
-        this.jeeters.splice(i, 1);
+      // Different speeds for different enemies
+      const speed = enemyConfig.speed * (this.game.loop.delta / 1000);
+      enemy.x -= speed;
+
+      // Remove off-screen enemies
+      if (enemy.x < -200) {
+        enemy.destroy();
+        this.enemies.splice(i, 1);
         continue;
       }
 
       // Check collision with eagle (ignore if shield is active)
       const distance = Phaser.Math.Distance.Between(
-        jeeter.x,
-        jeeter.y,
+        enemy.x,
+        enemy.y,
         this.eagle.x,
         this.eagle.y
       );
 
-      if (distance < 90) {
-        if (this.shieldActive) {
-          // Shield protects - destroy jeeter
-          jeeter.destroy();
-          this.jeeters.splice(i, 1);
+      // Collision radius based on enemy size
+      const collisionRadius = Math.max(enemyConfig.size.width, enemyConfig.size.height) / 2;
+
+      if (distance < collisionRadius + 40) {
+        if (this.shieldActive || this.belleModActive) {
+          // Shield or Belle MOD protects - destroy enemy
+          enemy.destroy();
+          this.enemies.splice(i, 1);
 
           // Visual feedback
-          const text = this.add.text(jeeter.x, jeeter.y, 'BLOCKED!', {
+          const feedbackMessage = this.belleModActive ? 'BANNED!' : 'BLOCKED!';
+          const feedbackColor = this.belleModActive ? '#FFD700' : '#00FF00';
+          const text = this.add.text(enemy.x, enemy.y, feedbackMessage, {
             fontSize: '32px',
-            color: '#00AAFF',
+            color: feedbackColor,
             fontFamily: 'Arial',
-            fontStyle: 'bold'
+            fontStyle: 'bold',
+            stroke: '#FFFFFF',
+            strokeThickness: 4
           }).setOrigin(0.5);
+          text.setDepth(2000);
 
           this.tweens.add({
             targets: text,
@@ -1082,8 +2063,18 @@ export class GameScene extends Phaser.Scene {
             duration: 800,
             onComplete: () => text.destroy()
           });
+
+          // Screen shake
+          this.cameras.main.shake(150, 0.003);
         } else {
-          // Hit by jeeter - game over
+          // Hit by enemy - game over
+          // Play crash sound
+          this.sound.play('crash', { volume: 0.6 });
+
+          // Show enemy meme text
+          const meme = enemyConfig.meme;
+          this.showMemePopup(meme, '#FF0000');
+
           this.gameOver();
         }
       }
@@ -1096,12 +2087,42 @@ export class GameScene extends Phaser.Scene {
 
     console.log('GAME OVER! Final score:', this.score);
 
+    // Stop ALL music and sounds
+    this.sound.stopByKey('background-music');
+    this.sound.stopByKey('background-music-2');
+    this.sound.stopByKey('shield-active-loop');
+    if (this.currentBackgroundMusic) {
+      this.currentBackgroundMusic.stop();
+    }
+    if (this.shieldLoopSound) {
+      this.shieldLoopSound.stop();
+      this.shieldLoopSound = undefined;
+    }
+
+    // Play game over sound
+    if (this.cache.audio.exists('crash')) {
+      this.sound.play('crash', { volume: 0.5 });
+    }
+
+    // Pause physics immediately
+    this.physics.pause();
+
     // Stop all timers
     this.coinSpawnTimer?.remove();
-    this.jeeterSpawnTimer?.remove();
+    this.enemySpawnTimer?.remove();
     this.gameTimer?.remove();
+    this.powerupSpawnTimer?.remove();
+    this.taglineTimer?.remove();
+    this.phaseTimer?.remove();
+
+    // Stop all power-up timers
     this.magnetTimer?.remove();
     this.shieldTimer?.remove();
+    this.burgerMultiplierTimer?.remove();
+    this.solanaSurgeTimer?.remove();
+    this.controlBlockTimer?.remove();
+    this.belleModTimer?.remove();
+    this.bullMarketTimer?.remove();
 
     // Update high score
     const currentHighScore = this.registry.get('highScore') || 0;
@@ -1121,10 +2142,133 @@ export class GameScene extends Phaser.Scene {
 
   private cleanupAndExit(): void {
     this.coinSpawnTimer?.remove();
-    this.jeeterSpawnTimer?.remove();
+    this.enemySpawnTimer?.remove();
     this.gameTimer?.remove();
+    this.powerupSpawnTimer?.remove();
+    this.taglineTimer?.remove();
+    this.phaseTimer?.remove();
     this.magnetTimer?.remove();
     this.shieldTimer?.remove();
+    this.burgerMultiplierTimer?.remove();
+    this.solanaSurgeTimer?.remove();
+    this.controlBlockTimer?.remove();
+
+    // Stop game music
+    this.sound.stopByKey('background-music');
+
     this.scene.start('StartScene');
+  }
+
+  // ========== VESPER (BULL OF WISDOM) ==========
+  private spawnVesper(): void {
+    const width = this.cameras.main.width;
+    const height = this.cameras.main.height;
+    const y = height / 2;
+
+    const vesper = this.add.container(width + 100, y);
+
+    // Vesper image
+    const vesperImage = this.add.image(0, 0, 'vesper');
+    vesperImage.setScale(0.3);
+
+    // Golden glow for wisdom
+    const glow = this.add.graphics();
+    glow.fillStyle(0xFFD700, 0.4);
+    glow.fillCircle(0, 0, 80);
+
+    vesper.add([glow, vesperImage]);
+    vesper.setData('type', 'vesper');
+    vesper.setSize(120, 120);
+
+    // Majestic floating animation
+    this.tweens.add({
+      targets: vesper,
+      y: y - 20,
+      duration: 1500,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut'
+    });
+
+    // Wisdom quotes
+    const quotes = [
+      "Patience is the true alpha.",
+      "Even bears bow before momentum.",
+      "Let your wings be guided by conviction."
+    ];
+    const randomQuote = quotes[Phaser.Math.Between(0, quotes.length - 1)];
+
+    // Show quote above Vesper
+    const quoteText = this.add.text(0, -100, randomQuote, {
+      fontSize: '24px',
+      color: '#FFD700',
+      fontFamily: 'Arial',
+      fontStyle: 'italic',
+      align: 'center',
+      wordWrap: { width: 300 }
+    }).setOrigin(0.5);
+    vesper.add(quoteText);
+
+    this.powerups.push(vesper);
+  }
+
+  private activateBullMarket(): void {
+    if (this.bullMarketActive) return;
+
+    this.bullMarketActive = true;
+    this.extraLives++;
+
+    const width = this.cameras.main.width;
+
+    // Visual feedback
+    const text = this.add.text(width / 2, 200, `🐂 BULL MARKET MODE!\n+1 Extra Life | Coins ×2\n"${this.getRandomWisdom()}"`, {
+      fontSize: '42px',
+      color: '#00FF00',
+      fontFamily: 'Arial',
+      fontStyle: 'bold',
+      align: 'center',
+      stroke: '#000000',
+      strokeThickness: 4
+    }).setOrigin(0.5);
+    text.setDepth(2000);
+
+    this.tweens.add({
+      targets: text,
+      alpha: 0,
+      y: 150,
+      duration: 3000,
+      onComplete: () => text.destroy()
+    });
+
+    // Show bull market indicator
+    this.bullMarketIcon?.setVisible(true);
+    this.bullMarketTimerText?.setVisible(true);
+
+    // Slow down game speed
+    const originalCoinSpeed = this.coinSpeed;
+    const originalEnemySpeed = this.enemySpeed;
+    this.coinSpeed *= 0.7; // 30% slower
+    this.enemySpeed *= 0.7;
+
+    // Double coin values temporarily
+    const duration = 10000; // 10 seconds
+    this.bullMarketTimer = this.time.delayedCall(duration, () => {
+      this.bullMarketActive = false;
+      this.bullMarketIcon?.setVisible(false);
+      this.bullMarketTimerText?.setVisible(false);
+      this.coinSpeed = originalCoinSpeed;
+      this.enemySpeed = originalEnemySpeed;
+    });
+  }
+
+  private getRandomWisdom(): string {
+    const wisdoms = [
+      "Patience is the true alpha.",
+      "Even bears bow before momentum.",
+      "Let your wings be guided by conviction.",
+      "The bull always rises.",
+      "Diamond hands forge legends."
+    ];
+    return wisdoms[Phaser.Math.Between(0, wisdoms.length - 1)];
   }
 }

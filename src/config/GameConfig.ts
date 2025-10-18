@@ -16,18 +16,222 @@ export const GameConfig = {
   obstacleSpawnInterval: 1500, // milliseconds (schneller für mehr Action)
   obstacleGap: 220, // etwas größer für einfacheres Gameplay
 
+  // === PHASES SYSTEM (Time-based progression) ===
+  phases: [
+    {
+      id: 1,
+      name: 'Soft Launch 🚀',
+      duration: 60, // seconds
+      enemies: ['jeeter'],
+      difficulty: 'easy',
+      speedMultiplier: 1.3,
+      spawnRate: 3500, // ms between enemy spawns
+      background: '#FFFFFF',
+      description: 'Get started, collect burgers!'
+    },
+    {
+      id: 2,
+      name: 'Paper Panic 👋',
+      duration: 60,
+      enemies: ['jeeter', 'paperHands'],
+      difficulty: 'medium',
+      speedMultiplier: 1.5,
+      spawnRate: 3000,
+      background: '#F0F8FF',
+      description: 'Watch out for fake coins! Speed +50%'
+    },
+    {
+      id: 3,
+      name: 'Candle Crash 📉',
+      duration: 60,
+      enemies: ['jeeter', 'paperHands', 'redCandles'],
+      difficulty: 'hard',
+      speedMultiplier: 1.7,
+      spawnRate: 2500,
+      background: '#FFF5E6',
+      description: 'Barriers incoming! Higher difficulty'
+    },
+    {
+      id: 4,
+      name: 'Regulation Run 🧑‍💼',
+      duration: 60,
+      enemies: ['jeeter', 'paperHands', 'redCandles', 'gary'],
+      difficulty: 'very_hard',
+      speedMultiplier: 1.9,
+      spawnRate: 2200,
+      background: '#FFF0E6',
+      description: 'Lawsuit storm! Power-ups needed'
+    },
+    {
+      id: 5,
+      name: 'Bear Market Finale 🐻',
+      duration: 60,
+      enemies: ['jeeter', 'paperHands', 'redCandles', 'gary', 'bearBoss'],
+      difficulty: 'extreme',
+      speedMultiplier: 2.1,
+      spawnRate: 1800,
+      background: '#FFE6E6',
+      description: 'Chaos + Freedom final phase'
+    },
+    {
+      id: 6,
+      name: 'WAGMI Mode 🦅',
+      duration: -1, // Endless
+      enemies: ['jeeter', 'paperHands', 'redCandles', 'gary', 'bearBoss'],
+      difficulty: 'variable',
+      speedMultiplier: 2.3,
+      spawnRate: 1500,
+      background: '#FFE6F0',
+      description: 'Endless fun, meme alerts & speed boosts!'
+    }
+  ],
+
+  // === COINS (Power-Tokens) ===
+  coins: {
+    BONK: {
+      name: '$BONK',
+      description: 'Meme-Dog Token',
+      points: 5,
+      icon: '🟠',
+      spawnChance: 40, // %
+      effect: 'none'
+    },
+    AOL: {
+      name: '$AOL',
+      description: 'Launchpad-Token',
+      points: 10,
+      icon: '🟣',
+      spawnChance: 30,
+      effect: 'buyback_boost', // 3x AOL = Buyback Mode
+      comboRequired: 3
+    },
+    USD1: {
+      name: '$USD1',
+      description: 'Stablecoin',
+      points: 2,
+      icon: '💵',
+      spawnChance: 20,
+      effect: 'none'
+    },
+    BURGER: {
+      name: '$BURGER',
+      description: 'Erster America.Fun-Launch',
+      points: 25,
+      icon: '🍔',
+      spawnChance: 10,
+      effect: 'score_multiplier', // 5s Multiplikator
+      multiplierDuration: 5000 // ms
+    }
+  },
+
+  // === ENEMIES ===
+  enemies: {
+    jeeter: {
+      name: 'Jeeter',
+      description: 'Paper-Hand-Symbol',
+      behavior: 'horizontal',
+      speed: 250,
+      size: { width: 120, height: 120 },
+      sprite: 'jeet',
+      scale: 0.25,
+      meme: 'I sold the top!'
+    },
+    paperHands: {
+      name: 'Paper Hands Pete',
+      description: 'Droppt Fake-Coins',
+      behavior: 'drops_fake_coins',
+      speed: 200,
+      size: { width: 100, height: 100 },
+      sprite: 'paper-hands',
+      scale: 0.2,
+      meme: 'Nooo I panic sold!',
+      fakeCoinPenalty: -10
+    },
+    redCandles: {
+      name: 'Red Candles',
+      description: 'Vertikale Barrieren',
+      behavior: 'vertical_barrier',
+      speed: 180,
+      size: { width: 80, height: 200 },
+      sprite: 'red-candles',
+      scale: 0.3,
+      meme: 'Market Dump Incoming 🚨'
+    },
+    gary: {
+      name: 'Gary (SEC)',
+      description: 'Wirft Lawsuit Papers',
+      behavior: 'throws_papers',
+      speed: 220,
+      size: { width: 100, height: 120 },
+      sprite: 'gary',
+      scale: 0.25,
+      meme: 'Unregistered Security!',
+      controlBlockDuration: 2000 // ms
+    },
+    bearBoss: {
+      name: 'Bear Market Boss',
+      description: 'Riesiger Endgegner',
+      behavior: 'chaos',
+      speed: 150,
+      size: { width: 200, height: 200 },
+      sprite: 'bear-boss',
+      scale: 0.4,
+      meme: 'SELL! SELL! SELL!',
+      isBoss: true
+    }
+  },
+
+  // === POWER-UPS ===
+  powerUps: {
+    buybackMode: {
+      name: '🧲 Buyback Mode',
+      icon: '🧲',
+      description: 'Attracts all coins',
+      duration: 5000, // ms
+      trigger: 'collect_3_aol',
+      magnetRadius: 400,
+      sound: 'Buyback activated!',
+      text: 'Coins fly to you like liquidity 🧲💸'
+    },
+    freedomShield: {
+      name: '🛡️ Freedom Shield',
+      icon: '🛡️',
+      description: 'Protects from 1 hit',
+      duration: 8000,
+      trigger: 'pickup',
+      spawnChance: 15 // % chance to spawn
+    },
+    solanaSurge: {
+      name: '⚡ Solana Surge',
+      icon: '⚡',
+      description: 'Speed + Jump boost',
+      duration: 4000,
+      trigger: 'pickup',
+      speedBoost: 1.5,
+      jumpBoost: 1.3
+    },
+    belleMod: {
+      name: 'Κρόνος Belle',
+      icon: '👁️',
+      description: 'MOD protection - deletes FUD and bans Jeeters',
+      duration: 8000, // 8 seconds
+      trigger: 'pickup',
+      spawnChance: 12, // % chance to spawn
+      sound: 'Moderator online.',
+      text: 'Κρόνος Belle is watching 👁️',
+      blockHits: true
+    }
+  },
+
   // Scoring
   pointsPerSecond: 1,
   coinPoints: {
-    AOL: 5,
-    BURGER: 3,
-    USD1: 2
+    BONK: 5,
+    AOL: 10,
+    USD1: 2,
+    BURGER: 25
   },
   fudWallBonus: 10,
-
-  // Power-ups
-  powerupDuration: 5000, // milliseconds
-  buybackMagnetRadius: 150,
 
   // Colors (America.Fun theme)
   colors: {
@@ -35,7 +239,8 @@ export const GameConfig = {
     secondary: '#0033A0',  // Blue
     gold: '#FBB13C',       // Gold
     white: '#FFFFFF',
-    lightBlue: '#E8F4FF'
+    lightBlue: '#E8F4FF',
+    bonkOrange: '#FF6B00'
   },
 
   // Skins
