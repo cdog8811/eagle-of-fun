@@ -44,7 +44,7 @@ export class LeaderboardScene extends Phaser.Scene {
     });
 
     // Title - professional, bigger
-    this.add.text(width / 2, 150, 'LEADERBOARD', {
+    this.add.text(width / 2, 150, 'HALL OF DEGENS', {
       fontSize: '96px',
       color: '#000000',
       fontFamily: 'Arial',

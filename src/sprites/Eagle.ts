@@ -12,7 +12,7 @@ export class Eagle extends Phaser.GameObjects.Container {
     scene.physics.world.enable(this);
     this.physicsBody = this.body as Phaser.Physics.Arcade.Body;
     this.physicsBody.setGravityY(GameConfig.gravity);
-    this.physicsBody.setSize(80, 80); // Adjusted for image size
+    this.physicsBody.setSize(130, 130); // Increased for bigger eagle (0.30 scale)
 
     // Create animations if they don't exist
     this.createAnimations(scene);
@@ -20,8 +20,8 @@ export class Eagle extends Phaser.GameObjects.Container {
     // Create eagle sprite from sprite sheet
     this.eagleSprite = scene.add.sprite(0, 0, 'eagle');
 
-    // Scale appropriately for 1920x1080 (frames are 512x512)
-    this.eagleSprite.setScale(0.18);
+    // Scale appropriately for 1920x1080 (frames are 512x512) - made bigger
+    this.eagleSprite.setScale(0.30);
 
     // Add sprite to container
     this.add(this.eagleSprite);
@@ -73,7 +73,7 @@ export class Eagle extends Phaser.GameObjects.Container {
     this.physicsBody.setVelocityY(GameConfig.flapVelocity);
 
     // Play wing flap sound for eagle flight
-    this.scene.sound.play('wing-flap', { volume: 0.3 });
+    this.scene.sound.play('wing-flap', { volume: 0.5 });
 
     // Briefly switch to dive animation for faster flapping
     this.eagleSprite.play('eagle_dive', true);

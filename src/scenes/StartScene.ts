@@ -66,9 +66,9 @@ export class StartScene extends Phaser.Scene {
       letterSpacing: 4
     }).setOrigin(0.5);
 
-    // Eagle sprite in center, bigger
-    const eagleSprite = this.add.sprite(width / 2, 480, 'player-eagle');
-    eagleSprite.setScale(0.5);
+    // Eagle image in center - bigger
+    const eagleSprite = this.add.image(width / 2, 480, 'player-eagle');
+    eagleSprite.setScale(0.6);
 
     // Subtle hover animation
     this.tweens.add({
@@ -87,11 +87,16 @@ export class StartScene extends Phaser.Scene {
     this.createButton(width / 2, buttonY, '▶️ Start Flight', () => {
       // Stop menu music before starting intro
       this.sound.stopByKey('menu-music');
-      this.scene.start('IntroScene');
+      // Play "ready for takeoff" sound
+      this.sound.play('ready-for-takeoff', { volume: 0.7 });
+      // Wait 2 seconds before starting intro scene
+      this.time.delayedCall(2000, () => {
+        this.scene.start('IntroScene');
+      });
     });
 
-    this.createButton(width / 2, buttonY + buttonSpacing, '🏆 Leaderboard', () => {
-      // Stop menu music before going to leaderboard
+    this.createButton(width / 2, buttonY + buttonSpacing, '🏆 Hall of Degens', () => {
+      // Stop menu music before going to Hall of Degens
       this.sound.stopByKey('menu-music');
       this.scene.start('LeaderboardScene');
     });

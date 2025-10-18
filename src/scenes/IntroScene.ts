@@ -3,12 +3,14 @@ import Phaser from 'phaser';
 export class IntroScene extends Phaser.Scene {
   private dialogText?: Phaser.GameObjects.Text;
   private promptText?: Phaser.GameObjects.Text;
+  private skipHintText?: Phaser.GameObjects.Text;
   private ogleImage?: Phaser.GameObjects.Image;
   private currentCharIndex: number = 0;
   private typewriterTimer?: Phaser.Time.TimerEvent;
   private isComplete: boolean = false;
   private keyboardSound?: Phaser.Sound.BaseSound;
   private spacePressed: boolean = false;
+  private textSkipped: boolean = false;
 
   private readonly fullDialog = `Ogle: Hi, Degen.
 Glad you showed up.
@@ -71,16 +73,53 @@ Ready to fly?`;
     }).setOrigin(0.5);
     this.promptText.setVisible(false);
 
+    // Create skip hint text - always visible during typing
+    this.skipHintText = this.add.text(width / 2, height - 40, 'Press SPACE to skip', {
+      fontSize: '20px',
+      color: '#888888',
+      fontFamily: 'Arial',
+      fontStyle: 'normal'
+    }).setOrigin(0.5);
+    this.skipHintText.setAlpha(0.7);
+
     // Start typewriter effect
     this.startTypewriter();
 
-    // Listen for SPACE key
+    // Listen for SPACE key - two-step skip
     this.input.keyboard?.on('keydown-SPACE', () => {
-      if (this.isComplete && !this.spacePressed) {
-        this.spacePressed = true;
-        this.showRPCMessages();
-      }
+      this.handleSpacePress();
     });
+  }
+
+  private handleSpacePress(): void {
+    if (!this.isComplete && !this.textSkipped) {
+      // First SPACE press - complete text immediately
+      this.textSkipped = true;
+      this.completeTextImmediately();
+    } else if (this.isComplete && !this.spacePressed) {
+      // Second SPACE press - start game
+      this.spacePressed = true;
+      this.showRPCMessages();
+    }
+  }
+
+  private completeTextImmediately(): void {
+    // Stop typewriter
+    if (this.typewriterTimer) {
+      this.typewriterTimer.destroy();
+    }
+
+    // Stop all sounds
+    if (this.keyboardSound) {
+      this.keyboardSound.stop();
+    }
+    this.sound.stopByKey('ogle-voice');
+
+    // Show complete text
+    this.dialogText?.setText(this.fullDialog);
+
+    // Mark as complete
+    this.onTypewriterComplete();
   }
 
   private startTypewriter(): void {
@@ -143,6 +182,9 @@ Ready to fly?`;
       this.keyboardSound.stop();
     }
 
+    // Hide skip hint
+    this.skipHintText?.setVisible(false);
+
     // Show blinking prompt directly below text
     this.promptText?.setVisible(true);
 
@@ -154,6 +196,23 @@ Ready to fly?`;
       yoyo: true,
       repeat: -1
     });
+  }
+
+  private skipIntro(): void {
+    // Stop all sounds and timers
+    if (this.keyboardSound) {
+      this.keyboardSound.stop();
+    }
+    if (this.typewriterTimer) {
+      this.typewriterTimer.destroy();
+    }
+    this.sound.stopAll();
+
+    // Remove keyboard listeners to prevent conflicts
+    this.input.keyboard?.removeAllListeners();
+
+    // Go directly to game
+    this.scene.start('GameScene', { autoStart: true });
   }
 
   private showRPCMessages(): void {
@@ -171,7 +230,7 @@ Ready to fly?`;
     this.ogleImage?.setVisible(false);
     this.dialogText?.setVisible(false);
 
-    // Show RPC messages
+    // Show RPC messages with faster timing
     const rpcText1 = this.add.text(width / 2, height / 2, 'Connecting to America.fun RPC...', {
       fontSize: '36px',
       color: '#0033A0',
@@ -179,21 +238,21 @@ Ready to fly?`;
       fontStyle: 'bold'
     }).setOrigin(0.5);
 
-    // After 1.5 seconds, show error
-    this.time.delayedCall(1500, () => {
+    // After 1 second, show error
+    this.time.delayedCall(1000, () => {
       rpcText1.setText('Error 404 – FUD detected.');
       rpcText1.setColor('#E63946');
 
-      // After another 1 second, show "Start Flight"
-      this.time.delayedCall(1000, () => {
+      // After another 0.8 seconds, show "Start Flight"
+      this.time.delayedCall(800, () => {
         rpcText1.setText('Start Flight');
         rpcText1.setColor('#00AA00');
 
-        // Flash effect
-        this.cameras.main.flash(500, 255, 255, 255);
+        // Fade out effect instead of flash
+        this.cameras.main.fadeOut(400, 255, 255, 255);
 
-        // Start game after 0.5 seconds
-        this.time.delayedCall(500, () => {
+        // Start game after fade
+        this.time.delayedCall(400, () => {
           // Stop all sounds before switching
           this.sound.stopAll();
           // Switch to GameScene with auto-start flag

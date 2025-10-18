@@ -20,6 +20,9 @@ export class PreloadScene extends Phaser.Scene {
       frameHeight: 512
     });
 
+    // Load single eagle image for start screen
+    this.load.image('player-eagle', 'assets/images/player-eagle.png');
+
     // === INTRO ===
     this.load.image('ogle-pixel', 'assets/images/Ogle-Pixel.png');
 
@@ -57,11 +60,13 @@ export class PreloadScene extends Phaser.Scene {
     this.load.audio('ui-confirm', 'assets/audio/confirm-tap-394001.mp3');
     this.load.audio('hover-button', 'assets/audio/hover-button-287656.mp3');
     this.load.audio('menu-button', 'assets/audio/menu-button-88360.mp3');
+    this.load.audio('ready-for-takeoff', 'assets/audio/readyfortakeoff.mp3');
 
     // Game Music
     this.load.audio('background-music', 'assets/audio/Eagle of Fun.mp3');
     this.load.audio('background-music-2', 'assets/audio/Eagle of Fun Kopie.mp3');
-    this.load.audio('countdown', 'assets/audio/ElevenLabs_2025-10-17T21_04_28_Drill Sergeant_pvc_sp100_s50_sb75_v3.mp3');
+    this.load.audio('countdown', 'assets/audio/321gobradford.mp3');
+    this.load.audio('buyback-voice', 'assets/audio/ElevenLabs_2025-10-17T21_02_09_Drill Sergeant_pvc_sp100_s50_sb75_v3.mp3');
     this.load.audio('level-up', 'assets/audio/new-level.mp3');
 
     // Scene Music
@@ -72,13 +77,14 @@ export class PreloadScene extends Phaser.Scene {
     this.load.audio('ogle-voice', 'assets/audio/ElevenLabs_2025-10-17T20_59_40_Bradford_pvc_sp100_s50_sb75_v3.mp3');
 
     // Sound Effects
-    this.load.audio('wing-flap', 'assets/audio/Rapid_Flaps_(Boost)__#1-1760733918824.mp3');
+    this.load.audio('wing-flap', 'assets/audio/wing-flap-1-6434.mp3');
     this.load.audio('coin-collect', 'assets/audio/get-coin-351945.mp3');
     this.load.audio('game-start', 'assets/audio/confirm-tap-394001.mp3');
     this.load.audio('shield-activate', 'assets/audio/arcade-bleep-sound-6071.mp3');
     this.load.audio('shield-active-loop', 'assets/audio/Shield_Active_subtle-1760734141916.mp3');
     this.load.audio('crash', 'assets/audio/car-crash-sound-376882.mp3');
     this.load.audio('belle-collect', 'assets/audio/arcade-ui-2-229500.mp3');
+    this.load.audio('phase-change', 'assets/audio/arcade-ui-2-229500.mp3');
     this.load.audio('keyboard-typing', 'assets/audio/keyboard-typing-sound-250308.mp3');
     this.load.audio('whoosh', 'assets/audio/whoosh-09-410876.mp3');
 

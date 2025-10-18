@@ -131,9 +131,9 @@ export const GameConfig = {
       description: 'Paper-Hand-Symbol',
       behavior: 'horizontal',
       speed: 250,
-      size: { width: 120, height: 120 },
+      size: { width: 100, height: 100 }, // Slightly smaller hitbox
       sprite: 'jeet',
-      scale: 0.25,
+      scale: 0.22, // Slightly smaller
       meme: 'I sold the top!'
     },
     paperHands: {
@@ -141,9 +141,9 @@ export const GameConfig = {
       description: 'Droppt Fake-Coins',
       behavior: 'drops_fake_coins',
       speed: 200,
-      size: { width: 100, height: 100 },
+      size: { width: 85, height: 85 }, // Slightly smaller hitbox
       sprite: 'paper-hands',
-      scale: 0.2,
+      scale: 0.18, // Slightly smaller
       meme: 'Nooo I panic sold!',
       fakeCoinPenalty: -10
     },
@@ -152,9 +152,9 @@ export const GameConfig = {
       description: 'Vertikale Barrieren',
       behavior: 'vertical_barrier',
       speed: 180,
-      size: { width: 80, height: 200 },
+      size: { width: 50, height: 150 }, // Smaller hitbox - was too dangerous
       sprite: 'red-candles',
-      scale: 0.3,
+      scale: 0.25, // Slightly smaller visual scale
       meme: 'Market Dump Incoming 🚨'
     },
     gary: {
@@ -162,9 +162,9 @@ export const GameConfig = {
       description: 'Wirft Lawsuit Papers',
       behavior: 'throws_papers',
       speed: 220,
-      size: { width: 100, height: 120 },
+      size: { width: 90, height: 100 }, // Smaller hitbox
       sprite: 'gary',
-      scale: 0.25,
+      scale: 0.22, // Slightly smaller
       meme: 'Unregistered Security!',
       controlBlockDuration: 2000 // ms
     },
@@ -173,9 +173,9 @@ export const GameConfig = {
       description: 'Riesiger Endgegner',
       behavior: 'chaos',
       speed: 150,
-      size: { width: 200, height: 200 },
+      size: { width: 180, height: 180 }, // Slightly smaller hitbox (still big boss)
       sprite: 'bear-boss',
-      scale: 0.4,
+      scale: 0.35, // Slightly smaller but still intimidating
       meme: 'SELL! SELL! SELL!',
       isBoss: true
     }

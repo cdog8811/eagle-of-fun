@@ -141,7 +141,7 @@ export class GameOverScene extends Phaser.Scene {
       this.scene.start('GameScene');
     });
 
-    this.createButton(width / 2 + 250, buttonGroupY, 'LEADERBOARD', () => {
+    this.createButton(width / 2 + 250, buttonGroupY, 'HALL OF DEGENS', () => {
       this.cleanupInput();
       this.sound.stopAll();
       this.scene.start('LeaderboardScene');

@@ -166,6 +166,9 @@ export class GameScene extends Phaser.Scene {
     // Background - clean white
     this.cameras.main.setBackgroundColor('#FFFFFF');
 
+    // Smooth fade in from white
+    this.cameras.main.fadeIn(600, 255, 255, 255);
+
     // Check if we should auto-start (coming from IntroScene)
     const shouldAutoStart = data?.autoStart || false;
 
@@ -277,91 +280,87 @@ export class GameScene extends Phaser.Scene {
     this.usd1CountText.setOrigin(0, 0.5);
     this.usd1CountText.setDepth(1000);
 
-    // ========== POWER-UP PANEL - BOTTOM (Minimalist Design) ==========
-    const powerupIconY = height - 65;
-    const powerupTimerY = height - 40;
+    // ========== POWER-UP PANEL - COMPACT BOTTOM BAR ==========
+    const powerupIconY = height - 40; // Closer to bottom
+    const powerupTimerY = height - 20;
 
-    // Clean white background like StartScene
+    // Smaller compact background
     const powerupBg = this.add.graphics();
-    powerupBg.fillStyle(0xFFFFFF, 0.95);
-    powerupBg.fillRoundedRect(width / 2 - 500, height - 100, 1000, 80, 10);
-    powerupBg.lineStyle(3, 0xE63946, 1); // Red border like HUD
-    powerupBg.strokeRoundedRect(width / 2 - 500, height - 100, 1000, 80, 10);
+    powerupBg.fillStyle(0xFFFFFF, 0.85); // More transparent
+    powerupBg.fillRoundedRect(width / 2 - 400, height - 55, 800, 50, 8); // Smaller: 50px height
+    powerupBg.lineStyle(2, 0xE63946, 1); // Thinner border
+    powerupBg.strokeRoundedRect(width / 2 - 400, height - 55, 800, 50, 8);
     powerupBg.setDepth(999);
 
-    // Magnet/Buyback Mode
-    this.magnetIcon = this.add.text(width / 2 - 300, powerupIconY, '🧲 BUYBACK', {
-      fontSize: '22px',
+    // Magnet/Buyback Mode - compact
+    this.magnetIcon = this.add.text(width / 2 - 270, powerupIconY - 8, '🧲', {
+      fontSize: '24px',
       color: '#E63946',
-      fontFamily: 'Arial',
-      fontStyle: 'bold',
-      letterSpacing: 1
+      fontFamily: 'Arial'
     }).setOrigin(0.5);
     this.magnetIcon.setVisible(false);
     this.magnetIcon.setDepth(1000);
 
-    this.magnetTimerText = this.add.text(width / 2 - 300, powerupTimerY, '10s', {
-      fontSize: '16px',
+    this.magnetTimerText = this.add.text(width / 2 - 240, powerupIconY - 8, 'BUYBACK 10s', {
+      fontSize: '14px',
       color: '#666666',
       fontFamily: 'Arial',
       fontStyle: 'bold'
-    }).setOrigin(0.5);
+    }).setOrigin(0, 0.5);
     this.magnetTimerText.setVisible(false);
     this.magnetTimerText.setDepth(1000);
 
-    // Shield/America Hat
-    this.shieldIcon = this.add.image(width / 2 - 100, powerupIconY - 5, 'america-hat');
-    this.shieldIcon.setScale(0.3);
-    this.shieldIcon.setOrigin(0.5);
+    // Shield/America Hat - compact
+    this.shieldIcon = this.add.text(width / 2 - 90, powerupIconY - 8, '🛡️', {
+      fontSize: '24px',
+      color: '#E63946',
+      fontFamily: 'Arial'
+    }).setOrigin(0.5);
     this.shieldIcon.setVisible(false);
     this.shieldIcon.setDepth(1000);
 
-    this.shieldTimerText = this.add.text(width / 2 - 100, powerupTimerY, '8s', {
-      fontSize: '16px',
+    this.shieldTimerText = this.add.text(width / 2 - 60, powerupIconY - 8, 'SHIELD 8s', {
+      fontSize: '14px',
       color: '#666666',
       fontFamily: 'Arial',
       fontStyle: 'bold'
-    }).setOrigin(0.5);
+    }).setOrigin(0, 0.5);
     this.shieldTimerText.setVisible(false);
     this.shieldTimerText.setDepth(1000);
 
-    // Belle MOD
-    this.belleIcon = this.add.text(width / 2 + 100, powerupIconY, '💎 BELLE', {
-      fontSize: '22px',
+    // Belle MOD - compact
+    this.belleIcon = this.add.text(width / 2 + 70, powerupIconY - 8, '👁️', {
+      fontSize: '24px',
       color: '#E63946',
-      fontFamily: 'Arial',
-      fontStyle: 'bold',
-      letterSpacing: 1
+      fontFamily: 'Arial'
     }).setOrigin(0.5);
     this.belleIcon.setVisible(false);
     this.belleIcon.setDepth(1000);
 
-    this.belleTimerText = this.add.text(width / 2 + 100, powerupTimerY, '15s', {
-      fontSize: '16px',
+    this.belleTimerText = this.add.text(width / 2 + 100, powerupIconY - 8, 'BELLE 15s', {
+      fontSize: '14px',
       color: '#666666',
       fontFamily: 'Arial',
       fontStyle: 'bold'
-    }).setOrigin(0.5);
+    }).setOrigin(0, 0.5);
     this.belleTimerText.setVisible(false);
     this.belleTimerText.setDepth(1000);
 
-    // Bull Market Mode
-    this.bullMarketIcon = this.add.text(width / 2 + 300, powerupIconY, '🐂 BULL', {
-      fontSize: '22px',
+    // Bull Market Mode - compact
+    this.bullMarketIcon = this.add.text(width / 2 + 230, powerupIconY - 8, '🐂', {
+      fontSize: '24px',
       color: '#E63946',
-      fontFamily: 'Arial',
-      fontStyle: 'bold',
-      letterSpacing: 1
+      fontFamily: 'Arial'
     }).setOrigin(0.5);
     this.bullMarketIcon.setVisible(false);
     this.bullMarketIcon.setDepth(1000);
 
-    this.bullMarketTimerText = this.add.text(width / 2 + 300, powerupTimerY, '10s', {
-      fontSize: '16px',
+    this.bullMarketTimerText = this.add.text(width / 2 + 260, powerupIconY - 8, 'BULL 10s', {
+      fontSize: '14px',
       color: '#666666',
       fontFamily: 'Arial',
       fontStyle: 'bold'
-    }).setOrigin(0.5);
+    }).setOrigin(0, 0.5);
     this.bullMarketTimerText.setVisible(false);
     this.bullMarketTimerText.setDepth(1000);
 
@@ -478,9 +477,47 @@ export class GameScene extends Phaser.Scene {
 
     // Physics already paused in create() - will resume after countdown
 
-    // Play countdown sound (3-2-1 with voice) - only if available
-    if (this.sound.get('countdown')) {
-      this.sound.play('countdown', { volume: 0.6 });
+    // Play countdown sound FIRST (3-2-1 with voice)
+    console.log('Playing countdown sound...');
+    if (this.cache.audio.exists('countdown')) {
+      console.log('Countdown sound exists in cache');
+      this.sound.play('countdown', { volume: 0.8 });
+    } else {
+      console.log('Countdown sound NOT in cache!');
+    }
+
+    // Start background music during countdown for smoother transition (lower volume)
+    if (!this.backgroundMusicStarted && this.cache.audio.exists('background-music')) {
+      console.log('Starting background music during countdown');
+
+      // Delay music start by 0.5 seconds so countdown voice is clear
+      this.time.delayedCall(500, () => {
+        this.currentBackgroundMusic = this.sound.add('background-music', {
+          volume: 0.2,  // Very low volume during countdown
+          loop: false
+        });
+
+        // When first track ends, play second track on loop
+        this.currentBackgroundMusic.once('complete', () => {
+          if (this.cache.audio.exists('background-music-2')) {
+            this.currentBackgroundMusic = this.sound.play('background-music-2', {
+              volume: 0.5,
+              loop: true
+            });
+          }
+        });
+
+        this.currentBackgroundMusic.play();
+        this.backgroundMusicStarted = true;
+
+        // Fade in music volume during countdown
+        this.tweens.add({
+          targets: this.currentBackgroundMusic,
+          volume: 0.5,
+          duration: 3000,
+          ease: 'Linear'
+        });
+      });
     }
 
     // Countdown: 3, 2, 1, GO!
@@ -539,33 +576,16 @@ export class GameScene extends Phaser.Scene {
       this.sound.play('game-start', { volume: 0.5 });
     }
 
-    // Start background music - first track plays once, then transitions to second track loop
-    if (!this.backgroundMusicStarted) {
-      console.log('GameScene startGame: Checking for background-music');
-      console.log('Cache exists:', this.cache.audio.exists('background-music'));
-      if (this.cache.audio.exists('background-music')) {
-        console.log('Playing background music');
-        this.currentBackgroundMusic = this.sound.add('background-music', {
-          volume: 0.5,  // Increased volume
-          loop: false   // Don't loop, will transition to second track
-        });
-
-        // When first track ends, play second track on loop
-        this.currentBackgroundMusic.once('complete', () => {
-          if (this.cache.audio.exists('background-music-2')) {
-            this.currentBackgroundMusic = this.sound.play('background-music-2', {
-              volume: 0.5,
-              loop: true
-            });
-          }
-        });
-
-        this.currentBackgroundMusic.play();
-        console.log('Background music started:', this.currentBackgroundMusic);
-        this.backgroundMusicStarted = true;
-      } else {
-        console.log('background-music not in cache');
-      }
+    // Background music already started during countdown
+    // Just ensure volume is at full level
+    if (this.currentBackgroundMusic && this.backgroundMusicStarted) {
+      console.log('Background music already playing, ensuring full volume');
+      this.tweens.add({
+        targets: this.currentBackgroundMusic,
+        volume: 0.5,
+        duration: 500,
+        ease: 'Linear'
+      });
     }
 
     // Resume physics after countdown
@@ -639,6 +659,9 @@ export class GameScene extends Phaser.Scene {
       this.tweens.pauseAll(); // Pause all animations (coin feedback, etc.)
       this.time.paused = true; // Pause ALL timers globally
 
+      // Pause all sounds
+      this.sound.pauseAll();
+
       // Pause specific timers
       if (this.coinSpawnTimer) this.coinSpawnTimer.paused = true;
       if (this.enemySpawnTimer) this.enemySpawnTimer.paused = true;
@@ -671,6 +694,9 @@ export class GameScene extends Phaser.Scene {
       this.tweens.resumeAll(); // Resume all animations
       this.time.paused = false; // Resume ALL timers globally
 
+      // Resume all sounds
+      this.sound.resumeAll();
+
       // Resume specific timers
       if (this.coinSpawnTimer) this.coinSpawnTimer.paused = false;
       if (this.enemySpawnTimer) this.enemySpawnTimer.paused = false;
@@ -699,10 +725,8 @@ export class GameScene extends Phaser.Scene {
     this.currentPhase = phaseId;
     this.phaseStartTime = Date.now();
 
-    // Play level up sound (except for phase 1)
-    if (phaseId > 1) {
-      this.sound.play('level-up', { volume: 0.6 });
-    }
+    // Phase change sound will be played in showPhaseAnnouncement
+    // (removed duplicate sound play here)
 
     // Update HUD
     this.phaseText.setText(`PHASE: ${phaseId}`);
@@ -785,6 +809,9 @@ export class GameScene extends Phaser.Scene {
     if (this.showingPhaseAnnouncement) return;
 
     this.showingPhaseAnnouncement = true;
+
+    // Play phase change sound
+    this.sound.play('phase-change', { volume: 0.7 });
 
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
@@ -904,7 +931,13 @@ export class GameScene extends Phaser.Scene {
     }
 
     coinImage = this.add.image(0, 0, coinKey);
-    coinImage.setScale(0.12);
+
+    // AOL coins are bigger (more important for combos)
+    if (type === 'aol') {
+      coinImage.setScale(0.16); // Bigger AOL coins
+    } else {
+      coinImage.setScale(0.12); // Normal size for other coins
+    }
 
     coin.add(coinImage);
     coin.setData('points', points);
@@ -1069,7 +1102,7 @@ export class GameScene extends Phaser.Scene {
         break;
       case 'belleMod':
         icon = this.add.image(0, 0, 'mod-belle');
-        icon.setScale(0.15);
+        icon.setScale(0.1); // Smaller icon
         glowColor = 0xFFD700; // Gold glow for MOD
         break;
       default:
@@ -1118,6 +1151,9 @@ export class GameScene extends Phaser.Scene {
 
     this.magnetIcon?.setVisible(true);
     this.magnetTimerText?.setVisible(true);
+
+    // Play buyback voice sound
+    this.sound.play('buyback-voice', { volume: 0.7 });
 
     // Visual feedback
     const text = this.add.text(this.cameras.main.width / 2, 200, '🧲 BUYBACK ACTIVATED!\nCoins fly to you like liquidity 💸', {
@@ -1347,7 +1383,7 @@ export class GameScene extends Phaser.Scene {
 
     // Create Belle sprite companion (follows eagle, slightly offset)
     this.belleSprite = this.add.image(0, 0, 'mod-belle');
-    this.belleSprite.setScale(0.2);
+    this.belleSprite.setScale(0.12); // Made smaller - was too big
     this.belleSprite.setDepth(150);
 
     // Create protection aura
@@ -1528,48 +1564,52 @@ export class GameScene extends Phaser.Scene {
     // Update Magnet/Buyback timer
     if (this.magnetActive && this.magnetTimer && this.magnetTimerText) {
       const remaining = Math.ceil((this.magnetTimer.delay - this.magnetTimer.elapsed) / 1000);
-      this.magnetTimerText.setText(`${remaining}s`);
+      this.magnetTimerText.setText(`BUYBACK ${remaining}s`);
 
-      // Blink warning when < 3 seconds
+      // Blink warning when < 3 seconds - more prominent
       if (remaining <= 3) {
         this.magnetTimerText.setColor(remaining % 2 === 0 ? '#FF0000' : '#666666');
-        this.magnetIcon?.setColor(remaining % 2 === 0 ? '#FF0000' : '#E63946');
+        this.magnetIcon?.setAlpha(remaining % 2 === 0 ? 0.4 : 1);
+        this.magnetIcon?.setScale(remaining % 2 === 0 ? 1.2 : 1); // Pulse effect
       }
     }
 
     // Update Shield timer
     if (this.shieldActive && this.shieldTimer && this.shieldTimerText) {
       const remaining = Math.ceil((this.shieldTimer.delay - this.shieldTimer.elapsed) / 1000);
-      this.shieldTimerText.setText(`${remaining}s`);
+      this.shieldTimerText.setText(`SHIELD ${remaining}s`);
 
-      // Blink warning when < 3 seconds
+      // Blink warning when < 3 seconds - more prominent
       if (remaining <= 3) {
         this.shieldTimerText.setColor(remaining % 2 === 0 ? '#FF0000' : '#666666');
-        this.shieldIcon?.setAlpha(remaining % 2 === 0 ? 0.5 : 1);
+        this.shieldIcon?.setAlpha(remaining % 2 === 0 ? 0.4 : 1);
+        this.shieldIcon?.setScale(remaining % 2 === 0 ? 1.2 : 1); // Pulse effect
       }
     }
 
     // Update Belle MOD timer
     if (this.belleModActive && this.belleModTimer && this.belleTimerText) {
       const remaining = Math.ceil((this.belleModTimer.delay - this.belleModTimer.elapsed) / 1000);
-      this.belleTimerText.setText(`${remaining}s`);
+      this.belleTimerText.setText(`BELLE ${remaining}s`);
 
-      // Blink warning when < 3 seconds
+      // Blink warning when < 3 seconds - more prominent
       if (remaining <= 3) {
         this.belleTimerText.setColor(remaining % 2 === 0 ? '#FF0000' : '#666666');
-        this.belleIcon?.setColor(remaining % 2 === 0 ? '#FF0000' : '#E63946');
+        this.belleIcon?.setAlpha(remaining % 2 === 0 ? 0.4 : 1);
+        this.belleIcon?.setScale(remaining % 2 === 0 ? 1.2 : 1); // Pulse effect
       }
     }
 
     // Update Bull Market timer
     if (this.bullMarketActive && this.bullMarketTimer && this.bullMarketTimerText) {
       const remaining = Math.ceil((this.bullMarketTimer.delay - this.bullMarketTimer.elapsed) / 1000);
-      this.bullMarketTimerText.setText(`${remaining}s`);
+      this.bullMarketTimerText.setText(`BULL ${remaining}s`);
 
-      // Blink warning when < 3 seconds
+      // Blink warning when < 3 seconds - more prominent
       if (remaining <= 3) {
         this.bullMarketTimerText.setColor(remaining % 2 === 0 ? '#FF0000' : '#666666');
-        this.bullMarketIcon?.setColor(remaining % 2 === 0 ? '#FF0000' : '#E63946');
+        this.bullMarketIcon?.setAlpha(remaining % 2 === 0 ? 0.4 : 1);
+        this.bullMarketIcon?.setScale(remaining % 2 === 0 ? 1.2 : 1); // Pulse effect
       }
     }
   }
@@ -1594,17 +1634,27 @@ export class GameScene extends Phaser.Scene {
     if (this.shieldActive && this.shieldGraphics) {
       this.shieldGraphics.clear();
 
-      // Draw beautiful layered shield
+      // Check if shield is about to expire (< 3 seconds)
+      let shieldAlphaMultiplier = 1.0;
+      if (this.shieldTimer) {
+        const remaining = Math.ceil((this.shieldTimer.delay - this.shieldTimer.elapsed) / 1000);
+        if (remaining <= 3) {
+          // Blink effect when < 3 seconds remaining
+          shieldAlphaMultiplier = Math.floor(Date.now() / 250) % 2 === 0 ? 0.3 : 1;
+        }
+      }
+
+      // Draw beautiful layered shield with alpha multiplier
       // Outer glow
-      this.shieldGraphics.fillStyle(0x00AAFF, 0.2);
+      this.shieldGraphics.fillStyle(0x00AAFF, 0.2 * shieldAlphaMultiplier);
       this.shieldGraphics.fillCircle(this.eagle.x, this.eagle.y, 100);
 
       // Middle ring
-      this.shieldGraphics.lineStyle(6, 0x00DDFF, 0.8);
+      this.shieldGraphics.lineStyle(6, 0x00DDFF, 0.8 * shieldAlphaMultiplier);
       this.shieldGraphics.strokeCircle(this.eagle.x, this.eagle.y, 85);
 
       // Inner ring
-      this.shieldGraphics.lineStyle(4, 0x88EEFF, 1);
+      this.shieldGraphics.lineStyle(4, 0x88EEFF, 1 * shieldAlphaMultiplier);
       this.shieldGraphics.strokeCircle(this.eagle.x, this.eagle.y, 75);
 
       // Energy particles effect (optional rotating dots)
@@ -1613,7 +1663,7 @@ export class GameScene extends Phaser.Scene {
         const angle = (time * 2 + i * Math.PI / 4) % (Math.PI * 2);
         const px = this.eagle.x + Math.cos(angle) * 82;
         const py = this.eagle.y + Math.sin(angle) * 82;
-        this.shieldGraphics.fillStyle(0xFFFFFF, 0.9);
+        this.shieldGraphics.fillStyle(0xFFFFFF, 0.9 * shieldAlphaMultiplier);
         this.shieldGraphics.fillCircle(px, py, 3);
       }
     }
@@ -1623,14 +1673,33 @@ export class GameScene extends Phaser.Scene {
       // Position Belle sprite next to eagle (offset left-up)
       if (this.belleSprite) {
         this.belleSprite.setPosition(this.eagle.x - 80, this.eagle.y - 60);
+
+        // Blink warning when < 3 seconds remaining
+        if (this.belleModTimer) {
+          const remaining = Math.ceil((this.belleModTimer.delay - this.belleModTimer.elapsed) / 1000);
+          if (remaining <= 3) {
+            // Flash Belle sprite on/off
+            this.belleSprite.setAlpha(Math.floor(Date.now() / 250) % 2 === 0 ? 0.3 : 1);
+          }
+        }
       }
 
       // Draw protection aura
       if (this.belleAura) {
         this.belleAura.clear();
 
+        // Check if warning phase
+        let auraAlpha = 0.15;
+        if (this.belleModTimer) {
+          const remaining = Math.ceil((this.belleModTimer.delay - this.belleModTimer.elapsed) / 1000);
+          if (remaining <= 3) {
+            // Pulsing aura when time running out
+            auraAlpha = Math.floor(Date.now() / 250) % 2 === 0 ? 0.05 : 0.25;
+          }
+        }
+
         // Golden glow aura
-        this.belleAura.fillStyle(0xFFD700, 0.15);
+        this.belleAura.fillStyle(0xFFD700, auraAlpha);
         this.belleAura.fillCircle(this.eagle.x, this.eagle.y, 110);
 
         // Golden ring
