@@ -23,10 +23,12 @@ export class GameScene extends Phaser.Scene {
   private aolCount: number = 0;
   private burgerCount: number = 0;
   private usd1Count: number = 0;
+  private valorCount: number = 0;
   private bonkCountText?: Phaser.GameObjects.Text;
   private aolCountText?: Phaser.GameObjects.Text;
   private burgerCountDisplayText?: Phaser.GameObjects.Text;
   private usd1CountText?: Phaser.GameObjects.Text;
+  private valorCountText?: Phaser.GameObjects.Text;
 
   // Game state
   private gameStartTime: number = 0;
@@ -65,6 +67,17 @@ export class GameScene extends Phaser.Scene {
   private bullMarketActive: boolean = false;
   private extraLives: number = 0;
 
+  // === v3.2: VALOR MODE ===
+  private valorModeActive: boolean = false;
+  private valorModeStage: number = 0; // 0 = inactive, 1 = stage1, 2 = stage2, 3 = afterglow
+  private valorModeCooldown: boolean = false;
+  private valorScoreMultiplier: number = 1;
+  private originalCoinSpeed: number = 0;
+  private originalEnemySpeed: number = 0;
+  private valorAuraParticles: Phaser.GameObjects.Particles.ParticleEmitter[] = [];
+  private valorScreenGlow?: Phaser.GameObjects.Rectangle;
+  private valorModeText?: Phaser.GameObjects.Text;
+
   private magnetTimer?: Phaser.Time.TimerEvent;
   private shieldTimer?: Phaser.Time.TimerEvent;
   private burgerMultiplierTimer?: Phaser.Time.TimerEvent;
@@ -72,6 +85,12 @@ export class GameScene extends Phaser.Scene {
   private belleModTimer?: Phaser.Time.TimerEvent;
   private controlBlockTimer?: Phaser.Time.TimerEvent;
   private bullMarketTimer?: Phaser.Time.TimerEvent;
+
+  // v3.2: VALOR MODE timers
+  private valorStage1Timer?: Phaser.Time.TimerEvent;
+  private valorStage2Timer?: Phaser.Time.TimerEvent;
+  private valorAfterglowTimer?: Phaser.Time.TimerEvent;
+  private valorCooldownTimer?: Phaser.Time.TimerEvent;
 
   // Combo System
   private comboCount: number = 0;
@@ -279,6 +298,11 @@ export class GameScene extends Phaser.Scene {
     this.usd1CountText = this.add.text(coinStartX + coinSpacing * 3, coinCounterY, '💵 $USD1: 0', coinStyle);
     this.usd1CountText.setOrigin(0, 0.5);
     this.usd1CountText.setDepth(1000);
+
+    // VALOR Count
+    this.valorCountText = this.add.text(coinStartX + coinSpacing * 4, coinCounterY, '⚡ $VALOR: 0', coinStyle);
+    this.valorCountText.setOrigin(0, 0.5);
+    this.valorCountText.setDepth(1000);
 
     // ========== POWER-UP PANEL - COMPACT BOTTOM BAR ==========
     const powerupIconY = height - 40; // Closer to bottom
@@ -908,18 +932,24 @@ export class GameScene extends Phaser.Scene {
     let type: string;
     let coinKey: string;
 
-    if (roll <= GameConfig.coins.BONK.spawnChance) {
+    // v3.2: Updated spawn distribution (40% BONK, 25% AOL, 15% VALOR, 10% USD1, 10% BURGER)
+    if (roll <= 40) {
       // BONK (40%)
       coinKey = 'coin-bonk';
       points = GameConfig.coins.BONK.points;
       type = 'bonk';
-    } else if (roll <= GameConfig.coins.BONK.spawnChance + GameConfig.coins.AOL.spawnChance) {
-      // AOL (30%)
+    } else if (roll <= 65) {
+      // AOL (25%)
       coinKey = 'coin-aol';
       points = GameConfig.coins.AOL.points;
       type = 'aol';
-    } else if (roll <= GameConfig.coins.BONK.spawnChance + GameConfig.coins.AOL.spawnChance + GameConfig.coins.USD1.spawnChance) {
-      // USD1 (20%)
+    } else if (roll <= 80) {
+      // VALOR (15%) - v3.2 NEW
+      coinKey = 'coin-valor';
+      points = GameConfig.coins.VALOR.points;
+      type = 'valor';
+    } else if (roll <= 90) {
+      // USD1 (10%)
       coinKey = 'coin-usd1';
       points = GameConfig.coins.USD1.points;
       type = 'usd1';
@@ -932,9 +962,11 @@ export class GameScene extends Phaser.Scene {
 
     coinImage = this.add.image(0, 0, coinKey);
 
-    // AOL coins are bigger (more important for combos)
-    if (type === 'aol') {
-      coinImage.setScale(0.16); // Bigger AOL coins
+    // v3.2: Size scaling for special coins
+    if (type === 'valor') {
+      coinImage.setScale(0.18); // VALOR largest (premium coin)
+    } else if (type === 'aol') {
+      coinImage.setScale(0.16); // AOL bigger (combo importance)
     } else {
       coinImage.setScale(0.12); // Normal size for other coins
     }
@@ -1846,6 +1878,18 @@ export class GameScene extends Phaser.Scene {
           if (this.usd1CountText) {
             this.usd1CountText.setText(`💵 $USD1: ${this.usd1Count}`);
           }
+        } else if (type === 'valor') {
+          // v3.2: VALOR coin collection
+          this.valorCount++;
+          if (this.valorCountText) {
+            this.valorCountText.setText(`🦅 $VALOR: ${this.valorCount}`);
+          }
+
+          // 5% chance to spawn Gold Feather
+          const goldFeatherRoll = Math.random() * 100;
+          if (goldFeatherRoll < 5) {
+            this.spawnGoldFeather(coin.y);
+          }
         }
 
         // Show coin collection feedback with points
@@ -1946,6 +1990,11 @@ export class GameScene extends Phaser.Scene {
             break;
           case 'vesper':
             this.activateBullMarket();
+            break;
+          case 'goldFeather':
+            // v3.2: Activate VALOR MODE
+            this.activateValorMode();
+            this.sound.play('buyback-voice', { volume: 0.9 });
             break;
         }
 
@@ -2226,6 +2275,53 @@ export class GameScene extends Phaser.Scene {
     this.sound.stopByKey('background-music');
 
     this.scene.start('StartScene');
+  }
+
+  // ========== v3.2: GOLD FEATHER (VALOR MODE TRIGGER) ==========
+  private spawnGoldFeather(y: number): void {
+    const width = this.cameras.main.width;
+
+    const feather = this.add.container(width + 100, y);
+
+    // Gold feather image
+    const featherIcon = this.add.image(0, 0, 'feder-pixel');
+    featherIcon.setScale(0.2);
+
+    // Golden sparkle ring
+    const sparkleRing = this.add.graphics();
+    sparkleRing.lineStyle(3, 0xFFD700, 0.8);
+    sparkleRing.strokeCircle(0, 0, 60);
+
+    // Pulsing glow
+    const glow = this.add.graphics();
+    glow.fillStyle(0xFFD700, 0.4);
+    glow.fillCircle(0, 0, 70);
+
+    feather.add([glow, sparkleRing, featherIcon]);
+    feather.setData('type', 'goldFeather');
+    feather.setSize(100, 100);
+
+    // Pulsing animation
+    this.tweens.add({
+      targets: feather,
+      scaleX: 1.15,
+      scaleY: 1.15,
+      duration: 800,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut'
+    });
+
+    // Rotation
+    this.tweens.add({
+      targets: featherIcon,
+      angle: 360,
+      duration: 3000,
+      repeat: -1,
+      ease: 'Linear'
+    });
+
+    this.powerups.push(feather);
   }
 
   // ========== VESPER (BULL OF WISDOM) ==========

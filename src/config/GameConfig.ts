@@ -90,37 +90,47 @@ export const GameConfig = {
   coins: {
     BONK: {
       name: '$BONK',
-      description: 'Meme-Dog Token',
+      description: 'Common meme coin',
       points: 5,
-      icon: '🟠',
-      spawnChance: 40, // %
+      icon: '🐕',
+      spawnChance: 40, // v3.2: 40%
       effect: 'none'
     },
     AOL: {
       name: '$AOL',
-      description: 'Launchpad-Token',
+      description: 'Core coin – enables Buyback Mode',
       points: 10,
-      icon: '🟣',
-      spawnChance: 30,
+      icon: '🇺🇸',
+      spawnChance: 25, // v3.2: 25%
       effect: 'buyback_boost', // 3x AOL = Buyback Mode
       comboRequired: 3
     },
     USD1: {
       name: '$USD1',
-      description: 'Stablecoin',
+      description: 'Stablecoin – safe, low value',
       points: 2,
       icon: '💵',
-      spawnChance: 20,
+      spawnChance: 10, // v3.2: 10%
       effect: 'none'
     },
     BURGER: {
       name: '$BURGER',
-      description: 'Erster America.Fun-Launch',
+      description: 'Multiplicator coin (Burger Mode trigger)',
       points: 25,
       icon: '🍔',
-      spawnChance: 10,
-      effect: 'score_multiplier', // 5s Multiplikator
+      spawnChance: 15, // v3.2 SPEC: 15%
+      effect: 'score_multiplier', // 5x BURGER = 2× score
+      comboRequired: 5,
       multiplierDuration: 5000 // ms
+    },
+    VALOR: {
+      name: '$VALOR',
+      description: 'Premium coin – larger sprite, triggers Gold Feather chance',
+      points: 25, // v3.2 SPEC: 25 points
+      icon: '🦅',
+      spawnChance: 15, // v3.2 SPEC: 15%
+      effect: 'gold_feather_chance', // 5% chance to drop Gold Feather
+      goldFeatherChance: 5
     }
   },
 
@@ -229,7 +239,8 @@ export const GameConfig = {
     BONK: 5,
     AOL: 10,
     USD1: 2,
-    BURGER: 25
+    BURGER: 25,
+    VALOR: 25 // v3.2 SPEC: 25 points
   },
   fudWallBonus: 10,
 

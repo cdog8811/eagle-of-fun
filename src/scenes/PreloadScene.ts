@@ -23,12 +23,19 @@ export class PreloadScene extends Phaser.Scene {
     // Load single eagle image for start screen
     this.load.image('player-eagle', 'assets/images/player-eagle.png');
 
+    // v3.2: Gold Eagle Sprite for Valor Mode
+    this.load.spritesheet('eagleGold', 'assets/images/eagle-spreat-sheet-gold.png', {
+      frameWidth: 512,
+      frameHeight: 512
+    });
+
     // === INTRO ===
     this.load.image('ogle-pixel', 'assets/images/Ogle-Pixel.png');
 
     // === POWER-UPS ===
     this.load.image('mod-belle', 'assets/images/MOD-Belle-pixel.png');
     this.load.image('america-hat', 'assets/images/america-hat-pixel.png');
+    this.load.image('feder-pixel', 'assets/images/feder-pixel.png'); // v3.2: Gold Feather
 
     // === NPC ===
     this.load.image('vesper', 'assets/images/vesper0x.png');
@@ -38,6 +45,7 @@ export class PreloadScene extends Phaser.Scene {
     this.load.image('coin-aol', 'assets/images/token_aol.png');
     this.load.image('coin-usd1', 'assets/images/usd1-coin.png');
     this.load.image('coin-burger', 'assets/images/Token_Burger.png');
+    this.load.image('coin-valor', 'assets/images/valorant-coin.png'); // v3.2
 
     // === ENEMIES ===
     this.load.image('jeet', 'assets/images/jeet.png'); // Jeeter (Phase 1)
