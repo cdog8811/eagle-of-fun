@@ -3,8 +3,9 @@ import { GameConfig } from '../config/GameConfig';
 import { Eagle } from '../sprites/Eagle';
 import { MissionManager } from '../managers/MissionManager';
 import { MARKET_PHASES, MICRO_EVENTS, determinePhase, MarketPhase, MicroEvent } from '../config/MarketPhasesConfig';
-import { WeaponManagerV37 } from '../managers/WeaponManagerV37';
+import { WeaponManagerSimple } from '../managers/WeaponManagerSimple';
 import { BossManagerV37 } from '../managers/BossManagerV37';
+import { BandanaPowerUp } from '../managers/BandanaPowerUp';
 
 export class GameScene extends Phaser.Scene {
   private eagle!: Eagle;
@@ -148,10 +149,16 @@ export class GameScene extends Phaser.Scene {
   private missionUI: Phaser.GameObjects.Container[] = [];
 
   // v3.7: Weapon & Boss System
-  private weaponManager!: WeaponManagerV37;
+  private weaponManager!: WeaponManagerSimple;
   private bossManager!: BossManagerV37;
   private weaponUI?: Phaser.GameObjects.Container;
-  private ammoText?: Phaser.GameObjects.Text;
+  private weaponEnergyBar?: Phaser.GameObjects.Graphics;
+  private weaponEnergyBarBg?: Phaser.GameObjects.Graphics;
+  private weaponPickup?: Phaser.GameObjects.Container;
+  private tutorialOverlay?: Phaser.GameObjects.Container;
+  private weaponRespawnTimer?: Phaser.Time.TimerEvent;
+  private bandanaPowerUp!: BandanaPowerUp;
+  private bandanaMagnetActive: boolean = false;
 
   // v3.2: XP & Progression UI
   private levelText?: Phaser.GameObjects.Text;
@@ -175,6 +182,7 @@ export class GameScene extends Phaser.Scene {
   // Shield visual
   private shieldGraphics?: Phaser.GameObjects.Graphics;
   private shieldLoopSound?: Phaser.Sound.BaseSound;
+  private shieldOwner: 'none' | 'powerup' | 'bandana' | 'valor' = 'none';
 
   // Belle MOD visuals
   private belleSprite?: Phaser.GameObjects.Image;
@@ -282,8 +290,9 @@ export class GameScene extends Phaser.Scene {
     this.missionManager = MissionManager.getInstance();
 
     // v3.7: Initialize Weapon & Boss Systems
-    this.weaponManager = new WeaponManagerV37(this);
+    this.weaponManager = new WeaponManagerSimple(this);
     this.bossManager = new BossManagerV37(this);
+    this.bandanaPowerUp = new BandanaPowerUp(this);
 
     // Pause physics immediately - will resume after countdown
     this.physics.pause();
@@ -349,8 +358,8 @@ export class GameScene extends Phaser.Scene {
     // v3.2: MISSION SYSTEM - Bottom right
     this.createMissionUI();
 
-    // v3.7: WEAPON UI - Bottom center
-    this.createWeaponUI();
+    // v3.7: Weapon UI will be created when weapon is collected
+    // (Don't create it at start)
 
     // ========== COIN COUNTERS - SECOND ROW (BLUE BAR) ==========
     const coinCounterY = 105;
@@ -555,53 +564,44 @@ export class GameScene extends Phaser.Scene {
       this.cleanupAndExit();
     });
 
-    // v3.7: Weapon Controls
-    // SHIFT - Fire weapon (or double-tap for rapid fire)
-    this.input.keyboard?.on('keydown-SHIFT', () => {
+    // v3.7: Weapon Controls - Q/W/E keys
+    // Q - Fire straight
+    this.input.keyboard?.on('keydown-Q', () => {
       if (!this.hasStarted || this.isPaused || this.controlBlocked || !this.eagle) return;
+      if (!this.weaponManager.hasWeapon()) return;
 
-      // Get eagle position from its sprite
       const eagleX = this.eagle.x || 300;
       const eagleY = this.eagle.y || this.cameras.main.height / 2;
 
-      const result = this.weaponManager.handleShiftPress(eagleX, eagleY);
-
-      if (result.cost > 0) {
-        // Deduct coins
-        this.deductCoinsForWeapon(result.coinType, result.cost);
-      }
+      this.weaponManager.fire(eagleX, eagleY, 0); // Straight ahead
     });
 
-    // TAB - Cycle weapons
+    // W - Fire upward angle
+    this.input.keyboard?.on('keydown-W', () => {
+      if (!this.hasStarted || this.isPaused || this.controlBlocked || !this.eagle) return;
+      if (!this.weaponManager.hasWeapon()) return;
+
+      const eagleX = this.eagle.x || 300;
+      const eagleY = this.eagle.y || this.cameras.main.height / 2;
+
+      this.weaponManager.fire(eagleX, eagleY, -15); // 15 degrees up
+    });
+
+    // E - Fire downward angle
+    this.input.keyboard?.on('keydown-E', () => {
+      if (!this.hasStarted || this.isPaused || this.controlBlocked || !this.eagle) return;
+      if (!this.weaponManager.hasWeapon()) return;
+
+      const eagleX = this.eagle.x || 300;
+      const eagleY = this.eagle.y || this.cameras.main.height / 2;
+
+      this.weaponManager.fire(eagleX, eagleY, 15); // 15 degrees down
+    });
+
+    // Prevent TAB from causing issues (browser focus change)
     this.input.keyboard?.on('keydown-TAB', (event: KeyboardEvent) => {
-      event.preventDefault(); // Prevent browser tab switching
-      if (!this.hasStarted || this.isPaused) return;
-
-      this.weaponManager.cycleWeapon();
-      this.updateWeaponUI();
+      event.preventDefault(); // Prevent browser tab switching/focus
     });
-
-    // Arrow UP - Aim up
-    this.input.keyboard?.on('keydown-UP', () => {
-      if (!this.hasStarted || this.isPaused) return;
-      if (this.input.keyboard?.checkDown(this.input.keyboard.addKey('SHIFT'))) {
-        this.weaponManager.adjustAim(-1);
-      }
-    });
-
-    // Arrow DOWN - Aim down
-    this.input.keyboard?.on('keydown-DOWN', () => {
-      if (!this.hasStarted || this.isPaused) return;
-      if (this.input.keyboard?.checkDown(this.input.keyboard.addKey('SHIFT'))) {
-        this.weaponManager.adjustAim(1);
-      }
-    });
-
-    // R - Reload (hold 1s to convert coins to ammo)
-    // TODO: Implement reload system
-
-    // U - Ultimate: Buyback Storm
-    // TODO: Implement ultimate ability
   }
 
   private showTaglineInGame(): void {
@@ -788,6 +788,9 @@ export class GameScene extends Phaser.Scene {
     this.speedMultiplier = 1.0;
     this.enemySpawnRateMultiplier = 1.0;
     this.coinSpawnRateMultiplier = 1.0;
+
+    // v3.7: Start Bandana Power-Up spawn timer
+    this.bandanaPowerUp.startSpawnTimer();
 
     // v3.4: Speed Scaling Timer (+3% every 20 seconds, max 2.5x)
     this.speedScalingInterval = this.time.addEvent({
@@ -1523,17 +1526,33 @@ export class GameScene extends Phaser.Scene {
   }
 
   private activateShield(): void {
-    if (this.shieldActive) return;
+    // Only allow America Hat to override if no other system owns the shield
+    if (this.shieldActive && this.shieldOwner !== 'none' && this.shieldOwner !== 'powerup') {
+      console.log('🛡️ Shield already owned by:', this.shieldOwner, '- America Hat blocked');
+      return;
+    }
+
+    // Cancel old shield timer if re-activating America Hat shield
+    if (this.shieldTimer) {
+      this.shieldTimer.remove();
+      this.shieldTimer = undefined;
+    }
 
     this.shieldActive = true;
+    this.shieldOwner = 'powerup';
     this.shieldIcon?.setVisible(true);
     this.shieldTimerText?.setVisible(true);
+
+    console.log('🛡️ America Hat shield activated - Owner: powerup');
 
     // Play shield activation sound
     this.sound.play('shield-activate', { volume: 0.5 });
 
     // Start shield active loop sound
     if (this.cache.audio.exists('shield-active-loop')) {
+      if (this.shieldLoopSound) {
+        this.shieldLoopSound.stop();
+      }
       this.shieldLoopSound = this.sound.add('shield-active-loop', {
         volume: 0.3,
         loop: true
@@ -1561,6 +1580,9 @@ export class GameScene extends Phaser.Scene {
     });
 
     // Create beautiful shield graphics that follows eagle
+    if (this.shieldGraphics) {
+      this.shieldGraphics.destroy();
+    }
     this.shieldGraphics = this.add.graphics();
     this.shieldGraphics.setDepth(99);
 
@@ -1573,7 +1595,7 @@ export class GameScene extends Phaser.Scene {
       yoyo: true,
       repeat: (duration / 500) - 1,
       onComplete: () => {
-        if (this.shieldGraphics) {
+        if (this.shieldGraphics && this.shieldOwner === 'powerup') {
           this.shieldGraphics.destroy();
           this.shieldGraphics = undefined;
         }
@@ -1582,17 +1604,24 @@ export class GameScene extends Phaser.Scene {
 
     // Deactivate after duration
     this.shieldTimer = this.time.delayedCall(duration, () => {
-      this.shieldActive = false;
-      this.shieldIcon?.setVisible(false);
-      this.shieldTimerText?.setVisible(false);
-      if (this.shieldGraphics) {
-        this.shieldGraphics.destroy();
-        this.shieldGraphics = undefined;
-      }
-      // Stop shield loop sound
-      if (this.shieldLoopSound) {
-        this.shieldLoopSound.stop();
-        this.shieldLoopSound = undefined;
+      // Only deactivate if we still own the shield
+      if (this.shieldOwner === 'powerup') {
+        console.log('🛡️ America Hat shield expired - deactivating');
+        this.shieldActive = false;
+        this.shieldOwner = 'none';
+        this.shieldIcon?.setVisible(false);
+        this.shieldTimerText?.setVisible(false);
+        if (this.shieldGraphics) {
+          this.shieldGraphics.destroy();
+          this.shieldGraphics = undefined;
+        }
+        // Stop shield loop sound
+        if (this.shieldLoopSound) {
+          this.shieldLoopSound.stop();
+          this.shieldLoopSound = undefined;
+        }
+      } else {
+        console.log('🛡️ America Hat timer expired but shield owned by:', this.shieldOwner);
       }
     });
   }
@@ -2006,41 +2035,20 @@ export class GameScene extends Phaser.Scene {
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
 
-    // v3.7: Update Weapon & Boss Systems
+    // v3.7: Update Weapon & Boss & Bandana Systems
     const delta = this.game.loop.delta;
     this.weaponManager.update(delta);
     this.bossManager.update(delta);
+    this.bandanaPowerUp.update(); // Bandana effects, magnet, trail
 
-    // v3.7: Update weapon manager with current coin counts
-    this.weaponManager.updateCoinCounts(
-      this.bonkCount,
-      this.aolCount,
-      this.burgerCount,
-      this.valorCount
-    );
+    // v3.7: Update weapon UI energy bar
+    if (this.weaponManager.hasWeapon()) {
+      this.updateWeaponUI();
+    }
 
     // v3.7: Check projectile collisions with enemies
     const hits = this.weaponManager.checkCollisions(this.enemies);
     for (const hit of hits) {
-      // Award coins back (1.5× return)
-      const returnAmount = this.weaponManager.onProjectileHit(hit.projectile);
-
-      // Add coins back
-      switch (hit.projectile.coinType) {
-        case 'BONK':
-          this.bonkCount += returnAmount;
-          if (this.bonkCountText) this.bonkCountText.setText(`${this.bonkCount}`);
-          break;
-        case 'AOL':
-          this.aolCount += returnAmount;
-          if (this.aolCountText) this.aolCountText.setText(`${this.aolCount}`);
-          break;
-        case 'BURGER':
-          this.burgerCount += returnAmount;
-          if (this.burgerCountDisplayText) this.burgerCountDisplayText.setText(`${this.burgerCount}`);
-          break;
-      }
-
       // === ENHANCED HIT EFFECTS ===
       const hitX = hit.enemy.x;
       const hitY = hit.enemy.y;
@@ -2108,9 +2116,29 @@ export class GameScene extends Phaser.Scene {
         this.enemies.splice(index, 1);
       }
 
-      // Award points
-      this.score += 50;
+      // Award points with visual feedback
+      const pointsAwarded = 50;
+      this.score += pointsAwarded;
       this.scoreText.setText(`SCORE: ${this.score}`);
+
+      // Show floating points text
+      const pointsText = this.add.text(hitX, hitY, `+${pointsAwarded}`, {
+        fontSize: '32px',
+        color: '#FFD700',
+        fontFamily: 'Arial',
+        fontStyle: 'bold',
+        stroke: '#000000',
+        strokeThickness: 4
+      }).setOrigin(0.5).setDepth(2000);
+
+      this.tweens.add({
+        targets: pointsText,
+        y: hitY - 80,
+        alpha: 0,
+        duration: 1000,
+        ease: 'Power2',
+        onComplete: () => pointsText.destroy()
+      });
 
       // Play explosion sound
       if (this.sound.get('explosion')) {
@@ -2330,6 +2358,9 @@ export class GameScene extends Phaser.Scene {
 
         // Play coin collection sound
         this.sound.play('coin-collect', { volume: 0.4 });
+
+        // v3.7: Add energy to weapon (3% per coin)
+        this.weaponManager.addEnergyFromCoin();
 
         // Collect coin - with safety checks
         const points = coin.getData('points') || 0;
@@ -2551,10 +2582,35 @@ export class GameScene extends Phaser.Scene {
             this.activateValorMode();
             this.sound.play('buyback-voice', { volume: 0.9 });
             break;
+          case 'bandana':
+            // v3.7: Activate BANDANA MODE
+            this.bandanaPowerUp.activate();
+            break;
         }
 
         powerup.destroy();
         this.powerups.splice(i, 1);
+      }
+    }
+
+    // v3.7: Check weapon pickup collision
+    if (this.weaponPickup && this.weaponPickup.active) {
+      this.weaponPickup.x -= this.coinSpeed * (this.game.loop.delta / 1000);
+
+      if (this.weaponPickup.x < -100) {
+        this.weaponPickup.destroy();
+        this.weaponPickup = undefined;
+      } else {
+        const distance = Phaser.Math.Distance.Between(
+          this.weaponPickup.x,
+          this.weaponPickup.y,
+          this.eagle.x,
+          this.eagle.y
+        );
+
+        if (distance < 80) {
+          this.collectWeaponPickup();
+        }
       }
     }
 
@@ -3087,6 +3143,263 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
+  // ========== v3.7: WEAPON PICKUP SYSTEM ==========
+  private spawnWeaponPickup(): void {
+    const width = this.cameras.main.width;
+    const height = this.cameras.main.height;
+    const y = height / 2;
+
+    this.weaponPickup = this.add.container(width + 100, y);
+
+    // Weapon crate visual (blue box with weapon icon)
+    const crateGraphics = this.add.graphics();
+    crateGraphics.fillStyle(0x0088FF, 1);
+    crateGraphics.fillRoundedRect(-40, -40, 80, 80, 8);
+    crateGraphics.lineStyle(4, 0xFFFFFF, 1);
+    crateGraphics.strokeRoundedRect(-40, -40, 80, 80, 8);
+
+    // Star icon for weapon
+    const star = this.add.graphics();
+    star.fillStyle(0xFFFFFF, 1);
+    for (let i = 0; i < 5; i++) {
+      const angle = (i * 144 - 90) * Math.PI / 180;
+      const x = Math.cos(angle) * 20;
+      const y = Math.sin(angle) * 20;
+      if (i === 0) star.moveTo(x, y);
+      else star.lineTo(x, y);
+    }
+    star.closePath();
+    star.fillPath();
+
+    // Glow effect
+    const glow = this.add.graphics();
+    glow.fillStyle(0x0088FF, 0.3);
+    glow.fillCircle(0, 0, 60);
+
+    // Text label
+    const label = this.add.text(0, 60, '⚡ WEAPON', {
+      fontSize: '20px',
+      color: '#FFFFFF',
+      fontFamily: 'Arial',
+      fontStyle: 'bold',
+      align: 'center'
+    }).setOrigin(0.5);
+
+    this.weaponPickup.add([glow, crateGraphics, star, label]);
+    this.weaponPickup.setData('type', 'weapon');
+    this.weaponPickup.setSize(80, 80);
+
+    // Pulse animation
+    this.tweens.add({
+      targets: glow,
+      scaleX: 1.3,
+      scaleY: 1.3,
+      alpha: 0.1,
+      duration: 1000,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut'
+    });
+
+    // Float animation
+    this.tweens.add({
+      targets: this.weaponPickup,
+      y: y - 20,
+      duration: 1500,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut'
+    });
+  }
+
+  private collectWeaponPickup(): void {
+    if (!this.weaponPickup || !this.weaponPickup.active) return;
+
+    // Unlock weapon
+    this.weaponManager.unlockWeapon();
+
+    // Play collection sound
+    if (this.sound.get('power-up')) {
+      this.sound.play('power-up', { volume: 0.6 });
+    }
+
+    // Visual feedback
+    const width = this.cameras.main.width;
+    const feedbackText = this.add.text(width / 2, 300, '⚡ WEAPON UNLOCKED!', {
+      fontSize: '48px',
+      color: '#0088FF',
+      fontFamily: 'Arial',
+      fontStyle: 'bold',
+      stroke: '#FFFFFF',
+      strokeThickness: 6
+    }).setOrigin(0.5).setDepth(2000);
+
+    this.tweens.add({
+      targets: feedbackText,
+      alpha: 0,
+      y: 250,
+      duration: 2000,
+      onComplete: () => feedbackText.destroy()
+    });
+
+    // Destroy pickup
+    this.weaponPickup.destroy();
+    this.weaponPickup = undefined;
+
+    // Stop the respawn timer (player has weapon now)
+    if (this.weaponRespawnTimer) {
+      this.weaponRespawnTimer.remove();
+      this.weaponRespawnTimer = undefined;
+      console.log('🔫 Weapon respawn timer stopped');
+    }
+
+    // FREEZE gameplay (but keep input working) so player can read tutorial
+    this.controlBlocked = true;
+    this.physics.pause();
+    this.time.paused = true; // Pause all timers (coin spawns, enemies, etc.)
+    this.tweens.pauseAll(); // Pause all animations
+
+    // Show tutorial overlay FIRST, then create UI
+    this.showWeaponTutorial();
+
+    // Create weapon UI
+    this.createWeaponUI();
+  }
+
+  private showWeaponTutorial(): void {
+    const width = this.cameras.main.width;
+    const height = this.cameras.main.height;
+
+    // Create a container for all tutorial elements
+    const tutorialElements: Phaser.GameObjects.GameObject[] = [];
+
+    // Dark overlay
+    const overlay = this.add.graphics();
+    overlay.fillStyle(0x000000, 0.8);
+    overlay.fillRect(0, 0, width, height);
+    overlay.setDepth(5000);
+    overlay.setScrollFactor(0); // Fixed to camera
+    tutorialElements.push(overlay);
+
+    // Tutorial box
+    const tutorialBg = this.add.graphics();
+    tutorialBg.fillStyle(0x222222, 0.98);
+    tutorialBg.fillRoundedRect(width / 2 - 350, height / 2 - 180, 700, 360, 20);
+    tutorialBg.lineStyle(5, 0x0088FF, 1);
+    tutorialBg.strokeRoundedRect(width / 2 - 350, height / 2 - 180, 700, 360, 20);
+    tutorialBg.setDepth(5001);
+    tutorialBg.setScrollFactor(0);
+    tutorialElements.push(tutorialBg);
+
+    // Title
+    const title = this.add.text(width / 2, height / 2 - 120, '⚡ WEAPON UNLOCKED ⚡', {
+      fontSize: '42px',
+      color: '#0088FF',
+      fontFamily: 'Arial',
+      fontStyle: 'bold',
+      stroke: '#000000',
+      strokeThickness: 4
+    }).setOrigin(0.5).setDepth(5002);
+    title.setScrollFactor(0);
+    tutorialElements.push(title);
+
+    // Instructions
+    const instructions = this.add.text(width / 2, height / 2 - 20,
+      'Q - Shoot straight\n' +
+      'W - Shoot up\n' +
+      'E - Shoot down\n\n' +
+      'Coins charge weapon energy\n' +
+      'Shooting depletes energy\n\n' +
+      'Energy bar shown bottom right',
+      {
+        fontSize: '26px',
+        color: '#FFFFFF',
+        fontFamily: 'Arial',
+        align: 'center',
+        lineSpacing: 8
+      }
+    ).setOrigin(0.5).setDepth(5002);
+    instructions.setScrollFactor(0);
+    tutorialElements.push(instructions);
+
+    // Close hint - SPACE only
+    const closeHint = this.add.text(width / 2, height / 2 + 140, 'Press SPACE to continue', {
+      fontSize: '22px',
+      color: '#FFD700',
+      fontFamily: 'Arial',
+      fontStyle: 'bold'
+    }).setOrigin(0.5).setDepth(5002);
+    closeHint.setScrollFactor(0);
+    tutorialElements.push(closeHint);
+
+    // Pulsing animation on close hint
+    this.tweens.add({
+      targets: closeHint,
+      alpha: 0.4,
+      duration: 800,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut'
+    });
+
+    // Store reference
+    (this as any).tutorialElements = tutorialElements;
+
+    // Close ONLY with SPACE key
+    const closeFunction = () => {
+      // Remove all tutorial elements
+      tutorialElements.forEach(el => {
+        if (el && (el as any).destroy) {
+          (el as any).destroy();
+        }
+      });
+
+      // Clear reference
+      (this as any).tutorialElements = undefined;
+
+      // Remove listener
+      this.input.keyboard?.off('keydown-SPACE', closeFunction);
+
+      // UNFREEZE gameplay - resume physics, timers, tweens and controls
+      this.controlBlocked = false;
+      this.physics.resume();
+      this.time.paused = false; // Resume all timers
+      this.tweens.resumeAll(); // Resume all animations
+
+      console.log('✅ Weapon tutorial closed - game resumed');
+    };
+
+    this.input.keyboard?.once('keydown-SPACE', closeFunction);
+  }
+
+  private startWeaponRespawnTimer(): void {
+    // Clear any existing timer
+    if (this.weaponRespawnTimer) {
+      this.weaponRespawnTimer.remove();
+    }
+
+    // Create a timer that checks every 15 seconds
+    this.weaponRespawnTimer = this.time.addEvent({
+      delay: 15000, // 15 seconds
+      callback: () => {
+        // Only respawn if:
+        // 1. Player doesn't have weapon yet
+        // 2. No weapon pickup currently on screen
+        if (!this.weaponManager.hasWeapon() && !this.weaponPickup) {
+          console.log('🔫 Respawning weapon pickup (player missed it)');
+          this.spawnWeaponPickup();
+        } else if (this.weaponManager.hasWeapon()) {
+          // Player has weapon now, stop the timer
+          if (this.weaponRespawnTimer) {
+            this.weaponRespawnTimer.remove();
+            this.weaponRespawnTimer = undefined;
+          }
+        }
+      },
+      loop: true
+    });
+  }
+
   // ========== v3.2: VALOR MODE (3 STAGES) ==========
   private activateValorMode(): void {
     if (this.valorModeActive || this.valorModeCooldown) return;
@@ -3109,11 +3422,24 @@ export class GameScene extends Phaser.Scene {
 
     // Switch to gold eagle sprite
     if (this.eagle && this.eagle.active) {
+      console.log('🦅 VALOR STAGE 1: Switching eagle to gold sprite...');
       this.eagle.switchToGoldSprite();
+      console.log('🦅 Gold sprite switch complete');
+    } else {
+      console.error('❌ Eagle not available for gold sprite switch!');
     }
 
-    // Set invincibility
+    // Set invincibility - VALOR owns the shield
+    console.log('🛡️ VALOR MODE taking shield ownership');
     this.shieldActive = true;
+    this.shieldOwner = 'valor';
+
+    // Create shield graphics for VALOR mode
+    if (this.shieldGraphics) {
+      this.shieldGraphics.destroy();
+    }
+    this.shieldGraphics = this.add.graphics();
+    this.shieldGraphics.setDepth(99);
 
     // Stage 1: Speed ×3, Coins ×2
     this.coinSpeed = this.originalCoinSpeed * 3;
@@ -3236,8 +3562,9 @@ export class GameScene extends Phaser.Scene {
     this.valorModeStage = 3;
     this.valorScoreMultiplier = 1.5; // Afterglow: ×1.5 score
 
-    // Keep invincibility active during afterglow
+    // Keep invincibility active during afterglow - VALOR still owns shield
     this.shieldActive = true;
+    this.shieldOwner = 'valor';
 
     // Slow down to ×1.5
     this.coinSpeed = this.originalCoinSpeed * 1.5;
@@ -3287,11 +3614,23 @@ export class GameScene extends Phaser.Scene {
 
     // Switch back to normal eagle
     if (this.eagle && this.eagle.active) {
+      console.log('🦅 VALOR MODE END: Switching back to normal eagle sprite...');
       this.eagle.switchToNormalSprite();
+      console.log('🦅 Normal sprite switch complete');
     }
 
-    // Remove shield
-    this.shieldActive = false;
+    // Remove shield and destroy graphics - only if VALOR owns it
+    if (this.shieldOwner === 'valor') {
+      console.log('🛡️ VALOR MODE releasing shield ownership');
+      this.shieldActive = false;
+      this.shieldOwner = 'none';
+      if (this.shieldGraphics) {
+        this.shieldGraphics.destroy();
+        this.shieldGraphics = undefined;
+      }
+    } else {
+      console.log('🛡️ VALOR MODE ending but shield owned by:', this.shieldOwner);
+    }
 
     // Remove screen glow
     if (this.valorScreenGlow) {
@@ -3755,6 +4094,14 @@ export class GameScene extends Phaser.Scene {
     // Apply phase effects
     this.applyMarketPhaseEffects();
 
+    // v3.7: Spawn weapon pickup after Phase 1 (when transitioning to CORRECTION)
+    if (this.currentMarketPhase === 'CORRECTION' && !this.weaponManager.hasWeapon()) {
+      this.spawnWeaponPickup();
+
+      // Start a timer to respawn weapon if player misses it
+      this.startWeaponRespawnTimer();
+    }
+
     // Reset transition flag after 1 second
     this.time.delayedCall(1000, () => {
       this.phaseTransitionInProgress = false;
@@ -4170,77 +4517,81 @@ export class GameScene extends Phaser.Scene {
 
   // ========== v3.7: WEAPON SYSTEM HELPERS ==========
 
-  private deductCoinsForWeapon(coinType: string, amount: number): void {
-    switch (coinType) {
-      case 'BONK':
-        this.bonkCount = Math.max(0, this.bonkCount - amount);
-        if (this.bonkCountText) {
-          this.bonkCountText.setText(`${this.bonkCount}`);
-        }
-        break;
-      case 'AOL':
-        this.aolCount = Math.max(0, this.aolCount - amount);
-        if (this.aolCountText) {
-          this.aolCountText.setText(`${this.aolCount}`);
-        }
-        break;
-      case 'BURGER':
-        this.burgerCount = Math.max(0, this.burgerCount - amount);
-        if (this.burgerCountDisplayText) {
-          this.burgerCountDisplayText.setText(`${this.burgerCount}`);
-        }
-        break;
-    }
-
-    // Update weapon manager with new coin counts
-    this.weaponManager.updateCoinCounts(
-      this.bonkCount,
-      this.aolCount,
-      this.burgerCount,
-      this.valorCount
-    );
-  }
+  // Removed: deductCoinsForWeapon (no longer needed with energy system)
 
   private updateWeaponUI(): void {
-    const weapon = this.weaponManager.getCurrentWeapon();
+    if (!this.weaponManager.hasWeapon()) return;
 
-    if (this.ammoText) {
-      let ammoDisplay = '';
-      switch (weapon.coinType) {
-        case 'BONK':
-          ammoDisplay = `${weapon.icon} ${weapon.name} | ${weapon.costPerShot} BONK | Ammo: ${this.bonkCount}`;
-          break;
-        case 'AOL':
-          ammoDisplay = `${weapon.icon} ${weapon.name} | ${weapon.costPerShot} AOL | Ammo: ${this.aolCount}`;
-          break;
-        case 'BURGER':
-          ammoDisplay = `${weapon.icon} ${weapon.name} | ${weapon.costPerShot} BURGER | Ammo: ${this.burgerCount}`;
-          break;
-        case 'VALOR':
-          ammoDisplay = `${weapon.icon} ${weapon.name} | FREE | Valor Mode Only`;
-          break;
+    const energy = this.weaponManager.getEnergy();
+    const maxEnergy = this.weaponManager.getMaxEnergy();
+    const weaponName = this.weaponManager.getWeaponName();
+    const weaponLevel = this.weaponManager.getWeaponLevel();
+
+    // Update energy bar fill - BIGGER (250x30)
+    if (this.weaponEnergyBar) {
+      const energyPercent = energy / maxEnergy;
+      this.weaponEnergyBar.clear();
+
+      // Bar color based on energy level
+      let barColor = 0x00FF00; // Green
+      if (energyPercent < 0.3) barColor = 0xFF0000; // Red
+      else if (energyPercent < 0.6) barColor = 0xFFAA00; // Orange
+
+      this.weaponEnergyBar.fillStyle(barColor, 1);
+      this.weaponEnergyBar.fillRect(15, 60, 250 * energyPercent, 30);
+    }
+
+    // Update weapon UI container text
+    if (this.weaponUI) {
+      const children = this.weaponUI.getAll();
+      const weaponText = children.find(child => (child as any).type === 'Text') as Phaser.GameObjects.Text;
+      if (weaponText) {
+        weaponText.setText(`⚡ ${weaponName} (Lv${weaponLevel})\nEnergy: ${Math.floor(energy)}%`);
       }
-
-      this.ammoText.setText(ammoDisplay);
     }
   }
 
   private createWeaponUI(): void {
+    if (!this.weaponManager.hasWeapon()) return;
+
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
 
-    // Weapon display at bottom center
-    const weapon = this.weaponManager.getCurrentWeapon();
+    // Position: Bottom LEFT corner (bigger size)
+    const uiX = 50;
+    const uiY = height - 140;
 
-    this.ammoText = this.add.text(width / 2, height - 50, '', {
+    this.weaponUI = this.add.container(uiX, uiY);
+    this.weaponUI.setDepth(9999);
+
+    // Background panel - BIGGER
+    const bg = this.add.graphics();
+    bg.fillStyle(0x222222, 0.92);
+    bg.fillRoundedRect(0, 0, 280, 110, 12);
+    bg.lineStyle(4, 0x0088FF, 1);
+    bg.strokeRoundedRect(0, 0, 280, 110, 12);
+
+    // Weapon name and level text - BIGGER
+    const weaponText = this.add.text(140, 22, '', {
       fontSize: '24px',
       color: '#FFFFFF',
       fontFamily: 'Arial',
       fontStyle: 'bold',
-      stroke: '#000000',
-      strokeThickness: 4
+      align: 'center'
     }).setOrigin(0.5);
-    this.ammoText.setDepth(9999);
+
+    // Energy bar background - BIGGER
+    this.weaponEnergyBarBg = this.add.graphics();
+    this.weaponEnergyBarBg.fillStyle(0x444444, 1);
+    this.weaponEnergyBarBg.fillRect(15, 60, 250, 30);
+    this.weaponEnergyBarBg.lineStyle(3, 0xFFFFFF, 1);
+    this.weaponEnergyBarBg.strokeRect(15, 60, 250, 30);
+
+    // Energy bar fill - BIGGER
+    this.weaponEnergyBar = this.add.graphics();
+
+    // Add all to container
+    this.weaponUI.add([bg, weaponText, this.weaponEnergyBarBg, this.weaponEnergyBar]);
 
     this.updateWeaponUI();
   }

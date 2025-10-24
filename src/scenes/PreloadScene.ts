@@ -36,6 +36,7 @@ export class PreloadScene extends Phaser.Scene {
     this.load.image('mod-belle', 'assets/images/MOD-Belle-pixel.png');
     this.load.image('america-hat', 'assets/images/america-hat-pixel.png');
     this.load.image('feder-pixel', 'assets/images/feder-pixel.png'); // v3.2: Gold Feather
+    this.load.image('bandana', 'assets/images/bandana-pixel.png'); // v3.7: Bandana Power-Up
 
     // === NPC ===
     this.load.image('vesper', 'assets/images/vesper0x.png');
@@ -97,6 +98,11 @@ export class PreloadScene extends Phaser.Scene {
     this.load.audio('whoosh', 'assets/audio/whoosh-09-410876.mp3');
     this.load.audio('explosion', 'assets/audio/explosion-312361.mp3'); // v3.5: Enemy defeat sound
     this.load.audio('lightning-strike', 'assets/audio/lightning-strike-386161.mp3'); // v3.5: Freedom Strike
+
+    // v3.7: Bandana Power-Up sounds (use existing sounds as placeholders for now)
+    this.load.audio('bandana-activate', 'assets/audio/shield-activate.mp3'); // Placeholder
+    this.load.audio('bandana-loop', 'assets/audio/shield-active-loop.mp3'); // Placeholder
+    this.load.audio('bandana-end', 'assets/audio/whoosh-09-410876.mp3'); // Placeholder
 
     // Load progress
     this.load.on('progress', (value: number) => {

@@ -200,69 +200,87 @@ export class Eagle extends Phaser.GameObjects.Container {
 
   // v3.2: VALOR MODE sprite switching
   public switchToGoldSprite(): void {
-    if (!this.eagleSprite) return;
-
-    console.log('✨ Switching to GOLD sprite');
-
-    // Get current animation name and progress
-    const currentAnim = this.eagleSprite.anims.currentAnim;
-    if (!currentAnim) {
-      // No animation running, just switch texture and start fly animation
-      this.eagleSprite.setTexture('eagleGold');
-      this.eagleSprite.play('eagleGold_fly', true);
+    if (!this.eagleSprite || !this.eagleSprite.active) {
+      console.error('❌ Cannot switch to gold: Eagle sprite not available');
       return;
     }
 
-    console.log('  - Current animation:', currentAnim.key);
+    try {
+      console.log('✨ Switching to GOLD sprite');
 
-    // Map normal animations to gold versions
-    let goldAnimKey = 'eagleGold_fly';
-    if (currentAnim.key === 'eagle_fly') {
-      goldAnimKey = 'eagleGold_fly';
-    } else if (currentAnim.key === 'eagle_dive') {
-      goldAnimKey = 'eagleGold_dive';
-    } else if (currentAnim.key === 'eagle_hit') {
-      goldAnimKey = 'eagleGold_hit';
+      // Get current animation name and progress
+      const currentAnim = this.eagleSprite.anims.currentAnim;
+      if (!currentAnim) {
+        // No animation running, just switch texture and start fly animation
+        this.eagleSprite.setTexture('eagleGold');
+        this.eagleSprite.play('eagleGold_fly', true);
+        console.log('  - Gold sprite switch complete (no anim)');
+        return;
+      }
+
+      console.log('  - Current animation:', currentAnim.key);
+
+      // Map normal animations to gold versions
+      let goldAnimKey = 'eagleGold_fly';
+      if (currentAnim.key === 'eagle_fly' || currentAnim.key === 'eagleGold_fly') {
+        goldAnimKey = 'eagleGold_fly';
+      } else if (currentAnim.key === 'eagle_dive' || currentAnim.key === 'eagleGold_dive') {
+        goldAnimKey = 'eagleGold_dive';
+      } else if (currentAnim.key === 'eagle_hit' || currentAnim.key === 'eagleGold_hit') {
+        goldAnimKey = 'eagleGold_hit';
+      }
+
+      console.log('  - Switching to:', goldAnimKey);
+
+      // Switch to gold texture and play corresponding gold animation
+      this.eagleSprite.setTexture('eagleGold');
+      this.eagleSprite.play(goldAnimKey, true);
+      console.log('  - Gold sprite switch complete');
+    } catch (error) {
+      console.error('❌ Error switching to gold sprite:', error);
     }
-
-    console.log('  - Switching to:', goldAnimKey);
-
-    // Switch to gold texture and play corresponding gold animation
-    this.eagleSprite.setTexture('eagleGold');
-    this.eagleSprite.play(goldAnimKey, true);
   }
 
   public switchToNormalSprite(): void {
-    if (!this.eagleSprite) return;
-
-    console.log('🦅 Switching to NORMAL sprite');
-
-    // Get current animation name and progress
-    const currentAnim = this.eagleSprite.anims.currentAnim;
-    if (!currentAnim) {
-      // No animation running, just switch texture and start fly animation
-      this.eagleSprite.setTexture('eagle');
-      this.eagleSprite.play('eagle_fly', true);
+    if (!this.eagleSprite || !this.eagleSprite.active) {
+      console.error('❌ Cannot switch to normal: Eagle sprite not available');
       return;
     }
 
-    console.log('  - Current animation:', currentAnim.key);
+    try {
+      console.log('🦅 Switching to NORMAL sprite');
 
-    // Map gold animations to normal versions
-    let normalAnimKey = 'eagle_fly';
-    if (currentAnim.key === 'eagleGold_fly') {
-      normalAnimKey = 'eagle_fly';
-    } else if (currentAnim.key === 'eagleGold_dive') {
-      normalAnimKey = 'eagle_dive';
-    } else if (currentAnim.key === 'eagleGold_hit') {
-      normalAnimKey = 'eagle_hit';
+      // Get current animation name and progress
+      const currentAnim = this.eagleSprite.anims.currentAnim;
+      if (!currentAnim) {
+        // No animation running, just switch texture and start fly animation
+        this.eagleSprite.setTexture('eagle');
+        this.eagleSprite.play('eagle_fly', true);
+        console.log('  - Normal sprite switch complete (no anim)');
+        return;
+      }
+
+      console.log('  - Current animation:', currentAnim.key);
+
+      // Map gold animations to normal versions
+      let normalAnimKey = 'eagle_fly';
+      if (currentAnim.key === 'eagleGold_fly' || currentAnim.key === 'eagle_fly') {
+        normalAnimKey = 'eagle_fly';
+      } else if (currentAnim.key === 'eagleGold_dive' || currentAnim.key === 'eagle_dive') {
+        normalAnimKey = 'eagle_dive';
+      } else if (currentAnim.key === 'eagleGold_hit' || currentAnim.key === 'eagle_hit') {
+        normalAnimKey = 'eagle_hit';
+      }
+
+      console.log('  - Switching to:', normalAnimKey);
+
+      // Switch to normal texture and play corresponding normal animation
+      this.eagleSprite.setTexture('eagle');
+      this.eagleSprite.play(normalAnimKey, true);
+      console.log('  - Normal sprite switch complete');
+    } catch (error) {
+      console.error('❌ Error switching to normal sprite:', error);
     }
-
-    console.log('  - Switching to:', normalAnimKey);
-
-    // Switch to normal texture and play corresponding normal animation
-    this.eagleSprite.setTexture('eagle');
-    this.eagleSprite.play(normalAnimKey, true);
   }
 
   // v3.2: Pause animation for glide mode
