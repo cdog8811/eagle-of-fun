@@ -2041,6 +2041,66 @@ export class GameScene extends Phaser.Scene {
           break;
       }
 
+      // === ENHANCED HIT EFFECTS ===
+      const hitX = hit.enemy.x;
+      const hitY = hit.enemy.y;
+
+      // Screen shake on hit
+      this.cameras.main.shake(100, 0.003);
+
+      // Explosion particles
+      for (let i = 0; i < 8; i++) {
+        const angle = (i / 8) * Math.PI * 2;
+        const distance = Phaser.Math.Between(20, 50);
+        const particle = this.add.graphics();
+        particle.fillStyle(0xFF6600, 1);
+        particle.fillCircle(0, 0, Phaser.Math.Between(3, 6));
+        particle.x = hitX;
+        particle.y = hitY;
+        particle.setDepth(1600);
+
+        this.tweens.add({
+          targets: particle,
+          x: hitX + Math.cos(angle) * distance,
+          y: hitY + Math.sin(angle) * distance,
+          alpha: 0,
+          duration: 400,
+          ease: 'Power2',
+          onComplete: () => particle.destroy()
+        });
+      }
+
+      // Explosion ring
+      const ring = this.add.graphics();
+      ring.lineStyle(4, 0xFF6600, 1);
+      ring.strokeCircle(hitX, hitY, 10);
+      ring.setDepth(1601);
+
+      this.tweens.add({
+        targets: ring,
+        alpha: 0,
+        scaleX: 3,
+        scaleY: 3,
+        duration: 400,
+        ease: 'Power2',
+        onComplete: () => ring.destroy()
+      });
+
+      // Impact flash
+      const flash = this.add.graphics();
+      flash.fillStyle(0xFFFFFF, 0.8);
+      flash.fillCircle(hitX, hitY, 25);
+      flash.setDepth(1602);
+
+      this.tweens.add({
+        targets: flash,
+        alpha: 0,
+        scaleX: 1.5,
+        scaleY: 1.5,
+        duration: 150,
+        onComplete: () => flash.destroy()
+      });
+
       // Destroy enemy
       hit.enemy.destroy();
       const index = this.enemies.indexOf(hit.enemy);
@@ -2053,7 +2113,9 @@ export class GameScene extends Phaser.Scene {
       this.scoreText.setText(`SCORE: ${this.score}`);
 
       // Play explosion sound
-      this.sound.play('explosion-312361', { volume: 0.5 });
+      if (this.sound.get('explosion')) {
+        this.sound.play('explosion', { volume: 0.5 });
+      }
 
       // Destroy projectile
       this.weaponManager.destroyProjectile(hit.projectile);

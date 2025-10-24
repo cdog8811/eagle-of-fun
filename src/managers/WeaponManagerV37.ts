@@ -309,39 +309,76 @@ export class WeaponManagerV37 {
   }
 
   private createProjectile(x: number, y: number, angle: number, weapon: Weapon, cost: number, coinType: string): void {
-    // Create projectile graphics
-    const graphics = this.scene.add.graphics();
-    graphics.fillStyle(weapon.projectileColor, 1);
+    // === MUZZLE FLASH ===
+    this.createMuzzleFlash(x, y, weapon.projectileColor);
 
-    // Draw projectile based on weapon type
+    // Create projectile graphics with glow
+    const graphics = this.scene.add.graphics();
+
+    // Draw projectile based on weapon type with enhanced visuals
     if (weapon.special === 'pierce') {
-      // Laser beam
-      graphics.fillRect(0, -3, 40, 6);
-      graphics.fillStyle(0xFFFFFF, 0.8);
-      graphics.fillRect(0, -1, 40, 2);
+      // Laser beam with glow
+      // Outer glow
+      graphics.fillStyle(weapon.projectileColor, 0.3);
+      graphics.fillRect(-5, -6, 50, 12);
+      // Main beam
+      graphics.fillStyle(weapon.projectileColor, 1);
+      graphics.fillRect(0, -3, 45, 6);
+      // Inner core
+      graphics.fillStyle(0xFFFFFF, 0.9);
+      graphics.fillRect(0, -1, 45, 2);
     } else if (weapon.special === 'area') {
-      // Cannon ball
-      graphics.fillCircle(0, 0, 10);
-      graphics.fillStyle(0xFFFFFF, 0.6);
-      graphics.fillCircle(-2, -2, 4);
+      // Cannon ball with glow
+      graphics.fillStyle(weapon.projectileColor, 0.4);
+      graphics.fillCircle(0, 0, 16);
+      graphics.fillStyle(weapon.projectileColor, 1);
+      graphics.fillCircle(0, 0, 12);
+      graphics.fillStyle(0xFFFFFF, 0.7);
+      graphics.fillCircle(-3, -3, 6);
     } else if (weapon.special === 'splash') {
-      // Burger projectile
-      graphics.fillCircle(0, 0, 8);
+      // Burger projectile with layers
+      // Bottom bun
+      graphics.fillStyle(0xFFAA00, 1);
+      graphics.fillCircle(0, 0, 10);
+      // Patty
       graphics.fillStyle(0xFF6B6B, 1);
-      graphics.fillCircle(0, -3, 5);
+      graphics.fillCircle(0, -4, 7);
+      // Cheese
       graphics.fillStyle(0xFFFF00, 1);
-      graphics.fillCircle(0, 2, 4);
+      graphics.fillCircle(0, 2, 6);
+      // Glow
+      graphics.fillStyle(0xFFAA00, 0.3);
+      graphics.fillCircle(0, 0, 15);
     } else {
-      // Standard bolt
-      graphics.fillCircle(0, 0, 6);
-      graphics.fillStyle(0xFFFFFF, 0.8);
-      graphics.fillCircle(-2, 0, 3);
+      // Standard bolt with glow and core
+      // Outer glow
+      graphics.fillStyle(weapon.projectileColor, 0.4);
+      graphics.fillCircle(0, 0, 12);
+      // Main body
+      graphics.fillStyle(weapon.projectileColor, 1);
+      graphics.fillCircle(0, 0, 8);
+      // Inner core
+      graphics.fillStyle(0xFFFFFF, 0.9);
+      graphics.fillCircle(-2, 0, 4);
+      // Sparkle
+      graphics.fillStyle(0xFFFFFF, 1);
+      graphics.fillCircle(2, -2, 2);
     }
 
     graphics.x = x;
     graphics.y = y;
     graphics.setDepth(1500);
     graphics.setRotation(Phaser.Math.DegToRad(angle));
+
+    // Pulse animation
+    this.scene.tweens.add({
+      targets: graphics,
+      scaleX: 1.1,
+      scaleY: 1.1,
+      duration: 200,
+      yoyo: true,
+      repeat: -1
+    });
 
     // Calculate velocity
     const angleRad = Phaser.Math.DegToRad(angle);
@@ -363,6 +400,50 @@ export class WeaponManagerV37 {
     };
 
     this.projectiles.push(projectile);
+
+    // Create trail emitter
+    this.createTrailEffect(projectile, weapon.projectileColor);
+  }
+
+  private createMuzzleFlash(x: number, y: number, color: number): void {
+    const flash = this.scene.add.graphics();
+    flash.fillStyle(color, 0.8);
+    flash.fillCircle(x, y, 20);
+    flash.fillStyle(0xFFFFFF, 0.6);
+    flash.fillCircle(x, y, 12);
+    flash.setDepth(1499);
+
+    this.scene.tweens.add({
+      targets: flash,
+      alpha: 0,
+      scaleX: 2,
+      scaleY: 2,
+      duration: 150,
+      ease: 'Power2',
+      onComplete: () => flash.destroy()
+    });
+  }
+
+  private createTrailEffect(projectile: Projectile, color: number): void {
+    // Create trail particles
+    const trail = this.scene.add.graphics();
+    trail.fillStyle(color, 0.6);
+    trail.fillCircle(0, 0, 4);
+    trail.x = projectile.x;
+    trail.y = projectile.y;
+    trail.setDepth(1498);
+
+    this.scene.tweens.add({
+      targets: trail,
+      alpha: 0,
+      scaleX: 0.5,
+      scaleY: 0.5,
+      duration: 300,
+      onComplete: () => trail.destroy()
+    });
+
+    // Store reference to create more trails in update
+    (projectile as any).lastTrailTime = Date.now();
   }
 
   public update(delta: number): void {
@@ -385,6 +466,26 @@ export class WeaponManagerV37 {
       projectile.y += projectile.velocityY * deltaSeconds;
       projectile.sprite.x = projectile.x;
       projectile.sprite.y = projectile.y;
+
+      // Create continuous trail effect
+      const lastTrailTime = (projectile as any).lastTrailTime || 0;
+      if (Date.now() - lastTrailTime > 50) { // Every 50ms
+        const trail = this.scene.add.graphics();
+        trail.fillStyle(projectile.weapon.projectileColor, 0.5);
+        trail.fillCircle(projectile.x, projectile.y, 3);
+        trail.setDepth(1498);
+
+        this.scene.tweens.add({
+          targets: trail,
+          alpha: 0,
+          scaleX: 0.3,
+          scaleY: 0.3,
+          duration: 200,
+          onComplete: () => trail.destroy()
+        });
+
+        (projectile as any).lastTrailTime = Date.now();
+      }
 
       // Check bounds
       const width = this.scene.cameras.main.width;
@@ -502,8 +603,10 @@ export class WeaponManagerV37 {
     // Show coin return feedback
     this.showCoinReturnFeedback(projectile.x, projectile.y, returnAmount, projectile.coinType);
 
-    // Play sound
-    this.scene.sound.play('collect-5930', { volume: 0.6 });
+    // Play sound (use existing collect sound)
+    if (this.scene.sound.get('coin-collect')) {
+      this.scene.sound.play('coin-collect', { volume: 0.6 });
+    }
 
     return returnAmount;
   }
@@ -553,8 +656,10 @@ export class WeaponManagerV37 {
   }
 
   private playFireSound(weapon: Weapon): void {
-    // Play weapon-specific sound
-    this.scene.sound.play('attack-fire-384913', { volume: 0.4 });
+    // Play weapon-specific sound (skip if not loaded)
+    if (this.scene.sound.get('shoot')) {
+      this.scene.sound.play('shoot', { volume: 0.4 });
+    }
   }
 
   private playNoLiquiditySound(): void {
