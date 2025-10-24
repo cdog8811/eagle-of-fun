@@ -86,14 +86,14 @@ export const GameConfig = {
     }
   ],
 
-  // === COINS (Power-Tokens) ===
+  // === COINS (Power-Tokens) - v3.5 Balanced ===
   coins: {
     BONK: {
       name: '$BONK',
       description: 'Common meme coin',
       points: 5,
       icon: '🐕',
-      spawnChance: 40, // v3.2: 40%
+      spawnChance: 35, // v3.5: 35% (reduced from 40%)
       effect: 'none'
     },
     AOL: {
@@ -101,7 +101,7 @@ export const GameConfig = {
       description: 'Core coin – enables Buyback Mode',
       points: 10,
       icon: '🇺🇸',
-      spawnChance: 25, // v3.2: 25%
+      spawnChance: 20, // v3.5: 20% (balanced)
       effect: 'buyback_boost', // 3x AOL = Buyback Mode
       comboRequired: 3
     },
@@ -110,7 +110,7 @@ export const GameConfig = {
       description: 'Stablecoin – safe, low value',
       points: 2,
       icon: '💵',
-      spawnChance: 10, // v3.2: 10%
+      spawnChance: 10, // v3.5: 10% (stable)
       effect: 'none'
     },
     BURGER: {
@@ -118,7 +118,7 @@ export const GameConfig = {
       description: 'Multiplicator coin (Burger Mode trigger)',
       points: 25,
       icon: '🍔',
-      spawnChance: 15, // v3.2 SPEC: 15%
+      spawnChance: 17.5, // v3.5: 17.5%
       effect: 'score_multiplier', // 5x BURGER = 2× score
       comboRequired: 5,
       multiplierDuration: 5000 // ms
@@ -126,9 +126,9 @@ export const GameConfig = {
     VALOR: {
       name: '$VALOR',
       description: 'Premium coin – larger sprite, triggers Gold Feather chance',
-      points: 25, // v3.2 SPEC: 25 points
+      points: 25, // v3.5: 25 points
       icon: '🦅',
-      spawnChance: 15, // v3.2 SPEC: 15%
+      spawnChance: 17.5, // v3.5: 17.5%
       effect: 'gold_feather_chance', // 5% chance to drop Gold Feather
       goldFeatherChance: 5
     }
@@ -211,14 +211,14 @@ export const GameConfig = {
       trigger: 'pickup',
       spawnChance: 15 // % chance to spawn
     },
-    solanaSurge: {
-      name: '⚡ Solana Surge',
+    freedomStrike: {
+      name: '⚡ Freedom Strike',
       icon: '⚡',
-      description: 'Speed + Jump boost',
-      duration: 4000,
+      description: 'Lightning destroys all enemies!',
+      duration: 1000, // Visual effect duration
       trigger: 'pickup',
-      speedBoost: 1.5,
-      jumpBoost: 1.3
+      effect: 'destroyAllEnemies', // v3.5: New effect
+      spawnChance: 8 // % chance to spawn
     },
     belleMod: {
       name: 'Κρόνος Belle',

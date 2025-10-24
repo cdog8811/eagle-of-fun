@@ -95,6 +95,8 @@ export class PreloadScene extends Phaser.Scene {
     this.load.audio('phase-change', 'assets/audio/arcade-ui-2-229500.mp3');
     this.load.audio('keyboard-typing', 'assets/audio/keyboard-typing-sound-250308.mp3');
     this.load.audio('whoosh', 'assets/audio/whoosh-09-410876.mp3');
+    this.load.audio('explosion', 'assets/audio/explosion-312361.mp3'); // v3.5: Enemy defeat sound
+    this.load.audio('lightning-strike', 'assets/audio/lightning-strike-386161.mp3'); // v3.5: Freedom Strike
 
     // Load progress
     this.load.on('progress', (value: number) => {

@@ -67,6 +67,34 @@ export class Eagle extends Phaser.GameObjects.Container {
         repeat: 0
       });
     }
+
+    // v3.2: GOLD EAGLE ANIMATIONS for VALOR MODE
+    if (!scene.anims.exists('eagleGold_fly')) {
+      scene.anims.create({
+        key: 'eagleGold_fly',
+        frames: scene.anims.generateFrameNumbers('eagleGold', { start: 0, end: 3 }),
+        frameRate: 6,
+        repeat: -1
+      });
+    }
+
+    if (!scene.anims.exists('eagleGold_dive')) {
+      scene.anims.create({
+        key: 'eagleGold_dive',
+        frames: scene.anims.generateFrameNumbers('eagleGold', { start: 0, end: 3 }),
+        frameRate: 10,
+        repeat: -1
+      });
+    }
+
+    if (!scene.anims.exists('eagleGold_hit')) {
+      scene.anims.create({
+        key: 'eagleGold_hit',
+        frames: [{ key: 'eagleGold', frame: 3 }],
+        frameRate: 1,
+        repeat: 0
+      });
+    }
   }
 
   public flap(): void {
@@ -75,13 +103,18 @@ export class Eagle extends Phaser.GameObjects.Container {
     // Play wing flap sound for eagle flight
     this.scene.sound.play('wing-flap', { volume: 0.5 });
 
+    // v3.2: Check if using gold sprite
+    const isGold = this.eagleSprite.texture.key === 'eagleGold';
+    const diveAnim = isGold ? 'eagleGold_dive' : 'eagle_dive';
+    const flyAnim = isGold ? 'eagleGold_fly' : 'eagle_fly';
+
     // Briefly switch to dive animation for faster flapping
-    this.eagleSprite.play('eagle_dive', true);
+    this.eagleSprite.play(diveAnim, true);
 
     // Return to normal fly animation after a short time
     this.scene.time.delayedCall(200, () => {
       if (this.eagleSprite && this.eagleSprite.anims) {
-        this.eagleSprite.play('eagle_fly', true);
+        this.eagleSprite.play(flyAnim, true);
       }
     });
 
@@ -126,8 +159,13 @@ export class Eagle extends Phaser.GameObjects.Container {
   }
 
   public playHitAnimation(): void {
+    // v3.2: Check if using gold sprite
+    const isGold = this.eagleSprite.texture.key === 'eagleGold';
+    const hitAnim = isGold ? 'eagleGold_hit' : 'eagle_hit';
+    const flyAnim = isGold ? 'eagleGold_fly' : 'eagle_fly';
+
     // Show hit frame
-    this.eagleSprite.play('eagle_hit', true);
+    this.eagleSprite.play(hitAnim, true);
 
     // Blink effect with alpha toggle (200ms intervals)
     let blinkCount = 0;
@@ -143,7 +181,7 @@ export class Eagle extends Phaser.GameObjects.Container {
     // Return to normal after blinking
     this.scene.time.delayedCall(600, () => {
       this.eagleSprite.setAlpha(1.0);
-      this.eagleSprite.play('eagle_fly', true);
+      this.eagleSprite.play(flyAnim, true);
       blinkInterval.remove();
     });
   }
@@ -158,5 +196,86 @@ export class Eagle extends Phaser.GameObjects.Container {
       width,
       height
     );
+  }
+
+  // v3.2: VALOR MODE sprite switching
+  public switchToGoldSprite(): void {
+    if (!this.eagleSprite) return;
+
+    console.log('✨ Switching to GOLD sprite');
+
+    // Get current animation name and progress
+    const currentAnim = this.eagleSprite.anims.currentAnim;
+    if (!currentAnim) {
+      // No animation running, just switch texture and start fly animation
+      this.eagleSprite.setTexture('eagleGold');
+      this.eagleSprite.play('eagleGold_fly', true);
+      return;
+    }
+
+    console.log('  - Current animation:', currentAnim.key);
+
+    // Map normal animations to gold versions
+    let goldAnimKey = 'eagleGold_fly';
+    if (currentAnim.key === 'eagle_fly') {
+      goldAnimKey = 'eagleGold_fly';
+    } else if (currentAnim.key === 'eagle_dive') {
+      goldAnimKey = 'eagleGold_dive';
+    } else if (currentAnim.key === 'eagle_hit') {
+      goldAnimKey = 'eagleGold_hit';
+    }
+
+    console.log('  - Switching to:', goldAnimKey);
+
+    // Switch to gold texture and play corresponding gold animation
+    this.eagleSprite.setTexture('eagleGold');
+    this.eagleSprite.play(goldAnimKey, true);
+  }
+
+  public switchToNormalSprite(): void {
+    if (!this.eagleSprite) return;
+
+    console.log('🦅 Switching to NORMAL sprite');
+
+    // Get current animation name and progress
+    const currentAnim = this.eagleSprite.anims.currentAnim;
+    if (!currentAnim) {
+      // No animation running, just switch texture and start fly animation
+      this.eagleSprite.setTexture('eagle');
+      this.eagleSprite.play('eagle_fly', true);
+      return;
+    }
+
+    console.log('  - Current animation:', currentAnim.key);
+
+    // Map gold animations to normal versions
+    let normalAnimKey = 'eagle_fly';
+    if (currentAnim.key === 'eagleGold_fly') {
+      normalAnimKey = 'eagle_fly';
+    } else if (currentAnim.key === 'eagleGold_dive') {
+      normalAnimKey = 'eagle_dive';
+    } else if (currentAnim.key === 'eagleGold_hit') {
+      normalAnimKey = 'eagle_hit';
+    }
+
+    console.log('  - Switching to:', normalAnimKey);
+
+    // Switch to normal texture and play corresponding normal animation
+    this.eagleSprite.setTexture('eagle');
+    this.eagleSprite.play(normalAnimKey, true);
+  }
+
+  // v3.2: Pause animation for glide mode
+  public pauseAnimation(): void {
+    if (this.eagleSprite && this.eagleSprite.anims) {
+      this.eagleSprite.anims.pause();
+    }
+  }
+
+  // v3.2: Resume animation after glide mode
+  public resumeAnimation(): void {
+    if (this.eagleSprite && this.eagleSprite.anims) {
+      this.eagleSprite.anims.resume();
+    }
   }
 }

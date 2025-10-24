@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
 import { GameConfig } from '../config/GameConfig';
 import { Eagle } from '../sprites/Eagle';
+import { MissionManager } from '../managers/MissionManager';
+import { MARKET_PHASES, MICRO_EVENTS, determinePhase, MarketPhase, MicroEvent } from '../config/MarketPhasesConfig';
 
 export class GameScene extends Phaser.Scene {
   private eagle!: Eagle;
@@ -45,6 +47,28 @@ export class GameScene extends Phaser.Scene {
   private phaseTimer?: Phaser.Time.TimerEvent;
   private showingPhaseAnnouncement: boolean = false;
 
+  // === v3.5: MARKET PHASES SYSTEM ===
+  private currentMarketPhase: string = 'BULL_RUN';
+  private previousMarketPhase: string = 'BULL_RUN';
+  private marketPhaseCheckInterval?: Phaser.Time.TimerEvent;
+  private phaseTransitionInProgress: boolean = false;
+  private activeAnnouncements: Phaser.GameObjects.Text[] = []; // v3.3: Track active announcements
+
+  // === v3.5: SCALING SYSTEM ===
+  private baseSpeed: number = 1.0;
+  private speedScalingInterval?: Phaser.Time.TimerEvent;
+  private difficultyScalingInterval?: Phaser.Time.TimerEvent;
+  private speedMultiplier: number = 1.0;
+  private enemySpawnRateMultiplier: number = 1.0;
+  private coinSpawnRateMultiplier: number = 1.0;
+
+  // === v3.5: MICRO-EVENTS SYSTEM ===
+  private microEventCheckInterval?: Phaser.Time.TimerEvent;
+  private activeMicroEvent?: MicroEvent;
+  private microEventActive: boolean = false;
+  private microEventEndTimer?: Phaser.Time.TimerEvent;
+  private microEventNotification?: Phaser.GameObjects.Text;
+
   // Timers
   private coinSpawnTimer?: Phaser.Time.TimerEvent;
   private enemySpawnTimer?: Phaser.Time.TimerEvent;
@@ -61,11 +85,18 @@ export class GameScene extends Phaser.Scene {
   private burgerMultiplierActive: boolean = false;
   private magnetActive: boolean = false;
   private shieldActive: boolean = false;
-  private solanaSurgeActive: boolean = false;
+  private freedomStrikeActive: boolean = false;
   private belleModActive: boolean = false;
   private controlBlocked: boolean = false;
   private bullMarketActive: boolean = false;
   private extraLives: number = 0;
+
+  // === v3.2: LIFE SYSTEM ===
+  private lives: number = 3; // Start with 3 hearts
+  private maxLives: number = 5; // v3.5: Maximum 5 hearts (was 3)
+  private invincible: boolean = false; // Invincibility frames after hit
+  private invincibilityTimer?: Phaser.Time.TimerEvent;
+  private heartSprites: Phaser.GameObjects.Image[] = [];
 
   // === v3.2: VALOR MODE ===
   private valorModeActive: boolean = false;
@@ -81,7 +112,7 @@ export class GameScene extends Phaser.Scene {
   private magnetTimer?: Phaser.Time.TimerEvent;
   private shieldTimer?: Phaser.Time.TimerEvent;
   private burgerMultiplierTimer?: Phaser.Time.TimerEvent;
-  private solanaSurgeTimer?: Phaser.Time.TimerEvent;
+  private freedomStrikeTimer?: Phaser.Time.TimerEvent;
   private belleModTimer?: Phaser.Time.TimerEvent;
   private controlBlockTimer?: Phaser.Time.TimerEvent;
   private bullMarketTimer?: Phaser.Time.TimerEvent;
@@ -109,6 +140,29 @@ export class GameScene extends Phaser.Scene {
 
   // Background image
   private backgroundImage?: Phaser.GameObjects.Image;
+
+  // v3.2: Mission System
+  private missionManager!: MissionManager;
+  private missionUI: Phaser.GameObjects.Container[] = [];
+
+  // v3.2: XP & Progression UI
+  private levelText?: Phaser.GameObjects.Text;
+  private xpBarBg?: Phaser.GameObjects.Graphics;
+  private xpBarFill?: Phaser.GameObjects.Graphics;
+
+  // v3.2: News Ticker
+  private newsTickerText?: Phaser.GameObjects.Text;
+  private newsTickerBg?: Phaser.GameObjects.Graphics;
+  private newsMessages: string[] = [];
+  private currentNewsIndex: number = 0;
+
+  // v3.2: Glide Controls
+  private spacePressed: boolean = false;
+  private spaceStartTime: number = 0;
+  private isGliding: boolean = false;
+  private glideThreshold: number = 300; // ms
+  private normalEagleX: number = 300; // Normal X position
+  private glideEagleX: number = 800; // Forward X position during glide (300px more = 500+300)
 
   // Shield visual
   private shieldGraphics?: Phaser.GameObjects.Graphics;
@@ -159,7 +213,7 @@ export class GameScene extends Phaser.Scene {
     this.burgerMultiplierActive = false;
     this.magnetActive = false;
     this.shieldActive = false;
-    this.solanaSurgeActive = false;
+    this.freedomStrikeActive = false;
     this.controlBlocked = false;
     this.backgroundMusicStarted = false;
 
@@ -216,68 +270,93 @@ export class GameScene extends Phaser.Scene {
     // Create eagle - bigger and positioned on the left
     this.eagle = new Eagle(this, 300, height / 2);
 
+    // v3.2: Initialize Mission System
+    this.missionManager = MissionManager.getInstance();
+
     // Pause physics immediately - will resume after countdown
     this.physics.pause();
 
-    // ========== GAME HUD - TOP BAR ==========
-    const hudY = 50;
+    // v3.2: NEWS TICKER - At very top (BREAKING)
+    this.createNewsTicker();
 
-    // Background bar for HUD
+    // ========== GAME HUD - TOP BAR (DESIGN REMAKE) ==========
+    const hudY = 55;
+
+    // Background bar for HUD - Pink/Red gradient
     const hudBg = this.add.graphics();
-    hudBg.fillStyle(0xFFFFFF, 0.9);
-    hudBg.fillRoundedRect(40, 20, width - 80, 60, 10);
-    hudBg.lineStyle(3, 0xE63946, 1);
-    hudBg.strokeRoundedRect(40, 20, width - 80, 60, 10);
+    hudBg.fillStyle(0xFFB3BA, 0.95); // Light pink/red
+    hudBg.fillRoundedRect(35, 35, width - 70, 45, 10);
+    hudBg.lineStyle(3, 0xFF6B7A, 1); // Pink border
+    hudBg.strokeRoundedRect(35, 35, width - 70, 45, 10);
     hudBg.setDepth(999);
 
     const hudStyle = {
-      fontSize: '28px',
-      color: '#E63946',
+      fontSize: '24px',
+      color: '#D32F2F',
       fontFamily: 'Arial',
       fontStyle: 'bold',
-      letterSpacing: 1
+      letterSpacing: 0
     };
 
     // Timer - left side
-    this.timerText = this.add.text(80, hudY, 'TIME: 0s', hudStyle);
+    this.timerText = this.add.text(65, hudY, 'TIME: 0s', hudStyle);
     this.timerText.setOrigin(0, 0.5);
     this.timerText.setDepth(1000);
 
     // Phase - left-center
-    this.phaseText = this.add.text(width * 0.28, hudY, 'PHASE: 1', hudStyle);
-    this.phaseText.setOrigin(0, 0.5);
+    this.phaseText = this.add.text(width * 0.30, hudY, 'PHASE: 1', hudStyle);
+    this.phaseText.setOrigin(0.5, 0.5);
     this.phaseText.setDepth(1000);
 
-    // Score - right-center
-    this.scoreText = this.add.text(width * 0.60, hudY, 'SCORE: 0', hudStyle);
-    this.scoreText.setOrigin(0, 0.5);
+    // Score - center-right
+    this.scoreText = this.add.text(width * 0.55, hudY, 'SCORE: 0', hudStyle);
+    this.scoreText.setOrigin(0.5, 0.5);
     this.scoreText.setDepth(1000);
 
-    // AOL Combo (für Buyback Mode) - right side
-    this.burgerCountText = this.add.text(width - 80, hudY, 'AOL: 0/3', hudStyle);
-    this.burgerCountText.setOrigin(1, 0.5);
+    // v3.2: Hearts inline in top bar
+    this.createHeartDisplay();
+
+    // v3.2: AOL Logo counter (AOL combo) - with image
+    const aolLogo = this.add.image(width - 215, hudY, 'coin-aol');
+    aolLogo.setScale(0.08); // Small size for top bar
+    aolLogo.setOrigin(0.5, 0.5);
+    aolLogo.setDepth(1000);
+
+    this.burgerCountText = this.add.text(width - 185, hudY, '0/3', hudStyle);
+    this.burgerCountText.setOrigin(0, 0.5);
     this.burgerCountText.setDepth(1000);
 
-    // ========== COIN COUNTERS - SECOND ROW ==========
-    const coinCounterY = 100;
+    // v3.2: Burger counter
+    const burgerCounterText = this.add.text(width - 80, hudY, '🍔 0/5', hudStyle);
+    burgerCounterText.setOrigin(0, 0.5);
+    burgerCounterText.setDepth(1000);
+
+    // v3.2: XP & LEVEL - Top right corner
+    this.createXPDisplay();
+
+    // v3.2: MISSION SYSTEM - Bottom right
+    this.createMissionUI();
+
+    // ========== COIN COUNTERS - SECOND ROW (BLUE BAR) ==========
+    const coinCounterY = 105;
     const coinStyle = {
-      fontSize: '24px',
+      fontSize: '22px',
       color: '#FFFFFF',
       fontFamily: 'Arial',
       fontStyle: 'bold',
       stroke: '#000000',
-      strokeThickness: 3
+      strokeThickness: 2
     };
 
-    // Background for coin counters
+    // Background for coin counters - Deep blue like design
     const coinBg = this.add.graphics();
-    coinBg.fillStyle(0x0033A0, 0.85);
-    coinBg.fillRoundedRect(40, 80, width - 80, 45, 8);
+    coinBg.fillStyle(0x1A3A8A, 0.95); // Deep blue
+    coinBg.fillRoundedRect(35, 90, width - 70, 35, 8);
     coinBg.setDepth(998);
 
-    // Calculate spacing for 4 coins
-    const coinStartX = 100;
-    const coinSpacing = (width - 200) / 4;
+    // Calculate spacing for 5 coins
+    const coinStartX = 80;
+    const coinSpacing = (width - 160) / 5;
 
     // BONK Count
     this.bonkCountText = this.add.text(coinStartX, coinCounterY, '🐕 $BONK: 0', coinStyle);
@@ -285,7 +364,7 @@ export class GameScene extends Phaser.Scene {
     this.bonkCountText.setDepth(1000);
 
     // AOL Count
-    this.aolCountText = this.add.text(coinStartX + coinSpacing, coinCounterY, '🟣 $AOL: 0', coinStyle);
+    this.aolCountText = this.add.text(coinStartX + coinSpacing, coinCounterY, '🦅 $AOL: 0', coinStyle);
     this.aolCountText.setOrigin(0, 0.5);
     this.aolCountText.setDepth(1000);
 
@@ -304,17 +383,11 @@ export class GameScene extends Phaser.Scene {
     this.valorCountText.setOrigin(0, 0.5);
     this.valorCountText.setDepth(1000);
 
-    // ========== POWER-UP PANEL - COMPACT BOTTOM BAR ==========
+    // ========== POWER-UP PANEL - NO BACKGROUND (removed white bar) ==========
     const powerupIconY = height - 40; // Closer to bottom
     const powerupTimerY = height - 20;
 
-    // Smaller compact background
-    const powerupBg = this.add.graphics();
-    powerupBg.fillStyle(0xFFFFFF, 0.85); // More transparent
-    powerupBg.fillRoundedRect(width / 2 - 400, height - 55, 800, 50, 8); // Smaller: 50px height
-    powerupBg.lineStyle(2, 0xE63946, 1); // Thinner border
-    powerupBg.strokeRoundedRect(width / 2 - 400, height - 55, 800, 50, 8);
-    powerupBg.setDepth(999);
+    // No background bar anymore - icons float freely
 
     // Magnet/Buyback Mode - compact
     this.magnetIcon = this.add.text(width / 2 - 270, powerupIconY - 8, '🧲', {
@@ -419,6 +492,7 @@ export class GameScene extends Phaser.Scene {
       }
     });
 
+    // v3.2: SPACE key down - start tracking hold time
     this.input.keyboard?.on('keydown-SPACE', () => {
       if (!this.hasStarted && !this.countdownStarted) {
         this.sound.play('ui-confirm', { volume: 0.3 });
@@ -429,7 +503,21 @@ export class GameScene extends Phaser.Scene {
           instructions = null;
         }
       } else if (!this.isPaused && this.hasStarted && !this.controlBlocked) {
-        this.eagle.flap();
+        if (!this.spacePressed) {
+          // First press - immediate flap
+          this.eagle.flap();
+          this.spacePressed = true;
+          this.spaceStartTime = Date.now();
+        }
+      }
+    });
+
+    // v3.2: SPACE key up - check if glide should activate
+    this.input.keyboard?.on('keyup-SPACE', () => {
+      if (this.spacePressed) {
+        console.log('SPACE RELEASED - isGliding:', this.isGliding);
+        this.spacePressed = false;
+        // DON'T set isGliding to false here - let update() handle the fly-back logic
       }
     });
 
@@ -622,7 +710,42 @@ export class GameScene extends Phaser.Scene {
         this.gameTime++;
         this.timerText.setText(`TIME: ${this.gameTime}s`);
         this.checkPhaseProgression();
+        this.checkMarketPhaseTransition(); // v3.3: Check market phase
       },
+      callbackScope: this,
+      loop: true
+    });
+
+    // v3.3: Initialize Market Phase System
+    this.currentMarketPhase = 'BULL_RUN';
+    this.applyMarketPhaseEffects();
+    this.updateTickerForPhase();
+
+    // v3.4: Initialize Speed & Difficulty Scaling System
+    this.speedMultiplier = 1.0;
+    this.enemySpawnRateMultiplier = 1.0;
+    this.coinSpawnRateMultiplier = 1.0;
+
+    // v3.4: Speed Scaling Timer (+3% every 20 seconds, max 2.5x)
+    this.speedScalingInterval = this.time.addEvent({
+      delay: 20000, // 20 seconds
+      callback: this.applySpeedScaling,
+      callbackScope: this,
+      loop: true
+    });
+
+    // v3.4: Difficulty Scaling Timer (+4% enemy spawn every 15 seconds)
+    this.difficultyScalingInterval = this.time.addEvent({
+      delay: 15000, // 15 seconds
+      callback: this.applyDifficultyScaling,
+      callbackScope: this,
+      loop: true
+    });
+
+    // v3.5: Micro-Events System (check every 30 seconds for random events)
+    this.microEventCheckInterval = this.time.addEvent({
+      delay: 30000, // Check every 30 seconds
+      callback: this.checkMicroEvents,
       callbackScope: this,
       loop: true
     });
@@ -696,7 +819,7 @@ export class GameScene extends Phaser.Scene {
       if (this.magnetTimer) this.magnetTimer.paused = true;
       if (this.shieldTimer) this.shieldTimer.paused = true;
       if (this.burgerMultiplierTimer) this.burgerMultiplierTimer.paused = true;
-      if (this.solanaSurgeTimer) this.solanaSurgeTimer.paused = true;
+      if (this.freedomStrikeTimer) this.freedomStrikeTimer.paused = true;
       if (this.controlBlockTimer) this.controlBlockTimer.paused = true;
 
       // Show pause text only - no overlay
@@ -731,7 +854,7 @@ export class GameScene extends Phaser.Scene {
       if (this.magnetTimer) this.magnetTimer.paused = false;
       if (this.shieldTimer) this.shieldTimer.paused = false;
       if (this.burgerMultiplierTimer) this.burgerMultiplierTimer.paused = false;
-      if (this.solanaSurgeTimer) this.solanaSurgeTimer.paused = false;
+      if (this.freedomStrikeTimer) this.freedomStrikeTimer.paused = false;
       if (this.controlBlockTimer) this.controlBlockTimer.paused = false;
 
       // Hide pause text
@@ -748,6 +871,10 @@ export class GameScene extends Phaser.Scene {
     const phase = GameConfig.phases[phaseId - 1];
     this.currentPhase = phaseId;
     this.phaseStartTime = Date.now();
+
+    // v3.2: Track phase change for missions
+    this.missionManager.onPhaseChange();
+    this.updateMissionUI();
 
     // Phase change sound will be played in showPhaseAnnouncement
     // (removed duplicate sound play here)
@@ -996,6 +1123,21 @@ export class GameScene extends Phaser.Scene {
     // Get current phase
     const phase = GameConfig.phases[this.currentPhase - 1];
 
+    // === v3.5: DYNAMIC SPAWN PATTERNS ===
+    // Reduced spawn chances - quality over quantity
+    const spawnPattern = Phaser.Math.Between(1, 100);
+
+    if (spawnPattern <= 4 && this.gameTime > 60) {
+      // V-Formation (3 enemies) - only after 60s, very rare
+      this.spawnFormation('v-formation');
+      return;
+    } else if (spawnPattern <= 6 && this.gameTime > 90) {
+      // Line formation (2 enemies) - only after 90s, extremely rare
+      this.spawnFormation('line');
+      return;
+    }
+    // Wave formation removed - too chaotic
+
     // Choose random enemy from current phase's enemy list
     const enemyTypes = phase.enemies;
     const randomEnemyType = enemyTypes[Phaser.Math.Between(0, enemyTypes.length - 1)];
@@ -1004,8 +1146,24 @@ export class GameScene extends Phaser.Scene {
     const enemyConfig = (GameConfig.enemies as any)[randomEnemyType];
     if (!enemyConfig) return;
 
-    // Random Y position
-    const y = Phaser.Math.Between(150, height - 150);
+    // === v3.5: DYNAMIC MOVEMENT PATTERNS ===
+    // Reduced movement pattern chances - most enemies still move straight
+    let movementPattern = 'straight';
+
+    if (this.gameTime > 45) {
+      const patternRoll = Phaser.Math.Between(1, 100);
+      if (patternRoll <= 15) {
+        movementPattern = 'sine_wave'; // Gentle wave
+      } else if (patternRoll <= 25) {
+        movementPattern = 'tracking'; // Follow eagle (more predictable)
+      } else if (patternRoll <= 30 && randomEnemyType !== 'bearBoss') {
+        movementPattern = 'dash'; // Rare dash
+      }
+      // Zigzag removed - too unpredictable
+    }
+
+    // Random Y position (avoid edges)
+    const y = Phaser.Math.Between(180, height - 180);
 
     // Create enemy container
     const enemy = this.add.container(width + 100, y);
@@ -1019,24 +1177,109 @@ export class GameScene extends Phaser.Scene {
     enemy.setSize(enemyConfig.size.width, enemyConfig.size.height);
     enemy.setData('type', randomEnemyType);
     enemy.setData('config', enemyConfig);
+    enemy.setData('movementPattern', movementPattern);
+    enemy.setData('startY', y); // Store initial Y for wave patterns
+    enemy.setData('waveOffset', Math.random() * Math.PI * 2); // Random wave offset
+    enemy.setData('zigzagDirection', 1); // 1 = down, -1 = up
+    enemy.setData('dashCooldown', 0);
 
-    // Special behavior for Paper Hands Pete - occasionally drops fake coins
+    // Special behavior for Paper Hands Pete - drops fake coins more frequently
     if (randomEnemyType === 'paperHands') {
-      this.time.delayedCall(Phaser.Math.Between(2000, 4000), () => {
+      const dropInterval = Phaser.Math.Between(2000, 3500);
+      this.time.delayedCall(dropInterval, () => {
         if (enemy.active) {
           this.spawnFakeCoin(enemy.x, enemy.y);
+          // Drop another one if still alive
+          this.time.delayedCall(dropInterval, () => {
+            if (enemy.active) {
+              this.spawnFakeCoin(enemy.x, enemy.y);
+            }
+          });
         }
       });
     }
 
-    // Special behavior for Gary - throws lawsuit papers
+    // Special behavior for Gary - throws lawsuit papers continuously
     if (randomEnemyType === 'gary') {
-      this.time.delayedCall(Phaser.Math.Between(1000, 3000), () => {
+      const throwPaper = () => {
         if (enemy.active) {
           this.spawnLawsuitPaper(enemy.x, enemy.y);
+          this.time.delayedCall(Phaser.Math.Between(1500, 2500), throwPaper);
         }
-      });
+      };
+      this.time.delayedCall(1000, throwPaper);
     }
+
+    // Special behavior for bearBoss - chaos mode
+    if (randomEnemyType === 'bearBoss') {
+      enemy.setData('movementPattern', 'boss_chaos');
+      enemy.setData('chaosTimer', 0);
+    }
+
+    this.enemies.push(enemy);
+  }
+
+  // v3.5: Spawn enemy formations
+  private spawnFormation(formationType: string): void {
+    const width = this.cameras.main.width;
+    const height = this.cameras.main.height;
+    const phase = GameConfig.phases[this.currentPhase - 1];
+    const enemyTypes = phase.enemies.filter(e => e !== 'bearBoss'); // No bosses in formations
+
+    switch (formationType) {
+      case 'v-formation':
+        // 3 enemies in V shape
+        const vType = enemyTypes[Phaser.Math.Between(0, enemyTypes.length - 1)];
+        const centerY = Phaser.Math.Between(300, height - 300);
+        const spacing = 120;
+
+        this.createSingleEnemy(vType, width + 100, centerY, 'straight');
+        this.createSingleEnemy(vType, width + 200, centerY - spacing, 'straight');
+        this.createSingleEnemy(vType, width + 200, centerY + spacing, 'straight');
+        break;
+
+      case 'line':
+        // 2 enemies in horizontal line - simple and predictable
+        const lineType = enemyTypes[Phaser.Math.Between(0, enemyTypes.length - 1)];
+        const lineY = Phaser.Math.Between(300, height - 300);
+        const lineSpacing = 180; // Increased spacing
+
+        // Always spawn exactly 2 enemies
+        this.createSingleEnemy(lineType, width + 100, lineY, 'straight');
+        this.createSingleEnemy(lineType, width + 100 + lineSpacing, lineY, 'straight');
+        break;
+
+      case 'wave':
+        // 4 enemies in wave pattern
+        const waveType = enemyTypes[Phaser.Math.Between(0, enemyTypes.length - 1)];
+        const waveStartY = Phaser.Math.Between(300, height - 400);
+
+        for (let i = 0; i < 4; i++) {
+          const offset = Math.sin(i * 0.8) * 80;
+          this.createSingleEnemy(waveType, width + 100 + (i * 120), waveStartY + offset, 'sine_wave');
+        }
+        break;
+    }
+  }
+
+  // Helper function to create a single enemy with specific pattern
+  private createSingleEnemy(enemyType: string, x: number, y: number, pattern: string): void {
+    const enemyConfig = (GameConfig.enemies as any)[enemyType];
+    if (!enemyConfig) return;
+
+    const enemy = this.add.container(x, y);
+    const enemyImage = this.add.image(0, 0, enemyConfig.sprite);
+    enemyImage.setScale(enemyConfig.scale);
+    enemyImage.setFlipX(true);
+
+    enemy.add(enemyImage);
+    enemy.setSize(enemyConfig.size.width, enemyConfig.size.height);
+    enemy.setData('type', enemyType);
+    enemy.setData('config', enemyConfig);
+    enemy.setData('movementPattern', pattern);
+    enemy.setData('startY', y);
+    enemy.setData('waveOffset', Math.random() * Math.PI * 2);
+    enemy.setData('zigzagDirection', 1);
 
     this.enemies.push(enemy);
   }
@@ -1114,7 +1357,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     // Randomly choose powerup type (excluding buyback which is triggered by AOL combo)
-    const powerupTypes = ['shield', 'solanaSurge', 'belleMod'];
+    const powerupTypes = ['shield', 'freedomStrike', 'belleMod'];
     const randomType = powerupTypes[Phaser.Math.Between(0, powerupTypes.length - 1)];
 
     const powerup = this.add.container(width + 100, y);
@@ -1128,9 +1371,9 @@ export class GameScene extends Phaser.Scene {
         icon.setScale(0.15);
         glowColor = 0xFF0000; // Red glow for America
         break;
-      case 'solanaSurge':
+      case 'freedomStrike':
         icon = '⚡';
-        glowColor = 0xFF00FF;
+        glowColor = 0xFFFF00; // Yellow glow for lightning
         break;
       case 'belleMod':
         icon = this.add.image(0, 0, 'mod-belle');
@@ -1291,39 +1534,44 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  private activateSolanaSurge(): void {
-    if (this.solanaSurgeActive) return;
+  private activateFreedomStrike(): void {
+    if (this.freedomStrikeActive) return;
 
-    this.solanaSurgeActive = true;
+    this.freedomStrikeActive = true;
 
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
 
-    // Lightning flash effect
+    console.log('⚡ FREEDOM STRIKE ACTIVATED!');
+
+    // Play lightning strike sound
+    this.sound.play('lightning-strike', { volume: 0.8 });
+
+    // White/Yellow lightning flash effect
     const flash = this.add.graphics();
-    flash.fillStyle(0x9945FF, 0.6); // Solana purple
+    flash.fillStyle(0xFFFFFF, 0.8); // Bright white flash
     flash.fillRect(0, 0, width, height);
     flash.setDepth(1999);
 
     this.tweens.add({
       targets: flash,
       alpha: 0,
-      duration: 300,
-      repeat: 2,
+      duration: 200,
+      repeat: 3,
       yoyo: true,
       onComplete: () => flash.destroy()
     });
 
-    // Lightning bolts animation
-    for (let i = 0; i < 5; i++) {
+    // Lightning bolts animation - more bolts for dramatic effect
+    for (let i = 0; i < 12; i++) {
       const bolt = this.add.graphics();
-      bolt.lineStyle(6, 0xFFFF00, 1);
+      bolt.lineStyle(8, 0xFFFF00, 1);
 
       const startX = Phaser.Math.Between(0, width);
       const startY = 0;
-      const endX = startX + Phaser.Math.Between(-100, 100);
+      const endX = startX + Phaser.Math.Between(-150, 150);
       const endY = height;
-      const midX = (startX + endX) / 2 + Phaser.Math.Between(-50, 50);
+      const midX = (startX + endX) / 2 + Phaser.Math.Between(-80, 80);
       const midY = height / 2;
 
       bolt.beginPath();
@@ -1332,27 +1580,27 @@ export class GameScene extends Phaser.Scene {
       bolt.lineTo(endX, endY);
       bolt.strokePath();
       bolt.setDepth(2000);
-      bolt.setAlpha(0.8);
+      bolt.setAlpha(0.9);
 
-      this.time.delayedCall(i * 100, () => {
+      this.time.delayedCall(i * 80, () => {
         this.tweens.add({
           targets: bolt,
           alpha: 0,
-          duration: 400,
+          duration: 300,
           onComplete: () => bolt.destroy()
         });
       });
     }
 
     // Visual feedback text
-    const text = this.add.text(width / 2, 200, '⚡ SOLANA SURGE!\nSpeed Boost Activated', {
-      fontSize: '48px',
-      color: '#9945FF',
+    const text = this.add.text(width / 2, 200, '⚡ FREEDOM STRIKE!\nLightning Destroys All Enemies', {
+      fontSize: '56px',
+      color: '#FFFF00',
       fontFamily: 'Arial',
       fontStyle: 'bold',
       align: 'center',
-      stroke: '#FFFFFF',
-      strokeThickness: 4
+      stroke: '#000000',
+      strokeThickness: 6
     }).setOrigin(0.5);
     text.setDepth(2001);
 
@@ -1360,24 +1608,60 @@ export class GameScene extends Phaser.Scene {
       targets: text,
       alpha: 0,
       y: 150,
-      duration: 1500,
+      duration: 2000,
+      ease: 'Power2',
       onComplete: () => text.destroy()
     });
 
-    // Temporarily increase speeds
-    const originalCoinSpeed = this.coinSpeed;
-    const originalEnemySpeed = this.enemySpeed;
+    // === DESTROY ALL ENEMIES (except bosses) ===
+    let enemiesDestroyed = 0;
+    this.enemies.forEach((enemy: Phaser.GameObjects.Container) => {
+      const enemyData = enemy.getData('enemyType');
 
-    const boost = GameConfig.powerUps.solanaSurge.speedBoost;
-    this.coinSpeed *= boost;
-    this.enemySpeed *= boost;
+      // Skip boss enemies
+      if (enemyData && enemyData.isBoss) {
+        console.log('  ⚠️ Skipping boss enemy:', enemyData.name);
+        return;
+      }
 
-    // Deactivate after duration
-    const duration = GameConfig.powerUps.solanaSurge.duration;
-    this.solanaSurgeTimer = this.time.delayedCall(duration, () => {
-      this.solanaSurgeActive = false;
-      this.coinSpeed = originalCoinSpeed;
-      this.enemySpeed = originalEnemySpeed;
+      // Destroy non-boss enemies with explosion effect
+      enemiesDestroyed++;
+
+      // Play explosion sound for each enemy
+      this.sound.play('explosion', { volume: 0.4 });
+
+      // Create explosion visual at enemy position
+      const explosionCircle = this.add.graphics();
+      explosionCircle.fillStyle(0xFFFF00, 0.8);
+      explosionCircle.fillCircle(enemy.x, enemy.y, 40);
+      explosionCircle.setDepth(1998);
+
+      this.tweens.add({
+        targets: explosionCircle,
+        alpha: 0,
+        scaleX: 2,
+        scaleY: 2,
+        duration: 400,
+        ease: 'Power2',
+        onComplete: () => explosionCircle.destroy()
+      });
+
+      // Award points for destroying enemy
+      this.score += 50; // Bonus points for destroyed enemies
+
+      // Destroy the enemy
+      enemy.destroy();
+    });
+
+    // Clear enemies array
+    this.enemies = [];
+
+    console.log(`  ⚡ Destroyed ${enemiesDestroyed} enemies!`);
+
+    // Deactivate after visual effect
+    const duration = GameConfig.powerUps.freedomStrike.duration;
+    this.freedomStrikeTimer = this.time.delayedCall(duration, () => {
+      this.freedomStrikeActive = false;
     });
   }
 
@@ -1659,6 +1943,80 @@ export class GameScene extends Phaser.Scene {
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
 
+    // v3.2: Track time for missions
+    this.missionManager.onTimeUpdate(this.gameTime);
+
+    // v3.2: GLIDE CONTROLS - Check if space held long enough
+    if (this.spacePressed && !this.isGliding && this.eagle) {
+      const holdTime = Date.now() - this.spaceStartTime;
+      if (holdTime >= this.glideThreshold) {
+        console.log('GLIDE START - Moving forward to position:', this.glideEagleX);
+        this.isGliding = true;
+
+        // Play whoosh sound when gliding starts
+        this.sound.play('whoosh', { volume: 0.6 });
+
+        // Activate glide immediately when threshold reached
+        const eagleBody = this.eagle.body as Phaser.Physics.Arcade.Body;
+        if (eagleBody) {
+          eagleBody.setGravityY(GameConfig.gravity * 0.2); // Strong reduction
+        }
+
+        // Pause animation during glide (frozen pose)
+        this.eagle.pauseAnimation();
+
+        // Move eagle forward smoothly
+        this.tweens.add({
+          targets: this.eagle,
+          x: this.glideEagleX,
+          duration: 300,
+          ease: 'Cubic.easeOut',
+          onComplete: () => {
+            console.log('Forward glide tween completed at x:', this.eagle?.x);
+          }
+        });
+      }
+    }
+
+    // v3.2: Maintain glide effect while holding
+    if (this.isGliding && this.spacePressed && this.eagle) {
+      const eagleBody = this.eagle.body as Phaser.Physics.Arcade.Body;
+      if (eagleBody) {
+        // Keep reduced gravity
+        eagleBody.setGravityY(GameConfig.gravity * 0.2);
+      }
+      // Visual feedback - slight transparency
+      this.eagle.setAlpha(0.85);
+    }
+
+    // v3.2: End glide when space released
+    if (this.isGliding && !this.spacePressed && this.eagle) {
+      console.log('GLIDE END - Flying back to position:', this.normalEagleX);
+
+      // Reset to normal gravity
+      const eagleBody = this.eagle.body as Phaser.Physics.Arcade.Body;
+      if (eagleBody) {
+        eagleBody.setGravityY(GameConfig.gravity);
+      }
+      this.eagle.setAlpha(1.0);
+
+      // Resume animation
+      this.eagle.resumeAnimation();
+
+      // Eagle flies BACK to normal position
+      this.tweens.add({
+        targets: this.eagle,
+        x: this.normalEagleX,
+        duration: 400,
+        ease: 'Cubic.easeInOut',
+        onComplete: () => {
+          console.log('Fly-back tween completed');
+        }
+      });
+
+      this.isGliding = false;
+    }
+
     // Update power-up timers
     this.updatePowerupTimers();
 
@@ -1811,6 +2169,10 @@ export class GameScene extends Phaser.Scene {
             this.comboCount++;
             bonusPoints = this.comboCount * 5;
             this.showComboText(this.comboCount, bonusPoints);
+
+            // v3.2: Track combo for missions
+            this.missionManager.onComboAchieved(this.comboCount);
+            this.updateMissionUI();
           } else {
             // Reset combo
             this.comboCount = 1;
@@ -1831,6 +2193,10 @@ export class GameScene extends Phaser.Scene {
 
           this.score += finalPoints;
           this.scoreText.setText(`SCORE: ${this.score}`);
+
+          // v3.2: Track score for missions
+          this.missionManager.onScoreUpdate(this.score);
+          this.updateMissionUI();
 
           // Score blink animation
           this.tweens.add({
@@ -1885,12 +2251,19 @@ export class GameScene extends Phaser.Scene {
             this.valorCountText.setText(`🦅 $VALOR: ${this.valorCount}`);
           }
 
-          // 5% chance to spawn Gold Feather
-          const goldFeatherRoll = Math.random() * 100;
-          if (goldFeatherRoll < 5) {
-            this.spawnGoldFeather(coin.y);
+          // 5% chance to spawn Gold Feather (only if not in cooldown)
+          if (!this.valorModeActive && !this.valorModeCooldown) {
+            const goldFeatherRoll = Math.random() * 100;
+            if (goldFeatherRoll < 5) {
+              this.spawnGoldFeather(coin.y);
+              console.log('✨ Gold Feather spawned from $VALOR coin!');
+            }
           }
         }
+
+        // v3.2: Track coin collection for missions
+        this.missionManager.onCoinCollected(type);
+        this.updateMissionUI();
 
         // Show coin collection feedback with points
         let coinName = '';
@@ -1912,6 +2285,10 @@ export class GameScene extends Phaser.Scene {
           case 'burger':
             coinName = '$BURGER';
             coinColor = '#FBB13C';
+            break;
+          case 'valor':
+            coinName = '$VALOR';
+            coinColor = '#FFD700'; // Gold
             break;
         }
 
@@ -1982,8 +2359,8 @@ export class GameScene extends Phaser.Scene {
           case 'shield':
             this.activateShield();
             break;
-          case 'solanaSurge':
-            this.activateSolanaSurge();
+          case 'freedomStrike':
+            this.activateFreedomStrike();
             break;
           case 'belleMod':
             this.activateBelleMod();
@@ -2083,8 +2460,8 @@ export class GameScene extends Phaser.Scene {
         this.fakeCoins.splice(i, 1);
         fakeCoin.destroy();
 
-        // Game over - fake coin is deadly
-        this.gameOver();
+        // v3.2: Take damage instead of instant game over
+        this.takeDamage();
       }
     }
 
@@ -2132,10 +2509,91 @@ export class GameScene extends Phaser.Scene {
 
       const enemyConfig = enemy.getData('config');
       const enemyType = enemy.getData('type');
+      const movementPattern = enemy.getData('movementPattern') || 'straight';
 
       // Different speeds for different enemies
-      const speed = enemyConfig.speed * (this.game.loop.delta / 1000);
-      enemy.x -= speed;
+      const baseSpeed = enemyConfig.speed * (this.game.loop.delta / 1000);
+
+      // === v3.5: DYNAMIC MOVEMENT PATTERNS ===
+      switch (movementPattern) {
+        case 'straight':
+          // Normal horizontal movement
+          enemy.x -= baseSpeed;
+          break;
+
+        case 'sine_wave':
+          // Gentle sine wave movement (up and down)
+          enemy.x -= baseSpeed;
+          const waveOffset = enemy.getData('waveOffset') || 0;
+          const startY = enemy.getData('startY') || enemy.y;
+          const waveTime = this.gameTime + waveOffset;
+          const waveAmplitude = 40; // Reduced from 60 to 40 - gentler movement
+          const waveSpeed = 1.5; // Reduced from 2 to 1.5 - slower wave
+          enemy.y = startY + Math.sin(waveTime * waveSpeed) * waveAmplitude;
+
+          // Keep within visible bounds
+          const maxWaveHeight = this.cameras.main.height;
+          if (enemy.y < 200) enemy.y = 200;
+          if (enemy.y > maxWaveHeight - 200) enemy.y = maxWaveHeight - 200;
+          break;
+
+        case 'dash':
+          // Occasional dash forward with warning
+          enemy.x -= baseSpeed;
+          let dashCooldown = enemy.getData('dashCooldown') || 0;
+          dashCooldown -= this.game.loop.delta;
+
+          if (dashCooldown <= 0) {
+            // Reduced dash speed for better visibility
+            enemy.x -= baseSpeed * 8; // Reduced from 15 to 8
+            dashCooldown = 3000; // Increased from 2000 to 3000ms - less frequent
+          }
+          enemy.setData('dashCooldown', dashCooldown);
+          break;
+
+        case 'tracking':
+          // Smoothly follow the eagle's Y position
+          enemy.x -= baseSpeed;
+          const targetY = this.eagle.y;
+          const currentY = enemy.y;
+          const trackingSpeed = baseSpeed * 0.8; // Reduced from 1.5 to 0.8 - slower tracking
+          const deadzone = 30; // Increased from 10 to 30 - less aggressive
+
+          if (currentY < targetY - deadzone) {
+            enemy.y += trackingSpeed;
+          } else if (currentY > targetY + deadzone) {
+            enemy.y -= trackingSpeed;
+          }
+
+          // Keep within visible bounds
+          const maxHeight = this.cameras.main.height;
+          if (enemy.y < 180) enemy.y = 180;
+          if (enemy.y > maxHeight - 180) enemy.y = maxHeight - 180;
+          break;
+
+        case 'boss_chaos':
+          // Boss special movement - smoother and more predictable
+          enemy.x -= baseSpeed * 0.6; // Slower horizontal movement
+          let chaosTimer = enemy.getData('chaosTimer') || 0;
+          chaosTimer += this.game.loop.delta;
+
+          if (chaosTimer > 1500) { // Increased from 800 to 1500 - slower changes
+            // Random direction change with constraints
+            const randomY = Phaser.Math.Between(250, this.cameras.main.height - 250);
+            this.tweens.add({
+              targets: enemy,
+              y: randomY,
+              duration: 1800, // Increased from 1200 to 1800 - smoother transition
+              ease: 'Sine.easeInOut'
+            });
+            chaosTimer = 0;
+          }
+          enemy.setData('chaosTimer', chaosTimer);
+          break;
+
+        default:
+          enemy.x -= baseSpeed;
+      }
 
       // Remove off-screen enemies
       if (enemy.x < -200) {
@@ -2158,11 +2616,25 @@ export class GameScene extends Phaser.Scene {
       if (distance < collisionRadius + 40) {
         if (this.shieldActive || this.belleModActive) {
           // Shield or Belle MOD protects - destroy enemy
+          const enemyType = enemy.getData('type') || 'enemy';
           enemy.destroy();
           this.enemies.splice(i, 1);
 
+          // v3.2: Award points for killing enemy
+          const killPoints = 50;
+          this.score += killPoints;
+          this.scoreText.setText(`SCORE: ${this.score}`);
+
+          // v3.5: Play explosion sound when enemy defeated
+          this.sound.play('explosion', { volume: 0.7 });
+
+          // v3.2: Track enemy kill for missions
+          this.missionManager.onEnemyKilled(enemyType);
+          this.missionManager.onScoreUpdate(this.score);
+          this.updateMissionUI();
+
           // Visual feedback
-          const feedbackMessage = this.belleModActive ? 'BANNED!' : 'BLOCKED!';
+          const feedbackMessage = this.belleModActive ? 'BANNED! +50' : 'BLOCKED! +50';
           const feedbackColor = this.belleModActive ? '#FFD700' : '#00FF00';
           const text = this.add.text(enemy.x, enemy.y, feedbackMessage, {
             fontSize: '32px',
@@ -2185,7 +2657,7 @@ export class GameScene extends Phaser.Scene {
           // Screen shake
           this.cameras.main.shake(150, 0.003);
         } else {
-          // Hit by enemy - game over
+          // v3.2: Hit by enemy - take damage instead of instant game over
           // Play crash sound
           this.sound.play('crash', { volume: 0.6 });
 
@@ -2193,7 +2665,15 @@ export class GameScene extends Phaser.Scene {
           const meme = enemyConfig.meme;
           this.showMemePopup(meme, '#FF0000');
 
-          this.gameOver();
+          // Take damage (removes 1 life, adds invincibility frames)
+          this.takeDamage();
+
+          // Destroy enemy after hit
+          enemy.destroy();
+          this.enemies.splice(i, 1);
+
+          // Screen shake
+          this.cameras.main.shake(200, 0.005);
         }
       }
     }
@@ -2237,7 +2717,7 @@ export class GameScene extends Phaser.Scene {
     this.magnetTimer?.remove();
     this.shieldTimer?.remove();
     this.burgerMultiplierTimer?.remove();
-    this.solanaSurgeTimer?.remove();
+    this.freedomStrikeTimer?.remove();
     this.controlBlockTimer?.remove();
     this.belleModTimer?.remove();
     this.bullMarketTimer?.remove();
@@ -2268,7 +2748,7 @@ export class GameScene extends Phaser.Scene {
     this.magnetTimer?.remove();
     this.shieldTimer?.remove();
     this.burgerMultiplierTimer?.remove();
-    this.solanaSurgeTimer?.remove();
+    this.freedomStrikeTimer?.remove();
     this.controlBlockTimer?.remove();
 
     // Stop game music
@@ -2383,6 +2863,9 @@ export class GameScene extends Phaser.Scene {
     this.bullMarketActive = true;
     this.extraLives++;
 
+    // Add a life to the player
+    this.addLife();
+
     const width = this.cameras.main.width;
 
     // Visual feedback
@@ -2426,6 +2909,626 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
+  // ========== v3.2: VALOR MODE (3 STAGES) ==========
+  private activateValorMode(): void {
+    if (this.valorModeActive || this.valorModeCooldown) return;
+    if (!this.eagle || !this.eagle.active) return;
+
+    console.log('🦅 VALOR MODE v3.2 ACTIVATED - Stage 1 Begin');
+
+    // Store original speeds
+    this.originalCoinSpeed = this.coinSpeed;
+    this.originalEnemySpeed = this.enemySpeed;
+
+    // Start Stage 1
+    this.startValorStage1();
+  }
+
+  private startValorStage1(): void {
+    this.valorModeActive = true;
+    this.valorModeStage = 1;
+    this.valorScoreMultiplier = 2; // Stage 1: ×2 score
+
+    // Switch to gold eagle sprite
+    if (this.eagle && this.eagle.active) {
+      this.eagle.switchToGoldSprite();
+    }
+
+    // Set invincibility
+    this.shieldActive = true;
+
+    // Stage 1: Speed ×3, Coins ×2
+    this.coinSpeed = this.originalCoinSpeed * 3;
+    this.enemySpeed = this.originalEnemySpeed * 3;
+
+    // Coin spawn rate ×2
+    if (this.coinSpawnTimer) {
+      this.coinSpawnTimer.remove();
+    }
+    this.coinSpawnTimer = this.time.addEvent({
+      delay: 750, // 2x faster
+      callback: this.spawnCoin,
+      callbackScope: this,
+      loop: true
+    });
+
+    // Create golden screen glow
+    this.createValorScreenGlow();
+
+    // Create VALOR MODE HUD
+    this.createValorModeHUD('VALOR MODE', 'Stage 1');
+
+    // Stage 1 visual feedback
+    const width = this.cameras.main.width;
+    const height = this.cameras.main.height;
+
+    const overlay = this.add.text(width / 2, height / 2, '⚡🦅 VALOR MODE STAGE 1 🦅⚡\nSPEED ×3 | COINS ×2\nSCORE ×2', {
+      fontSize: '48px',
+      color: '#FFD700',
+      fontFamily: 'Arial',
+      fontStyle: 'bold',
+      align: 'center',
+      stroke: '#000000',
+      strokeThickness: 6
+    });
+    overlay.setOrigin(0.5);
+    overlay.setDepth(10000);
+
+    this.tweens.add({
+      targets: overlay,
+      alpha: 0,
+      duration: 2500,
+      onComplete: () => overlay.destroy()
+    });
+
+    // Play sound
+    this.sound.play('buyback-voice', { volume: 0.9 });
+    this.cameras.main.shake(600, 0.006);
+    this.cameras.main.flash(500, 255, 215, 0, true);
+
+    // Stage 1 duration: 6 seconds
+    this.valorStage1Timer = this.time.delayedCall(6000, () => {
+      this.startValorStage2();
+    });
+  }
+
+  private startValorStage2(): void {
+    console.log('⚡ VALOR MODE - Stage 2 Begin (ASCENSION)');
+
+    this.valorModeStage = 2;
+    this.valorScoreMultiplier = 3; // Stage 2: ×3 score
+
+    // Keep invincibility active
+    this.shieldActive = true;
+
+    // Stage 2: Speed ×4.5, Coins ×4
+    this.coinSpeed = this.originalCoinSpeed * 4.5;
+    this.enemySpeed = this.originalEnemySpeed * 4.5;
+
+    // Coin spawn rate ×4
+    if (this.coinSpawnTimer) {
+      this.coinSpawnTimer.remove();
+    }
+    this.coinSpawnTimer = this.time.addEvent({
+      delay: 375, // 4x faster
+      callback: this.spawnCoin,
+      callbackScope: this,
+      loop: true
+    });
+
+    // Update HUD
+    this.updateValorModeHUD('VALOR ASCENSION', 'Stage 2');
+
+    // Stage 2 visual feedback
+    const width = this.cameras.main.width;
+    const height = this.cameras.main.height;
+
+    const overlay = this.add.text(width / 2, height / 2, '⚡🦅 VALOR MODE STAGE 2 🦅⚡\nSPEED ×4.5 | COINS ×4\nSCORE ×3', {
+      fontSize: '52px',
+      color: '#FFD700',
+      fontFamily: 'Arial',
+      fontStyle: 'bold',
+      align: 'center',
+      stroke: '#000000',
+      strokeThickness: 6
+    });
+    overlay.setOrigin(0.5);
+    overlay.setDepth(10000);
+
+    this.tweens.add({
+      targets: overlay,
+      alpha: 0,
+      duration: 2500,
+      onComplete: () => overlay.destroy()
+    });
+
+    // Stronger effects
+    this.cameras.main.shake(1000, 0.010);
+    this.cameras.main.flash(800, 255, 215, 0, true);
+
+    // Stage 2 duration: 6 seconds
+    this.valorStage2Timer = this.time.delayedCall(6000, () => {
+      this.startValorAfterglow();
+    });
+  }
+
+  private startValorAfterglow(): void {
+    console.log('✨ VALOR MODE - Afterglow (fade out)');
+
+    this.valorModeStage = 3;
+    this.valorScoreMultiplier = 1.5; // Afterglow: ×1.5 score
+
+    // Keep invincibility active during afterglow
+    this.shieldActive = true;
+
+    // Slow down to ×1.5
+    this.coinSpeed = this.originalCoinSpeed * 1.5;
+    this.enemySpeed = this.originalEnemySpeed * 1.5;
+
+    // Normal coin spawn
+    if (this.coinSpawnTimer) {
+      this.coinSpawnTimer.remove();
+    }
+    this.coinSpawnTimer = this.time.addEvent({
+      delay: 1500,
+      callback: this.spawnCoin,
+      callbackScope: this,
+      loop: true
+    });
+
+    // Update HUD
+    this.updateValorModeHUD('VALOR AFTERGLOW', 'Fade');
+
+    // Afterglow duration: 5 seconds
+    this.valorAfterglowTimer = this.time.delayedCall(5000, () => {
+      this.deactivateValorMode();
+    });
+  }
+
+  private deactivateValorMode(): void {
+    console.log('VALOR MODE v3.2 - Complete Deactivation');
+
+    this.valorModeActive = false;
+    this.valorModeStage = 0;
+    this.valorScoreMultiplier = 1;
+
+    // Restore normal speeds
+    this.coinSpeed = this.originalCoinSpeed;
+    this.enemySpeed = this.originalEnemySpeed;
+
+    // Restore normal coin spawn
+    if (this.coinSpawnTimer) {
+      this.coinSpawnTimer.remove();
+    }
+    this.coinSpawnTimer = this.time.addEvent({
+      delay: 1500,
+      callback: this.spawnCoin,
+      callbackScope: this,
+      loop: true
+    });
+
+    // Switch back to normal eagle
+    if (this.eagle && this.eagle.active) {
+      this.eagle.switchToNormalSprite();
+    }
+
+    // Remove shield
+    this.shieldActive = false;
+
+    // Remove screen glow
+    if (this.valorScreenGlow) {
+      this.valorScreenGlow.destroy();
+      this.valorScreenGlow = undefined;
+    }
+    if (this.valorModeText) {
+      this.valorModeText.destroy();
+      this.valorModeText = undefined;
+    }
+
+    // Start 60s cooldown
+    this.valorModeCooldown = true;
+    this.valorCooldownTimer = this.time.delayedCall(60000, () => {
+      this.valorModeCooldown = false;
+      console.log('VALOR MODE - Cooldown complete. Ready again!');
+    });
+  }
+
+  private createValorScreenGlow(): void {
+    const width = this.cameras.main.width;
+    const height = this.cameras.main.height;
+
+    // Use rectangle instead of graphics to avoid crashes
+    this.valorScreenGlow = this.add.rectangle(0, 0, width, height, 0xFFD700, 0.15);
+    this.valorScreenGlow.setOrigin(0, 0);
+    this.valorScreenGlow.setDepth(9999);
+
+    // Pulsing animation
+    this.tweens.add({
+      targets: this.valorScreenGlow,
+      alpha: 0.3,
+      duration: 1000,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut'
+    });
+  }
+
+  private createValorModeHUD(title: string, subtitle: string): void {
+    const width = this.cameras.main.width;
+
+    // VALOR MODE text at top center
+    this.valorModeText = this.add.text(width / 2, 150, `${title}\n${subtitle}`, {
+      fontSize: '42px',
+      color: '#FFD700',
+      fontFamily: 'Arial',
+      fontStyle: 'bold',
+      align: 'center',
+      stroke: '#000000',
+      strokeThickness: 5
+    });
+    this.valorModeText.setOrigin(0.5);
+    this.valorModeText.setDepth(10000);
+  }
+
+  private updateValorModeHUD(title: string, subtitle: string): void {
+    if (this.valorModeText) {
+      this.valorModeText.setText(`${title}\n${subtitle}`);
+    }
+  }
+
+  // v3.2: LIFE SYSTEM - Create heart display (inline in top bar)
+  private createHeartDisplay(): void {
+    const width = this.cameras.main.width;
+    const heartStartX = width * 0.70; // Position in top bar, after SCORE
+    const heartY = 55; // Same as hudY
+    const heartSpacing = 35;
+
+    // Clear existing hearts
+    this.heartSprites.forEach(heart => heart.destroy());
+    this.heartSprites = [];
+
+    // Create hearts based on current lives
+    for (let i = 0; i < this.maxLives; i++) {
+      const heart = this.add.text(
+        heartStartX + (i * heartSpacing),
+        heartY,
+        '❤️',
+        {
+          fontSize: '28px'
+        }
+      );
+      heart.setOrigin(0.5);
+      heart.setDepth(1001);
+
+      // Make heart semi-transparent if empty
+      if (i >= this.lives) {
+        heart.setAlpha(0.2);
+      }
+
+      this.heartSprites.push(heart as any);
+    }
+  }
+
+  // v3.2: Update heart display after taking damage or gaining life
+  private updateHeartDisplay(): void {
+    for (let i = 0; i < this.heartSprites.length; i++) {
+      if (i < this.lives) {
+        this.heartSprites[i].setAlpha(1.0); // Full heart
+      } else {
+        this.heartSprites[i].setAlpha(0.2); // Empty heart
+      }
+    }
+  }
+
+  // v3.2: Take damage and lose a life
+  private takeDamage(): void {
+    if (this.invincible || this.shieldActive || this.belleModActive) return;
+
+    this.lives--;
+    this.updateHeartDisplay();
+
+    // Play hit animation on eagle
+    if (this.eagle) {
+      this.eagle.playHitAnimation();
+    }
+
+    // Invincibility frames (2 seconds)
+    this.invincible = true;
+
+    // Blink effect during invincibility
+    let blinkCount = 0;
+    const blinkInterval = this.time.addEvent({
+      delay: 150,
+      repeat: 13, // 2 seconds / 150ms = ~13 blinks
+      callback: () => {
+        if (this.eagle) {
+          this.eagle.setAlpha(blinkCount % 2 === 0 ? 0.3 : 1.0);
+        }
+        blinkCount++;
+      }
+    });
+
+    // Remove invincibility after 2 seconds
+    this.invincibilityTimer = this.time.delayedCall(2000, () => {
+      this.invincible = false;
+      if (this.eagle) {
+        this.eagle.setAlpha(1.0);
+      }
+      blinkInterval.remove();
+    });
+
+    // Check if game over
+    if (this.lives <= 0) {
+      this.gameOver();
+    }
+  }
+
+  // v3.2: Add a life (from powerup or milestone)
+  private addLife(): void {
+    if (this.lives < this.maxLives) {
+      this.lives++;
+      this.updateHeartDisplay();
+
+      // Visual feedback
+      const width = this.cameras.main.width;
+      const text = this.add.text(width / 2, 300, '+1 LIFE!', {
+        fontSize: '48px',
+        color: '#FF1493',
+        fontFamily: 'Arial',
+        fontStyle: 'bold',
+        stroke: '#FFFFFF',
+        strokeThickness: 6
+      }).setOrigin(0.5);
+      text.setDepth(10000);
+
+      this.tweens.add({
+        targets: text,
+        alpha: 0,
+        y: text.y - 80,
+        duration: 1500,
+        ease: 'Cubic.easeOut',
+        onComplete: () => text.destroy()
+      });
+
+      this.sound.play('buyback-voice', { volume: 0.7 });
+    }
+  }
+
+  // v3.2: MISSION SYSTEM - Create mission UI display (bottom right, stacked)
+  private createMissionUI(): void {
+    // Clear existing UI
+    this.missionUI.forEach(ui => ui.destroy());
+    this.missionUI = [];
+
+    const width = this.cameras.main.width;
+    const height = this.cameras.main.height;
+    const dailyMissions = this.missionManager.getDailyMissions();
+
+    // Position: Bottom right, stacked
+    const boxWidth = 340;
+    const boxHeight = 55;
+    const startX = width - boxWidth - 15;
+    const startY = height - 250;
+    const spacing = boxHeight + 8;
+
+    dailyMissions.forEach((mission, index) => {
+      const yPos = startY + (index * spacing);
+      const container = this.add.container(startX, yPos);
+
+      // Background - dark semi-transparent
+      const bg = this.add.graphics();
+      bg.fillStyle(0x424242, 0.85);
+      bg.fillRoundedRect(0, 0, boxWidth, boxHeight, 8);
+      bg.setDepth(1499);
+
+      // Mission emoji and title
+      const title = this.add.text(12, 12, `${mission.emoji} ${mission.title}`, {
+        fontSize: '16px',
+        color: '#FFFFFF',
+        fontFamily: 'Arial',
+        fontStyle: 'bold'
+      });
+      title.setDepth(1500);
+
+      // Progress text
+      const progressText = this.add.text(12, 32, `${mission.progress}/${mission.target}`, {
+        fontSize: '14px',
+        color: '#AAAAAA',
+        fontFamily: 'Arial'
+      });
+      progressText.setDepth(1500);
+
+      // Progress bar background
+      const barBg = this.add.graphics();
+      barBg.fillStyle(0x212121, 0.9);
+      barBg.fillRect(160, 20, 165, 8);
+      barBg.setDepth(1499);
+
+      // Progress bar fill
+      const barFill = this.add.graphics();
+      const fillWidth = Math.min((mission.progress / mission.target) * 165, 165);
+      const color = mission.completed ? 0xFFD700 : 0x4CAF50;
+      barFill.fillStyle(color, 1);
+      barFill.fillRect(160, 20, fillWidth, 8);
+      barFill.setDepth(1500);
+
+      container.add([bg, title, progressText, barBg, barFill]);
+      container.setDepth(1500);
+      container.setData('mission', mission);
+      container.setData('progressText', progressText);
+      container.setData('barFill', barFill);
+
+      this.missionUI.push(container);
+    });
+  }
+
+  // v3.2: Update mission UI during gameplay
+  private updateMissionUI(): void {
+    const dailyMissions = this.missionManager.getDailyMissions();
+
+    this.missionUI.forEach((container, index) => {
+      const mission = dailyMissions[index];
+      if (!mission) return;
+
+      const progressText = container.getData('progressText') as Phaser.GameObjects.Text;
+      const barFill = container.getData('barFill') as Phaser.GameObjects.Graphics;
+
+      if (progressText) {
+        progressText.setText(`${mission.progress}/${mission.target}`);
+      }
+
+      if (barFill) {
+        barFill.clear();
+        const fillWidth = Math.min((mission.progress / mission.target) * 300, 300);
+        const color = mission.completed ? 0xFFD700 : 0x00FF00;
+        barFill.fillStyle(color, 1);
+        barFill.fillRect(10, 52, fillWidth, 10);
+      }
+
+      // Show completion animation
+      if (mission.completed && !container.getData('animated')) {
+        container.setData('animated', true);
+        this.sound.play('buyback-voice', { volume: 0.6 });
+
+        this.tweens.add({
+          targets: container,
+          scaleX: 1.1,
+          scaleY: 1.1,
+          duration: 200,
+          yoyo: true,
+          repeat: 2,
+          ease: 'Sine.easeInOut'
+        });
+      }
+    });
+
+    // Also update XP display
+    this.updateXPDisplay();
+  }
+
+  // v3.2: XP & PROGRESSION - Create XP/Level display (top right corner)
+  private createXPDisplay(): void {
+    const progress = this.missionManager.getProgress();
+    const width = this.cameras.main.width;
+    const tierData = this.missionManager.getCurrentTierData();
+    const tierName = tierData ? tierData.name : 'Rookie';
+
+    // Position: Top right corner
+    const xpX = width - 180;
+    const xpY = 150;
+
+    // Background
+    const bg = this.add.graphics();
+    bg.fillStyle(0x424242, 0.8);
+    bg.fillRoundedRect(xpX - 10, xpY - 25, 200, 35, 8);
+    bg.setDepth(1499);
+
+    // Level text with tier name
+    this.levelText = this.add.text(xpX, xpY - 15, `LVL ${progress.level} - ${tierName}`, {
+      fontSize: '14px',
+      color: '#FFFFFF',
+      fontFamily: 'Arial',
+      fontStyle: 'bold'
+    }).setOrigin(0, 0);
+    this.levelText.setDepth(1500);
+
+    // XP Bar background
+    this.xpBarBg = this.add.graphics();
+    this.xpBarBg.fillStyle(0x212121, 0.9);
+    this.xpBarBg.fillRect(xpX, xpY, 180, 8);
+    this.xpBarBg.setDepth(1499);
+
+    // XP Bar fill
+    this.xpBarFill = this.add.graphics();
+    const fillWidth = (progress.xp / progress.xpToNextLevel) * 180;
+    this.xpBarFill.fillStyle(0x4CAF50, 1); // Green
+    this.xpBarFill.fillRect(xpX, xpY, fillWidth, 8);
+    this.xpBarFill.setDepth(1500);
+  }
+
+  // v3.2: Update XP display during gameplay
+  private updateXPDisplay(): void {
+    const progress = this.missionManager.getProgress();
+    const width = this.cameras.main.width;
+    const tierData = this.missionManager.getCurrentTierData();
+    const tierName = tierData ? tierData.name : 'Rookie';
+    const xpX = width - 180;
+    const xpY = 150;
+
+    // Update level text
+    if (this.levelText) {
+      this.levelText.setText(`LVL ${progress.level} - ${tierName}`);
+    }
+
+    // Update XP bar
+    if (this.xpBarFill) {
+      this.xpBarFill.clear();
+      const fillWidth = (progress.xp / progress.xpToNextLevel) * 180;
+      this.xpBarFill.fillStyle(0x4CAF50, 1);
+      this.xpBarFill.fillRect(xpX, xpY, fillWidth, 8);
+    }
+  }
+
+  // v3.2: NEWS TICKER - Create scrolling ticker (BREAKING format)
+  private createNewsTicker(): void {
+    const width = this.cameras.main.width;
+
+    // Background bar - Red like design
+    this.newsTickerBg = this.add.graphics();
+    this.newsTickerBg.fillStyle(0xC62828, 0.95); // Deep red
+    this.newsTickerBg.fillRect(0, 0, width, 28);
+    this.newsTickerBg.setDepth(2000);
+
+    // BREAKING: label (static, left side)
+    const breakingLabel = this.add.text(15, 14, '🚨 BREAKING:', {
+      fontSize: '16px',
+      color: '#FFFFFF',
+      fontFamily: 'Arial',
+      fontStyle: 'bold'
+    }).setOrigin(0, 0.5);
+    breakingLabel.setDepth(2002);
+
+    // Create repeating ticker message like a real ticker
+    const tickerMessage = ' Gary sues another meme coin!  •  $BONK hits new ATH  •  Whales accumulating  •  Bear market cancelled  •  Diamond hands prevail  •  ';
+
+    // Repeat message 10 times to create seamless loop
+    const repeatedMessage = tickerMessage.repeat(10);
+
+    // Create ticker text (starts after BREAKING label)
+    this.newsTickerText = this.add.text(width, 14, repeatedMessage, {
+      fontSize: '15px',
+      color: '#FFFFFF',
+      fontFamily: 'Arial',
+      fontStyle: 'normal'
+    }).setOrigin(0, 0.5);
+    this.newsTickerText.setDepth(2001);
+
+    // Start scrolling animation
+    this.startNewsTickerScroll();
+  }
+
+  // Animate ticker scroll
+  private startNewsTickerScroll(): void {
+    if (!this.newsTickerText) return;
+
+    const width = this.cameras.main.width;
+
+    // Start from right edge
+    this.newsTickerText.x = width;
+
+    // Calculate one message length for seamless loop
+    const singleMessageLength = this.newsTickerText.width / 10; // Divided by repeat count
+
+    // Scroll continuously
+    this.tweens.add({
+      targets: this.newsTickerText,
+      x: -singleMessageLength,
+      duration: 30000, // 30 seconds
+      ease: 'Linear',
+      repeat: -1 // Infinite loop
+    });
+  }
+
   private getRandomWisdom(): string {
     const wisdoms = [
       "Patience is the true alpha.",
@@ -2435,5 +3538,455 @@ export class GameScene extends Phaser.Scene {
       "Diamond hands forge legends."
     ];
     return wisdoms[Phaser.Math.Between(0, wisdoms.length - 1)];
+  }
+
+  // ========== v3.3: MARKET PHASES SYSTEM ==========
+
+  private checkMarketPhaseTransition(): void {
+    if (this.phaseTransitionInProgress) return;
+
+    const newPhase = determinePhase(this.gameTime, this.score);
+
+    if (newPhase !== this.currentMarketPhase) {
+      console.log(`📊 Market Phase Transition: ${this.currentMarketPhase} → ${newPhase}`);
+      this.previousMarketPhase = this.currentMarketPhase;
+      this.currentMarketPhase = newPhase;
+      this.performPhaseTransition();
+    }
+  }
+
+  private performPhaseTransition(): void {
+    this.phaseTransitionInProgress = true;
+
+    const phase = MARKET_PHASES[this.currentMarketPhase];
+
+    // Screen flash
+    this.cameras.main.flash(500, 255, 255, 255, false);
+
+    // Sound effect
+    if (this.sound.get('phase-change')) {
+      this.sound.play('phase-change', { volume: 0.6 });
+    }
+
+    // v3.3: Visual Market Phase Announcement
+    this.showMarketPhaseAnnouncement(phase);
+
+    // Update ticker with phase message
+    this.updateTickerForPhase();
+
+    // Apply phase effects
+    this.applyMarketPhaseEffects();
+
+    // Reset transition flag after 1 second
+    this.time.delayedCall(1000, () => {
+      this.phaseTransitionInProgress = false;
+    });
+  }
+
+  private showMarketPhaseAnnouncement(phase: MarketPhase): void {
+    const width = this.cameras.main.width;
+    const height = this.cameras.main.height;
+
+    // Get phase emoji
+    const phaseEmojis: { [key: string]: string } = {
+      'BULL_RUN': '🐂',
+      'CORRECTION': '📉',
+      'BEAR_TRAP': '🐻',
+      'SIDEWAYS': '↔️',
+      'VALOR_COMEBACK': '🦅',
+      'ENDLESS_WAGMI': '🌟'
+    };
+
+    const emoji = phaseEmojis[this.currentMarketPhase] || '📊';
+
+    // v3.3: Calculate Y position based on active announcements
+    const baseY = height / 2;
+    const spacing = 150; // Space between announcements
+    const yPosition = baseY + (this.activeAnnouncements.length * spacing);
+
+    // Create announcement text
+    const announcementText = this.add.text(
+      width / 2,
+      yPosition,
+      `${emoji} ${phase.name.toUpperCase()} ${emoji}\n${phase.theme}`,
+      {
+        fontSize: '64px',
+        color: `#${phase.tickerColor.toString(16).padStart(6, '0')}`,
+        fontFamily: 'Arial',
+        fontStyle: 'bold',
+        align: 'center',
+        stroke: '#000000',
+        strokeThickness: 8
+      }
+    );
+    announcementText.setOrigin(0.5);
+    announcementText.setDepth(10000);
+    announcementText.setAlpha(0);
+
+    // v3.3: Add to active announcements list
+    this.activeAnnouncements.push(announcementText);
+
+    // Animate in
+    this.tweens.add({
+      targets: announcementText,
+      alpha: 1,
+      scale: { from: 0.5, to: 1.2 },
+      duration: 500,
+      ease: 'Back.easeOut',
+      onComplete: () => {
+        // Hold for 1.5 seconds, then fade out
+        this.tweens.add({
+          targets: announcementText,
+          alpha: 0,
+          scale: 1.3,
+          duration: 800,
+          delay: 1500,
+          ease: 'Cubic.easeIn',
+          onComplete: () => {
+            // v3.3: Remove from active announcements
+            const index = this.activeAnnouncements.indexOf(announcementText);
+            if (index > -1) {
+              this.activeAnnouncements.splice(index, 1);
+            }
+            announcementText.destroy();
+
+            // v3.3: Move remaining announcements up
+            this.repositionActiveAnnouncements();
+          }
+        });
+      }
+    });
+  }
+
+  // v3.3: Reposition remaining announcements when one is removed
+  private repositionActiveAnnouncements(): void {
+    const height = this.cameras.main.height;
+    const baseY = height / 2;
+    const spacing = 150;
+
+    this.activeAnnouncements.forEach((announcement, index) => {
+      const targetY = baseY + (index * spacing);
+
+      // Smoothly move to new position
+      this.tweens.add({
+        targets: announcement,
+        y: targetY,
+        duration: 300,
+        ease: 'Cubic.easeOut'
+      });
+    });
+  }
+
+  private applyMarketPhaseEffects(): void {
+    const phase = MARKET_PHASES[this.currentMarketPhase];
+
+    if (!phase) {
+      console.warn(`Unknown market phase: ${this.currentMarketPhase}`);
+      return;
+    }
+
+    console.log(`⚙️ Applying phase effects for ${phase.name}:`);
+    console.log(`  - Coin Spawn: ×${phase.coinSpawnModifier}`);
+    console.log(`  - Enemy Spawn: ×${phase.enemySpawnModifier}`);
+    console.log(`  - Speed: ×${phase.speedModifier}`);
+
+    // Apply speed modifier
+    const baseSpeed = 300;
+    this.coinSpeed = baseSpeed * phase.speedModifier;
+    this.enemySpeed = (250 * phase.speedModifier);
+
+    // Update coin spawn rate
+    if (this.coinSpawnTimer) {
+      this.coinSpawnTimer.remove();
+    }
+    const baseCoinDelay = 1500;
+    const newCoinDelay = baseCoinDelay / phase.coinSpawnModifier;
+    this.coinSpawnTimer = this.time.addEvent({
+      delay: newCoinDelay,
+      callback: this.spawnCoin,
+      callbackScope: this,
+      loop: true
+    });
+
+    // Update enemy spawn rate
+    if (this.enemySpawnTimer) {
+      this.enemySpawnTimer.remove();
+    }
+    const currentPhaseConfig = GameConfig.phases[this.currentPhase - 1];
+    if (currentPhaseConfig) {
+      const baseEnemyDelay = currentPhaseConfig.spawnRate;
+      const newEnemyDelay = baseEnemyDelay / phase.enemySpawnModifier;
+      this.enemySpawnTimer = this.time.addEvent({
+        delay: newEnemyDelay,
+        callback: this.spawnEnemy,
+        callbackScope: this,
+        loop: true
+      });
+    }
+
+    // Apply background filter if specified
+    if (phase.backgroundFilter !== undefined && this.backgroundImage) {
+      this.backgroundImage.setTint(phase.backgroundFilter);
+    } else if (this.backgroundImage) {
+      this.backgroundImage.clearTint();
+    }
+  }
+
+  private updateTickerForPhase(): void {
+    const phase = MARKET_PHASES[this.currentMarketPhase];
+
+    if (!phase || !this.newsTickerBg || !this.newsTickerText) {
+      return;
+    }
+
+    // Update ticker background color
+    this.newsTickerBg.clear();
+    this.newsTickerBg.fillStyle(phase.tickerColor, 0.95);
+    this.newsTickerBg.fillRect(0, 0, this.cameras.main.width, 28);
+
+    // Update ticker message
+    const tickerMessage = `  ${phase.tickerMessage}  •  `.repeat(10);
+    this.newsTickerText.setText(tickerMessage);
+
+    console.log(`📰 Ticker updated: ${phase.tickerMessage}`);
+  }
+
+  // ========== v3.4: SPEED & DIFFICULTY SCALING SYSTEM ==========
+
+  private applySpeedScaling(): void {
+    // v3.4: Increase speed by 3% every 20 seconds, max 2.5x
+    this.speedMultiplier = Math.min(this.speedMultiplier * 1.03, 2.5);
+
+    console.log(`⚡ Speed Scaling Applied: ×${this.speedMultiplier.toFixed(2)}`);
+
+    // Apply to coin and enemy speeds
+    const phase = MARKET_PHASES[this.currentMarketPhase];
+    if (phase) {
+      const baseSpeed = 300;
+      this.coinSpeed = baseSpeed * phase.speedModifier * this.speedMultiplier;
+      this.enemySpeed = 250 * phase.speedModifier * this.speedMultiplier;
+    }
+
+    // v3.4: Reduce coin spawn rate by 1% every 20 seconds (min 0.5x)
+    this.coinSpawnRateMultiplier = Math.max(this.coinSpawnRateMultiplier * 0.99, 0.5);
+
+    // Update coin spawn timer
+    if (this.coinSpawnTimer && phase) {
+      this.coinSpawnTimer.remove();
+      const baseCoinDelay = 1500;
+      const newCoinDelay = (baseCoinDelay / phase.coinSpawnModifier) / this.coinSpawnRateMultiplier;
+      this.coinSpawnTimer = this.time.addEvent({
+        delay: newCoinDelay,
+        callback: this.spawnCoin,
+        callbackScope: this,
+        loop: true
+      });
+      console.log(`  - Coin Spawn Rate: ×${this.coinSpawnRateMultiplier.toFixed(2)} (delay: ${newCoinDelay.toFixed(0)}ms)`);
+    }
+  }
+
+  private applyDifficultyScaling(): void {
+    // v3.4: Increase enemy spawn rate by 4% every 15 seconds
+    this.enemySpawnRateMultiplier *= 1.04;
+
+    console.log(`💀 Difficulty Scaling Applied: ×${this.enemySpawnRateMultiplier.toFixed(2)}`);
+
+    // Update enemy spawn timer
+    const phase = MARKET_PHASES[this.currentMarketPhase];
+    const currentPhaseConfig = GameConfig.phases[this.currentPhase - 1];
+
+    if (this.enemySpawnTimer && phase && currentPhaseConfig) {
+      this.enemySpawnTimer.remove();
+      const baseEnemyDelay = currentPhaseConfig.spawnRate;
+      const newEnemyDelay = (baseEnemyDelay / phase.enemySpawnModifier) / this.enemySpawnRateMultiplier;
+      this.enemySpawnTimer = this.time.addEvent({
+        delay: newEnemyDelay,
+        callback: this.spawnEnemy,
+        callbackScope: this,
+        loop: true
+      });
+      console.log(`  - Enemy Spawn Rate: ×${this.enemySpawnRateMultiplier.toFixed(2)} (delay: ${newEnemyDelay.toFixed(0)}ms)`);
+    }
+  }
+
+  // ========== v3.5: MICRO-EVENTS SYSTEM ==========
+
+  private checkMicroEvents(): void {
+    // Don't trigger events if one is already active
+    if (this.microEventActive) return;
+
+    // Random chance to trigger an event
+    const randomRoll = Phaser.Math.Between(0, 100);
+    let cumulativeProbability = 0;
+
+    for (const event of MICRO_EVENTS) {
+      cumulativeProbability += event.probability;
+      if (randomRoll <= cumulativeProbability) {
+        this.triggerMicroEvent(event);
+        return;
+      }
+    }
+  }
+
+  private triggerMicroEvent(event: MicroEvent): void {
+    console.log(`🎉 Micro-Event Triggered: ${event.name}`);
+
+    this.microEventActive = true;
+    this.activeMicroEvent = event;
+
+    // Show notification
+    this.showMicroEventNotification(event);
+
+    // Apply event effect
+    this.applyMicroEventEffect(event);
+
+    // End event after duration
+    this.microEventEndTimer = this.time.delayedCall(event.duration, () => {
+      this.endMicroEvent(event);
+    });
+  }
+
+  private showMicroEventNotification(event: MicroEvent): void {
+    const width = this.cameras.main.width;
+    const height = this.cameras.main.height;
+
+    // Create notification at bottom-center (unten zentral)
+    const startY = height - 80;
+    const targetY = height - 120;
+
+    this.microEventNotification = this.add.text(
+      width / 2,
+      startY,
+      event.message,
+      {
+        fontSize: '36px',
+        color: '#FFD700',
+        fontFamily: 'Arial',
+        fontStyle: 'bold',
+        align: 'center',
+        stroke: '#000000',
+        strokeThickness: 8,
+        backgroundColor: '#000000CC',
+        padding: { x: 30, y: 15 }
+      }
+    );
+    this.microEventNotification.setOrigin(0.5);
+    this.microEventNotification.setDepth(9999);
+    this.microEventNotification.setAlpha(0);
+
+    // Animate in (from bottom, slightly up)
+    this.tweens.add({
+      targets: this.microEventNotification,
+      alpha: 1,
+      y: targetY,
+      duration: 400,
+      ease: 'Back.easeOut'
+    });
+  }
+
+  private applyMicroEventEffect(event: MicroEvent): void {
+    switch (event.effect) {
+      case 'coinSpawn3x':
+        // Triple coin spawn rate
+        if (this.coinSpawnTimer) {
+          this.coinSpawnTimer.remove();
+          const phase = MARKET_PHASES[this.currentMarketPhase];
+          const baseCoinDelay = 1500;
+          const newDelay = (baseCoinDelay / (phase?.coinSpawnModifier || 1)) / 3;
+          this.coinSpawnTimer = this.time.addEvent({
+            delay: newDelay,
+            callback: this.spawnCoin,
+            callbackScope: this,
+            loop: true
+          });
+          console.log(`  - Coin spawn rate ×3 (delay: ${newDelay}ms)`);
+        }
+        break;
+
+      case 'enemyPause':
+        // Pause enemy spawning
+        if (this.enemySpawnTimer) {
+          this.enemySpawnTimer.paused = true;
+          console.log(`  - Enemies paused for ${event.duration}ms`);
+        }
+        break;
+
+      case 'coinRain':
+        // Spawn multiple coins at once
+        for (let i = 0; i < 10; i++) {
+          this.time.delayedCall(i * 200, () => {
+            this.spawnCoin();
+          });
+        }
+        console.log(`  - Coin rain: 10 coins spawning`);
+        break;
+
+      case 'xpDouble':
+        // XP multiplier handled in mission system (TODO)
+        console.log(`  - XP ×2 for ${event.duration}ms`);
+        break;
+
+      case 'guaranteedFeather':
+        // Spawn gold feather after delay (only if not in cooldown)
+        this.time.delayedCall(3000, () => {
+          if (!this.valorModeActive && !this.valorModeCooldown) {
+            const y = Phaser.Math.Between(100, this.cameras.main.height - 100);
+            this.spawnGoldFeather(y);
+            console.log(`  - Gold Feather spawned from Micro-Event!`);
+          } else {
+            console.log(`  - Gold Feather spawn blocked (VALOR MODE active or cooldown)`);
+          }
+        });
+        break;
+    }
+  }
+
+  private endMicroEvent(event: MicroEvent): void {
+    console.log(`🏁 Micro-Event Ended: ${event.name}`);
+
+    // Restore effects
+    switch (event.effect) {
+      case 'coinSpawn3x':
+        // Restore normal coin spawn rate
+        if (this.coinSpawnTimer) {
+          this.coinSpawnTimer.remove();
+          const phase = MARKET_PHASES[this.currentMarketPhase];
+          const baseCoinDelay = 1500;
+          const newDelay = (baseCoinDelay / (phase?.coinSpawnModifier || 1)) / this.coinSpawnRateMultiplier;
+          this.coinSpawnTimer = this.time.addEvent({
+            delay: newDelay,
+            callback: this.spawnCoin,
+            callbackScope: this,
+            loop: true
+          });
+        }
+        break;
+
+      case 'enemyPause':
+        // Resume enemy spawning
+        if (this.enemySpawnTimer) {
+          this.enemySpawnTimer.paused = false;
+        }
+        break;
+    }
+
+    // Fade out notification (nach unten)
+    if (this.microEventNotification) {
+      const height = this.cameras.main.height;
+      this.tweens.add({
+        targets: this.microEventNotification,
+        alpha: 0,
+        y: height - 80,
+        duration: 300,
+        ease: 'Cubic.easeIn',
+        onComplete: () => {
+          this.microEventNotification?.destroy();
+          this.microEventNotification = undefined;
+        }
+      });
+    }
+
+    this.microEventActive = false;
+    this.activeMicroEvent = undefined;
   }
 }
