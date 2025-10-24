@@ -3,6 +3,8 @@ import { GameConfig } from '../config/GameConfig';
 import { Eagle } from '../sprites/Eagle';
 import { MissionManager } from '../managers/MissionManager';
 import { MARKET_PHASES, MICRO_EVENTS, determinePhase, MarketPhase, MicroEvent } from '../config/MarketPhasesConfig';
+import { WeaponManagerV37 } from '../managers/WeaponManagerV37';
+import { BossManagerV37 } from '../managers/BossManagerV37';
 
 export class GameScene extends Phaser.Scene {
   private eagle!: Eagle;
@@ -145,6 +147,12 @@ export class GameScene extends Phaser.Scene {
   private missionManager!: MissionManager;
   private missionUI: Phaser.GameObjects.Container[] = [];
 
+  // v3.7: Weapon & Boss System
+  private weaponManager!: WeaponManagerV37;
+  private bossManager!: BossManagerV37;
+  private weaponUI?: Phaser.GameObjects.Container;
+  private ammoText?: Phaser.GameObjects.Text;
+
   // v3.2: XP & Progression UI
   private levelText?: Phaser.GameObjects.Text;
   private xpBarBg?: Phaser.GameObjects.Graphics;
@@ -273,6 +281,10 @@ export class GameScene extends Phaser.Scene {
     // v3.2: Initialize Mission System
     this.missionManager = MissionManager.getInstance();
 
+    // v3.7: Initialize Weapon & Boss Systems
+    this.weaponManager = new WeaponManagerV37(this);
+    this.bossManager = new BossManagerV37(this);
+
     // Pause physics immediately - will resume after countdown
     this.physics.pause();
 
@@ -336,6 +348,9 @@ export class GameScene extends Phaser.Scene {
 
     // v3.2: MISSION SYSTEM - Bottom right
     this.createMissionUI();
+
+    // v3.7: WEAPON UI - Bottom center
+    this.createWeaponUI();
 
     // ========== COIN COUNTERS - SECOND ROW (BLUE BAR) ==========
     const coinCounterY = 105;
@@ -539,6 +554,54 @@ export class GameScene extends Phaser.Scene {
     this.input.keyboard?.on('keydown-ESC', () => {
       this.cleanupAndExit();
     });
+
+    // v3.7: Weapon Controls
+    // SHIFT - Fire weapon (or double-tap for rapid fire)
+    this.input.keyboard?.on('keydown-SHIFT', () => {
+      if (!this.hasStarted || this.isPaused || this.controlBlocked || !this.eagle) return;
+
+      // Get eagle position from its sprite
+      const eagleX = this.eagle.x || 300;
+      const eagleY = this.eagle.y || this.cameras.main.height / 2;
+
+      const result = this.weaponManager.handleShiftPress(eagleX, eagleY);
+
+      if (result.cost > 0) {
+        // Deduct coins
+        this.deductCoinsForWeapon(result.coinType, result.cost);
+      }
+    });
+
+    // TAB - Cycle weapons
+    this.input.keyboard?.on('keydown-TAB', (event: KeyboardEvent) => {
+      event.preventDefault(); // Prevent browser tab switching
+      if (!this.hasStarted || this.isPaused) return;
+
+      this.weaponManager.cycleWeapon();
+      this.updateWeaponUI();
+    });
+
+    // Arrow UP - Aim up
+    this.input.keyboard?.on('keydown-UP', () => {
+      if (!this.hasStarted || this.isPaused) return;
+      if (this.input.keyboard?.checkDown(this.input.keyboard.addKey('SHIFT'))) {
+        this.weaponManager.adjustAim(-1);
+      }
+    });
+
+    // Arrow DOWN - Aim down
+    this.input.keyboard?.on('keydown-DOWN', () => {
+      if (!this.hasStarted || this.isPaused) return;
+      if (this.input.keyboard?.checkDown(this.input.keyboard.addKey('SHIFT'))) {
+        this.weaponManager.adjustAim(1);
+      }
+    });
+
+    // R - Reload (hold 1s to convert coins to ammo)
+    // TODO: Implement reload system
+
+    // U - Ultimate: Buyback Storm
+    // TODO: Implement ultimate ability
   }
 
   private showTaglineInGame(): void {
@@ -1942,6 +2005,59 @@ export class GameScene extends Phaser.Scene {
 
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
+
+    // v3.7: Update Weapon & Boss Systems
+    const delta = this.game.loop.delta;
+    this.weaponManager.update(delta);
+    this.bossManager.update(delta);
+
+    // v3.7: Update weapon manager with current coin counts
+    this.weaponManager.updateCoinCounts(
+      this.bonkCount,
+      this.aolCount,
+      this.burgerCount,
+      this.valorCount
+    );
+
+    // v3.7: Check projectile collisions with enemies
+    const hits = this.weaponManager.checkCollisions(this.enemies);
+    for (const hit of hits) {
+      // Award coins back (1.5× return)
+      const returnAmount = this.weaponManager.onProjectileHit(hit.projectile);
+
+      // Add coins back
+      switch (hit.projectile.coinType) {
+        case 'BONK':
+          this.bonkCount += returnAmount;
+          if (this.bonkCountText) this.bonkCountText.setText(`${this.bonkCount}`);
+          break;
+        case 'AOL':
+          this.aolCount += returnAmount;
+          if (this.aolCountText) this.aolCountText.setText(`${this.aolCount}`);
+          break;
+        case 'BURGER':
+          this.burgerCount += returnAmount;
+          if (this.burgerCountDisplayText) this.burgerCountDisplayText.setText(`${this.burgerCount}`);
+          break;
+      }
+
+      // Destroy enemy
+      hit.enemy.destroy();
+      const index = this.enemies.indexOf(hit.enemy);
+      if (index > -1) {
+        this.enemies.splice(index, 1);
+      }
+
+      // Award points
+      this.score += 50;
+      this.scoreText.setText(`SCORE: ${this.score}`);
+
+      // Play explosion sound
+      this.sound.play('explosion-312361', { volume: 0.5 });
+
+      // Destroy projectile
+      this.weaponManager.destroyProjectile(hit.projectile);
+    }
 
     // v3.2: Track time for missions
     this.missionManager.onTimeUpdate(this.gameTime);
@@ -3988,5 +4104,82 @@ export class GameScene extends Phaser.Scene {
 
     this.microEventActive = false;
     this.activeMicroEvent = undefined;
+  }
+
+  // ========== v3.7: WEAPON SYSTEM HELPERS ==========
+
+  private deductCoinsForWeapon(coinType: string, amount: number): void {
+    switch (coinType) {
+      case 'BONK':
+        this.bonkCount = Math.max(0, this.bonkCount - amount);
+        if (this.bonkCountText) {
+          this.bonkCountText.setText(`${this.bonkCount}`);
+        }
+        break;
+      case 'AOL':
+        this.aolCount = Math.max(0, this.aolCount - amount);
+        if (this.aolCountText) {
+          this.aolCountText.setText(`${this.aolCount}`);
+        }
+        break;
+      case 'BURGER':
+        this.burgerCount = Math.max(0, this.burgerCount - amount);
+        if (this.burgerCountDisplayText) {
+          this.burgerCountDisplayText.setText(`${this.burgerCount}`);
+        }
+        break;
+    }
+
+    // Update weapon manager with new coin counts
+    this.weaponManager.updateCoinCounts(
+      this.bonkCount,
+      this.aolCount,
+      this.burgerCount,
+      this.valorCount
+    );
+  }
+
+  private updateWeaponUI(): void {
+    const weapon = this.weaponManager.getCurrentWeapon();
+
+    if (this.ammoText) {
+      let ammoDisplay = '';
+      switch (weapon.coinType) {
+        case 'BONK':
+          ammoDisplay = `${weapon.icon} ${weapon.name} | ${weapon.costPerShot} BONK | Ammo: ${this.bonkCount}`;
+          break;
+        case 'AOL':
+          ammoDisplay = `${weapon.icon} ${weapon.name} | ${weapon.costPerShot} AOL | Ammo: ${this.aolCount}`;
+          break;
+        case 'BURGER':
+          ammoDisplay = `${weapon.icon} ${weapon.name} | ${weapon.costPerShot} BURGER | Ammo: ${this.burgerCount}`;
+          break;
+        case 'VALOR':
+          ammoDisplay = `${weapon.icon} ${weapon.name} | FREE | Valor Mode Only`;
+          break;
+      }
+
+      this.ammoText.setText(ammoDisplay);
+    }
+  }
+
+  private createWeaponUI(): void {
+    const width = this.cameras.main.width;
+    const height = this.cameras.main.height;
+
+    // Weapon display at bottom center
+    const weapon = this.weaponManager.getCurrentWeapon();
+
+    this.ammoText = this.add.text(width / 2, height - 50, '', {
+      fontSize: '24px',
+      color: '#FFFFFF',
+      fontFamily: 'Arial',
+      fontStyle: 'bold',
+      stroke: '#000000',
+      strokeThickness: 4
+    }).setOrigin(0.5);
+    this.ammoText.setDepth(9999);
+
+    this.updateWeaponUI();
   }
 }
