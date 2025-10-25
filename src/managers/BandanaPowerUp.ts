@@ -189,35 +189,34 @@ export class BandanaPowerUp {
 
   private createHUDOverlay(): void {
     const width = this.scene.cameras.main.width;
+    const height = this.scene.cameras.main.height;
 
-    this.hudOverlay = this.scene.add.container(width / 2, 120);
+    // Position at bottom center (like other power-ups)
+    this.hudOverlay = this.scene.add.container(width / 2 - 200, height - 65);
     this.hudOverlay.setDepth(10000);
 
-    // Background
+    // Background - Navy Blue like other power-ups
     const bg = this.scene.add.graphics();
-    bg.fillStyle(0xFF0000, 0.85);
-    bg.fillRoundedRect(-200, -30, 400, 60, 10);
-    bg.lineStyle(3, 0xFFFFFF, 1);
-    bg.strokeRoundedRect(-200, -30, 400, 60, 10);
+    bg.fillStyle(0x002868, 0.8); // Navy blue transparent
+    bg.fillRoundedRect(0, -35, 180, 70, 8);
+    bg.lineStyle(2, 0xFFD700, 1); // Gold border
+    bg.strokeRoundedRect(0, -35, 180, 70, 8);
 
-    // Text
-    const text = this.scene.add.text(0, 0, '🧢 BANDANA MODE ACTIVE – SPEED × 2.5', {
-      fontSize: '24px',
+    // Icon
+    const icon = this.scene.add.text(40, -10, '🧢', {
+      fontSize: '48px'
+    }).setOrigin(0.5);
+
+    // Timer text (2 lines like others)
+    const timerText = this.scene.add.text(90, -10, 'BANDANA\n5.0s', {
+      fontSize: '18px',
       color: '#FFFFFF',
       fontFamily: 'Arial',
       fontStyle: 'bold',
       align: 'center'
-    }).setOrigin(0.5);
+    }).setOrigin(0, 0.5);
 
-    // Timer text (will be updated)
-    const timerText = this.scene.add.text(0, -50, '⏱ 5.0 s', {
-      fontSize: '20px',
-      color: '#FFD700',
-      fontFamily: 'Arial',
-      fontStyle: 'bold'
-    }).setOrigin(0.5);
-
-    this.hudOverlay.add([bg, text, timerText]);
+    this.hudOverlay.add([bg, icon, timerText]);
     (this.hudOverlay as any).timerText = timerText;
   }
 
@@ -229,7 +228,13 @@ export class BandanaPowerUp {
       const remaining = this.bandanaTimer.getRemaining() / 1000;
       const timerText = (this.hudOverlay as any).timerText as Phaser.GameObjects.Text;
       if (timerText) {
-        timerText.setText(`⏱ ${remaining.toFixed(1)} s`);
+        timerText.setText(`BANDANA\n${remaining.toFixed(1)}s`);
+
+        // Blink warning when < 3 seconds
+        if (remaining <= 3) {
+          const blink = Math.floor(remaining * 2) % 2 === 0;
+          timerText.setColor(blink ? '#FF0000' : '#FFFFFF');
+        }
       }
     }
 

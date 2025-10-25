@@ -4554,37 +4554,57 @@ export class GameScene extends Phaser.Scene {
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
 
-    // Create notification at bottom-center (unten zentral)
-    const startY = height - 80;
-    const targetY = height - 120;
+    // Create notification at bottom-center
+    const startY = height - 150;
+    const targetY = height - 180;
+
+    // Background box - Navy Blue with Gold border (patriotic)
+    const bg = this.add.graphics();
+    bg.fillStyle(0x002868, 0.9); // Navy blue
+    bg.fillRoundedRect(width / 2 - 300, targetY - 35, 600, 70, 12);
+    bg.lineStyle(4, 0xFFD700, 1); // Gold border
+    bg.strokeRoundedRect(width / 2 - 300, targetY - 35, 600, 70, 12);
+    bg.setDepth(9998);
+    bg.setAlpha(0);
 
     this.microEventNotification = this.add.text(
       width / 2,
-      startY,
+      targetY,
       event.message,
       {
-        fontSize: '36px',
-        color: '#FFD700',
+        fontSize: '32px',
+        color: '#FFFFFF', // White text
         fontFamily: 'Arial',
         fontStyle: 'bold',
         align: 'center',
         stroke: '#000000',
-        strokeThickness: 8,
-        backgroundColor: '#000000CC',
-        padding: { x: 30, y: 15 }
+        strokeThickness: 4
       }
     );
     this.microEventNotification.setOrigin(0.5);
     this.microEventNotification.setDepth(9999);
     this.microEventNotification.setAlpha(0);
 
-    // Animate in (from bottom, slightly up)
+    // Animate in together
     this.tweens.add({
-      targets: this.microEventNotification,
+      targets: [this.microEventNotification, bg],
       alpha: 1,
-      y: targetY,
       duration: 400,
-      ease: 'Back.easeOut'
+      ease: 'Back.easeOut',
+      onComplete: () => {
+        // Fade out after 3 seconds
+        this.time.delayedCall(3000, () => {
+          this.tweens.add({
+            targets: [this.microEventNotification, bg],
+            alpha: 0,
+            duration: 500,
+            onComplete: () => {
+              this.microEventNotification?.destroy();
+              bg.destroy();
+            }
+          });
+        });
+      }
     });
   }
 
