@@ -311,6 +311,9 @@ export class GameScene extends Phaser.Scene {
     // Pause physics immediately - will resume after countdown
     this.physics.pause();
 
+    // Launch UIScene as overlay
+    this.scene.launch('UIScene');
+
     // v3.2: NEWS TICKER - At very top (BREAKING)
     this.createNewsTicker();
 
@@ -368,11 +371,19 @@ export class GameScene extends Phaser.Scene {
     this.burgerCounterText.setOrigin(0, 0.5);
     this.burgerCounterText.setDepth(1000);
 
-    // v3.2: XP & LEVEL - Top right corner
-    this.createXPDisplay();
+    // v3.2: XP & LEVEL - Now handled by UIScene
+    // Send initial XP data to UIScene
+    const progress = this.missionManager.getProgress();
+    const uiScene = this.scene.get('UIScene') as any;
+    if (uiScene && uiScene.updateXP) {
+      uiScene.updateXP(progress.level, progress.xp, progress.xpToNextLevel);
+    }
 
-    // v3.2: MISSION SYSTEM - Bottom right
-    this.createMissionUI();
+    // v3.2: MISSION SYSTEM - Now handled by UIScene
+    // Send initial missions to UIScene
+    if (uiScene && uiScene.updateMissions) {
+      uiScene.updateMissions(this.missionManager.getDailyMissions());
+    }
 
     // v3.7: Weapon UI will be created when weapon is collected
     // (Don't create it at start)
@@ -2176,6 +2187,9 @@ export class GameScene extends Phaser.Scene {
     this.weaponManager.update(delta);
     this.bossManager.update(delta);
     this.bandanaPowerUp.update(); // Bandana effects, magnet, trail
+
+    // v3.7: Update ticker positions for continuous flow around perimeter
+    this.updateTickerPositions(delta);
 
     // v3.7: Update weapon UI energy bar
     if (this.weaponManager.hasWeapon()) {
@@ -3992,200 +4006,44 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  // v3.2: MISSION SYSTEM - Create mission UI display (bottom right, stacked)
-  private createMissionUI(): void {
-    // Clear existing UI
-    this.missionUI.forEach(ui => ui.destroy());
-    this.missionUI = [];
-
-    const width = this.cameras.main.width;
-    const height = this.cameras.main.height;
-    const dailyMissions = this.missionManager.getDailyMissions();
-
-    // Position: Bottom right, stacked
-    const boxWidth = 340;
-    const boxHeight = 55;
-    const startX = width - boxWidth - 15;
-    const startY = height - 250;
-    const spacing = boxHeight + 8;
-
-    dailyMissions.forEach((mission, index) => {
-      const yPos = startY + (index * spacing);
-      const container = this.add.container(startX, yPos);
-
-      // Background - dark semi-transparent
-      const bg = this.add.graphics();
-      bg.fillStyle(0x424242, 0.85);
-      bg.fillRoundedRect(0, 0, boxWidth, boxHeight, 8);
-      bg.setDepth(1499);
-
-      // Mission emoji and title
-      const title = this.add.text(12, 12, `${mission.emoji} ${mission.title}`, {
-        fontSize: '16px',
-        color: '#FFFFFF',
-        fontFamily: 'Arial',
-        fontStyle: 'bold'
-      });
-      title.setDepth(1500);
-
-      // Progress text
-      const progressText = this.add.text(12, 32, `${mission.progress}/${mission.target}`, {
-        fontSize: '14px',
-        color: '#AAAAAA',
-        fontFamily: 'Arial'
-      });
-      progressText.setDepth(1500);
-
-      // Progress bar background
-      const barBg = this.add.graphics();
-      barBg.fillStyle(0x212121, 0.9);
-      barBg.fillRect(160, 20, 165, 8);
-      barBg.setDepth(1499);
-
-      // Progress bar fill
-      const barFill = this.add.graphics();
-      const fillWidth = Math.min((mission.progress / mission.target) * 165, 165);
-      const color = mission.completed ? 0xFFD700 : 0x4CAF50;
-      barFill.fillStyle(color, 1);
-      barFill.fillRect(160, 20, fillWidth, 8);
-      barFill.setDepth(1500);
-
-      container.add([bg, title, progressText, barBg, barFill]);
-      container.setDepth(1500);
-      container.setData('mission', mission);
-      container.setData('progressText', progressText);
-      container.setData('barFill', barFill);
-
-      this.missionUI.push(container);
-    });
-  }
-
-  // v3.2: Update mission UI during gameplay
+  // v3.2: Update mission UI - now sends to UIScene
   private updateMissionUI(): void {
     const dailyMissions = this.missionManager.getDailyMissions();
+    const uiScene = this.scene.get('UIScene') as any;
 
-    this.missionUI.forEach((container, index) => {
-      const mission = dailyMissions[index];
-      if (!mission) return;
-
-      const progressText = container.getData('progressText') as Phaser.GameObjects.Text;
-      const barFill = container.getData('barFill') as Phaser.GameObjects.Graphics;
-
-      if (progressText) {
-        progressText.setText(`${mission.progress}/${mission.target}`);
-      }
-
-      if (barFill) {
-        barFill.clear();
-        const fillWidth = Math.min((mission.progress / mission.target) * 300, 300);
-        const color = mission.completed ? 0xFFD700 : 0x00FF00;
-        barFill.fillStyle(color, 1);
-        barFill.fillRect(10, 52, fillWidth, 10);
-      }
-
-      // Show completion animation
-      if (mission.completed && !container.getData('animated')) {
-        container.setData('animated', true);
-        this.sound.play('missioncleared', { volume: 0.8 });
-
-        this.tweens.add({
-          targets: container,
-          scaleX: 1.1,
-          scaleY: 1.1,
-          duration: 200,
-          yoyo: true,
-          repeat: 2,
-          ease: 'Sine.easeInOut'
-        });
-      }
-    });
+    if (uiScene && uiScene.updateMissions) {
+      uiScene.updateMissions(dailyMissions);
+    }
 
     // Also update XP display
     this.updateXPDisplay();
   }
 
-  // v3.2: XP & PROGRESSION - Create XP/Level display (top right corner)
-  private createXPDisplay(): void {
-    const progress = this.missionManager.getProgress();
-    const width = this.cameras.main.width;
-    const tierData = this.missionManager.getCurrentTierData();
-    const tierName = tierData ? tierData.name : 'Rookie';
-
-    // Position: Top right corner
-    const xpX = width - 180;
-    const xpY = 150;
-
-    // Background
-    const bg = this.add.graphics();
-    bg.fillStyle(0x424242, 0.8);
-    bg.fillRoundedRect(xpX - 10, xpY - 25, 200, 35, 8);
-    bg.setDepth(1499);
-
-    // Level text with tier name
-    this.levelText = this.add.text(xpX, xpY - 15, `LVL ${progress.level} - ${tierName}`, {
-      fontSize: '14px',
-      color: '#FFFFFF',
-      fontFamily: 'Arial',
-      fontStyle: 'bold'
-    }).setOrigin(0, 0);
-    this.levelText.setDepth(1500);
-
-    // XP Bar background
-    this.xpBarBg = this.add.graphics();
-    this.xpBarBg.fillStyle(0x212121, 0.9);
-    this.xpBarBg.fillRect(xpX, xpY, 180, 8);
-    this.xpBarBg.setDepth(1499);
-
-    // XP Bar fill
-    this.xpBarFill = this.add.graphics();
-    const fillWidth = (progress.xp / progress.xpToNextLevel) * 180;
-    this.xpBarFill.fillStyle(0x4CAF50, 1); // Green
-    this.xpBarFill.fillRect(xpX, xpY, fillWidth, 8);
-    this.xpBarFill.setDepth(1500);
-  }
-
-  // v3.2: Update XP display during gameplay
+  // v3.2: Update XP display - now sends to UIScene
   private updateXPDisplay(): void {
     const progress = this.missionManager.getProgress();
-    const width = this.cameras.main.width;
-    const tierData = this.missionManager.getCurrentTierData();
-    const tierName = tierData ? tierData.name : 'Rookie';
-    const xpX = width - 180;
-    const xpY = 150;
-
-    // Update level text
-    if (this.levelText) {
-      this.levelText.setText(`LVL ${progress.level} - ${tierName}`);
-    }
-
-    // Update XP bar
-    if (this.xpBarFill) {
-      this.xpBarFill.clear();
-      const fillWidth = (progress.xp / progress.xpToNextLevel) * 180;
-      this.xpBarFill.fillStyle(0x4CAF50, 1);
-      this.xpBarFill.fillRect(xpX, xpY, fillWidth, 8);
+    const uiScene = this.scene.get('UIScene') as any;
+    if (uiScene && uiScene.updateXP) {
+      uiScene.updateXP(progress.level, progress.xp, progress.xpToNextLevel);
     }
   }
 
-  // v3.7: NEWS TICKER FRAME - Create full screen frame (top, left, right, bottom)
+  // v3.7: NEWS TICKER FRAME - Simplified continuous ticker on all 4 sides
   private createNewsTicker(): void {
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
-    const frameThickness = 28; // Thickness of the frame bars
+    const frameThickness = 28;
 
-    // Create frame graphics - Deep red background (will change with market phase)
+    // Create frame graphics
     this.newsTickerBg = this.add.graphics();
-    this.newsTickerBg.fillStyle(0xC62828, 0.95); // Deep red
-
-    // Draw frame: TOP, LEFT, RIGHT, BOTTOM
-    this.newsTickerBg.fillRect(0, 0, width, frameThickness); // Top bar
-    this.newsTickerBg.fillRect(0, 0, frameThickness, height); // Left bar
-    this.newsTickerBg.fillRect(width - frameThickness, 0, frameThickness, height); // Right bar
-    this.newsTickerBg.fillRect(0, height - frameThickness, width, frameThickness); // Bottom bar
-
+    this.newsTickerBg.fillStyle(0xC62828, 0.95);
+    this.newsTickerBg.fillRect(0, 0, width, frameThickness);
+    this.newsTickerBg.fillRect(0, 0, frameThickness, height);
+    this.newsTickerBg.fillRect(width - frameThickness, 0, frameThickness, height);
+    this.newsTickerBg.fillRect(0, height - frameThickness, width, frameThickness);
     this.newsTickerBg.setDepth(2000);
 
-    // BREAKING: label (static, top-left corner)
+    // BREAKING label
     const breakingLabel = this.add.text(frameThickness + 15, 14, '🚨 BREAKING:', {
       fontSize: '16px',
       color: '#FFFFFF',
@@ -4194,9 +4052,8 @@ export class GameScene extends Phaser.Scene {
     }).setOrigin(0, 0.5);
     breakingLabel.setDepth(2002);
 
-    // Create repeating ticker message
     const tickerMessage = ' Gary sues another meme coin!  •  $BONK hits new ATH  •  Whales accumulating  •  Bear market cancelled  •  Diamond hands prevail  •  ';
-    const repeatedMessage = tickerMessage.repeat(10);
+    const repeatedMessage = tickerMessage.repeat(20);
 
     const tickerStyle = {
       fontSize: '15px',
@@ -4205,74 +4062,72 @@ export class GameScene extends Phaser.Scene {
       fontStyle: 'normal'
     };
 
-    const edgeGap = 10; // 10px gap before frame edge
+    const edgeGap = 10;
+    const topWidth = width - (frameThickness * 2) - (edgeGap * 2);
+    const sideHeight = height - (frameThickness * 2) - (edgeGap * 2);
 
-    // TOP ticker (horizontal, left to right)
-    // Visible area: from frameThickness to width - frameThickness - edgeGap
+    // TOP ticker (horizontal, right to left)
     this.newsTickerText = this.add.text(width, 14, repeatedMessage, tickerStyle);
     this.newsTickerText.setOrigin(0, 0.5);
     this.newsTickerText.setDepth(2001);
-    // Clip to visible area of top bar
     const topMask = this.add.graphics();
-    topMask.fillRect(frameThickness + edgeGap, 0, width - (frameThickness * 2) - (edgeGap * 2), frameThickness);
+    topMask.fillRect(frameThickness + edgeGap, 0, topWidth, frameThickness);
     this.newsTickerText.setMask(topMask.createGeometryMask());
 
-    // LEFT ticker (vertical, top to bottom)
-    // Visible area: from frameThickness + 3px to height - frameThickness - edgeGap
-    this.newsTickerTextLeft = this.add.text(14, -500, repeatedMessage, tickerStyle);
+    // LEFT ticker (vertical, top to bottom) - centered with padding from edge
+    const textPadding = 6; // Padding from screen edge for readability
+    const leftCenterX = frameThickness / 2 + textPadding; // Slightly more to the right
+    this.newsTickerTextLeft = this.add.text(leftCenterX, -500, repeatedMessage, tickerStyle);
     this.newsTickerTextLeft.setOrigin(0.5, 0);
     this.newsTickerTextLeft.setAngle(90);
     this.newsTickerTextLeft.setDepth(2001);
     const leftMask = this.add.graphics();
-    leftMask.fillRect(3, frameThickness + edgeGap, frameThickness - 3, height - (frameThickness * 2) - (edgeGap * 2));
+    // Mask covers full left frame area
+    leftMask.fillRect(0, frameThickness + edgeGap, frameThickness, sideHeight);
     this.newsTickerTextLeft.setMask(leftMask.createGeometryMask());
 
-    // RIGHT ticker (vertical, bottom to top)
-    // Visible area: from frameThickness + 3px to height - frameThickness - edgeGap
-    this.newsTickerTextRight = this.add.text(width - 14, height + 500, repeatedMessage, tickerStyle);
+    // RIGHT ticker (vertical, bottom to top) - centered with padding from edge
+    const rightCenterX = width - (frameThickness / 2) + textPadding; // Slightly more to the right (away from edge)
+    this.newsTickerTextRight = this.add.text(rightCenterX, height + 500, repeatedMessage, tickerStyle);
     this.newsTickerTextRight.setOrigin(0.5, 0);
     this.newsTickerTextRight.setAngle(90);
     this.newsTickerTextRight.setDepth(2001);
     const rightMask = this.add.graphics();
-    rightMask.fillRect(width - frameThickness + 3, frameThickness + edgeGap, frameThickness - 3, height - (frameThickness * 2) - (edgeGap * 2));
+    // Mask covers full right frame area
+    rightMask.fillRect(width - frameThickness, frameThickness + edgeGap, frameThickness, sideHeight);
     this.newsTickerTextRight.setMask(rightMask.createGeometryMask());
 
-    // BOTTOM ticker (horizontal, right to left)
-    // Visible area: from frameThickness to width - frameThickness - edgeGap
+    // BOTTOM ticker (horizontal, left to right)
     this.newsTickerTextBottom = this.add.text(-width, height - 14, repeatedMessage, tickerStyle);
     this.newsTickerTextBottom.setOrigin(0, 0.5);
     this.newsTickerTextBottom.setDepth(2001);
     const bottomMask = this.add.graphics();
-    bottomMask.fillRect(frameThickness + edgeGap, height - frameThickness, width - (frameThickness * 2) - (edgeGap * 2), frameThickness);
+    bottomMask.fillRect(frameThickness + edgeGap, height - frameThickness, topWidth, frameThickness);
     this.newsTickerTextBottom.setMask(bottomMask.createGeometryMask());
 
-    // Start scrolling animation for all tickers
     this.startNewsTickerScroll();
   }
 
-  // Animate ticker scroll on all 4 sides
+  // Animate ticker scroll on all 4 sides with Tweens
   private startNewsTickerScroll(): void {
     if (!this.newsTickerText) return;
 
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
-
-    const singleMessageLength = this.newsTickerText.width / 10; // Divided by repeat count
-    const scrollDuration = 30000; // 30 seconds for one full loop
+    const singleMessageLength = this.newsTickerText.width / 20;
+    const scrollDuration = 30000;
 
     // TOP ticker: Scroll from right to left
-    if (this.newsTickerText) {
-      this.newsTickerText.x = width;
-      this.tweens.add({
-        targets: this.newsTickerText,
-        x: -singleMessageLength,
-        duration: scrollDuration,
-        ease: 'Linear',
-        repeat: -1
-      });
-    }
+    this.newsTickerText.x = width;
+    this.tweens.add({
+      targets: this.newsTickerText,
+      x: -singleMessageLength,
+      duration: scrollDuration,
+      ease: 'Linear',
+      repeat: -1
+    });
 
-    // LEFT ticker: Scroll from top to bottom (vertical)
+    // LEFT ticker: Scroll from top to bottom
     if (this.newsTickerTextLeft) {
       this.newsTickerTextLeft.y = -singleMessageLength;
       this.tweens.add({
@@ -4284,7 +4139,7 @@ export class GameScene extends Phaser.Scene {
       });
     }
 
-    // RIGHT ticker: Scroll from bottom to top (vertical)
+    // RIGHT ticker: Scroll from bottom to top
     if (this.newsTickerTextRight) {
       this.newsTickerTextRight.y = height + singleMessageLength;
       this.tweens.add({
@@ -4307,6 +4162,11 @@ export class GameScene extends Phaser.Scene {
         repeat: -1
       });
     }
+  }
+
+  // Dummy function for compatibility (no longer needed with Tweens)
+  private updateTickerPositions(delta: number): void {
+    // Ticker now uses Tweens instead of manual update
   }
 
   private getRandomWisdom(): string {
@@ -4807,76 +4667,21 @@ export class GameScene extends Phaser.Scene {
     if (!this.weaponManager.hasWeapon()) return;
 
     const energy = this.weaponManager.getEnergy();
-    const maxEnergy = this.weaponManager.getMaxEnergy();
     const weaponName = this.weaponManager.getWeaponName();
     const weaponLevel = this.weaponManager.getWeaponLevel();
 
-    // Update energy bar fill - BIGGER (250x30)
-    if (this.weaponEnergyBar) {
-      const energyPercent = energy / maxEnergy;
-      this.weaponEnergyBar.clear();
-
-      // Bar color based on energy level
-      let barColor = 0x00FF00; // Green
-      if (energyPercent < 0.3) barColor = 0xFF0000; // Red
-      else if (energyPercent < 0.6) barColor = 0xFFAA00; // Orange
-
-      this.weaponEnergyBar.fillStyle(barColor, 1);
-      this.weaponEnergyBar.fillRect(15, 60, 250 * energyPercent, 30);
-    }
-
-    // Update weapon UI container text
-    if (this.weaponUI) {
-      const children = this.weaponUI.getAll();
-      const weaponText = children.find(child => (child as any).type === 'Text') as Phaser.GameObjects.Text;
-      if (weaponText) {
-        weaponText.setText(`⚡ ${weaponName} (Lv${weaponLevel})\nEnergy: ${Math.floor(energy)}%`);
-      }
+    // Send to UIScene
+    const uiScene = this.scene.get('UIScene') as any;
+    if (uiScene && uiScene.updateWeapon) {
+      const weaponIcon = '🔫'; // You can change based on weapon type
+      const info = `Lv${weaponLevel} | Energy: ${Math.floor(energy)}%`;
+      uiScene.updateWeapon(weaponName, weaponIcon, info);
     }
   }
 
   private createWeaponUI(): void {
-    if (!this.weaponManager.hasWeapon()) return;
-
-    const width = this.cameras.main.width;
-    const height = this.cameras.main.height;
-
-    // Position: Bottom LEFT corner (bigger size)
-    const uiX = 50;
-    const uiY = height - 140;
-
-    this.weaponUI = this.add.container(uiX, uiY);
-    this.weaponUI.setDepth(9999);
-
-    // Background panel - BIGGER
-    const bg = this.add.graphics();
-    bg.fillStyle(0x222222, 0.92);
-    bg.fillRoundedRect(0, 0, 280, 110, 12);
-    bg.lineStyle(4, 0x0088FF, 1);
-    bg.strokeRoundedRect(0, 0, 280, 110, 12);
-
-    // Weapon name and level text - BIGGER
-    const weaponText = this.add.text(140, 22, '', {
-      fontSize: '24px',
-      color: '#FFFFFF',
-      fontFamily: 'Arial',
-      fontStyle: 'bold',
-      align: 'center'
-    }).setOrigin(0.5);
-
-    // Energy bar background - BIGGER
-    this.weaponEnergyBarBg = this.add.graphics();
-    this.weaponEnergyBarBg.fillStyle(0x444444, 1);
-    this.weaponEnergyBarBg.fillRect(15, 60, 250, 30);
-    this.weaponEnergyBarBg.lineStyle(3, 0xFFFFFF, 1);
-    this.weaponEnergyBarBg.strokeRect(15, 60, 250, 30);
-
-    // Energy bar fill - BIGGER
-    this.weaponEnergyBar = this.add.graphics();
-
-    // Add all to container
-    this.weaponUI.add([bg, weaponText, this.weaponEnergyBarBg, this.weaponEnergyBar]);
-
+    // Weapon UI now handled by UIScene
+    // Just send initial data
     this.updateWeaponUI();
   }
 }

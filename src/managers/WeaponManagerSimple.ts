@@ -151,9 +151,11 @@ export class WeaponManagerSimple {
       onComplete: () => flash.destroy()
     });
 
+    // Calculate angle once for all uses
+    const angleRad = Phaser.Math.DegToRad(angle);
+
     // Add directional blast streak
     const streak = this.scene.add.graphics();
-    const angleRad = Phaser.Math.DegToRad(angle);
     const streakLength = 40;
     const endX = x + Math.cos(angleRad) * streakLength;
     const endY = y + Math.sin(angleRad) * streakLength;
@@ -188,7 +190,7 @@ export class WeaponManagerSimple {
     graphics.x = x;
     graphics.y = y;
     graphics.setDepth(1500);
-    graphics.setRotation(Phaser.Math.DegToRad(angle));
+    graphics.setRotation(angleRad);
 
     // Pulse animation
     this.scene.tweens.add({
@@ -201,7 +203,6 @@ export class WeaponManagerSimple {
     });
 
     // Calculate velocity
-    const angleRad = Phaser.Math.DegToRad(angle);
     const velocityX = Math.cos(angleRad) * stats.speed;
     const velocityY = Math.sin(angleRad) * stats.speed;
 
