@@ -1673,25 +1673,10 @@ export class GameScene extends Phaser.Scene {
       this.shieldGraphics.destroy();
     }
     this.shieldGraphics = this.add.graphics();
-    this.shieldGraphics.setDepth(99);
-
-    // Pulse animation for shield
-    const duration = GameConfig.powerUps.freedomShield.duration;
-    this.tweens.add({
-      targets: this.shieldGraphics,
-      alpha: 0.6,
-      duration: 500,
-      yoyo: true,
-      repeat: (duration / 500) - 1,
-      onComplete: () => {
-        if (this.shieldGraphics && this.shieldOwner === 'powerup') {
-          this.shieldGraphics.destroy();
-          this.shieldGraphics = undefined;
-        }
-      }
-    });
+    this.shieldGraphics.setDepth(999); // Higher depth to ensure visibility
 
     // Deactivate after duration
+    const duration = GameConfig.powerUps.freedomShield.duration;
     this.shieldTimer = this.time.delayedCall(duration, () => {
       // Only deactivate if we still own the shield
       if (this.shieldOwner === 'powerup') {
@@ -2354,6 +2339,50 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
+    // Update Belle MOD companion and aura ALWAYS (even when paused)
+    if (this.belleModActive && this.eagle) {
+      // Position Belle sprite next to eagle (offset left-up)
+      if (this.belleSprite) {
+        this.belleSprite.setPosition(this.eagle.x - 80, this.eagle.y - 60);
+
+        // Blink warning when < 3 seconds remaining
+        if (this.belleModTimer) {
+          const remaining = Math.ceil((this.belleModTimer.delay - this.belleModTimer.elapsed) / 1000);
+          if (remaining <= 3) {
+            // Flash Belle sprite on/off
+            this.belleSprite.setAlpha(Math.floor(Date.now() / 250) % 2 === 0 ? 0.3 : 1);
+          }
+        }
+      }
+
+      // Draw protection aura
+      if (this.belleAura) {
+        this.belleAura.clear();
+
+        // Check if warning phase
+        let auraAlpha = 0.15;
+        if (this.belleModTimer) {
+          const remaining = Math.ceil((this.belleModTimer.delay - this.belleModTimer.elapsed) / 1000);
+          if (remaining <= 3) {
+            // Pulsing aura when time running out
+            auraAlpha = Math.floor(Date.now() / 250) % 2 === 0 ? 0.05 : 0.25;
+          }
+        }
+
+        // Golden glow aura
+        this.belleAura.fillStyle(0xFFD700, auraAlpha);
+        this.belleAura.fillCircle(this.eagle.x, this.eagle.y, 110);
+
+        // Golden ring
+        this.belleAura.lineStyle(5, 0xFFD700, 0.7);
+        this.belleAura.strokeCircle(this.eagle.x, this.eagle.y, 95);
+
+        // Inner gold ring
+        this.belleAura.lineStyle(3, 0xFFF59D, 1);
+        this.belleAura.strokeCircle(this.eagle.x, this.eagle.y, 85);
+      }
+    }
+
     if (!this.hasStarted || this.isGameOver || this.isPaused) return;
 
     // Safety check: Fix NaN score
@@ -2634,50 +2663,6 @@ export class GameScene extends Phaser.Scene {
 
     // Update power-up timers
     this.updatePowerupTimers();
-
-    // Update Belle MOD companion and aura
-    if (this.belleModActive) {
-      // Position Belle sprite next to eagle (offset left-up)
-      if (this.belleSprite) {
-        this.belleSprite.setPosition(this.eagle.x - 80, this.eagle.y - 60);
-
-        // Blink warning when < 3 seconds remaining
-        if (this.belleModTimer) {
-          const remaining = Math.ceil((this.belleModTimer.delay - this.belleModTimer.elapsed) / 1000);
-          if (remaining <= 3) {
-            // Flash Belle sprite on/off
-            this.belleSprite.setAlpha(Math.floor(Date.now() / 250) % 2 === 0 ? 0.3 : 1);
-          }
-        }
-      }
-
-      // Draw protection aura
-      if (this.belleAura) {
-        this.belleAura.clear();
-
-        // Check if warning phase
-        let auraAlpha = 0.15;
-        if (this.belleModTimer) {
-          const remaining = Math.ceil((this.belleModTimer.delay - this.belleModTimer.elapsed) / 1000);
-          if (remaining <= 3) {
-            // Pulsing aura when time running out
-            auraAlpha = Math.floor(Date.now() / 250) % 2 === 0 ? 0.05 : 0.25;
-          }
-        }
-
-        // Golden glow aura
-        this.belleAura.fillStyle(0xFFD700, auraAlpha);
-        this.belleAura.fillCircle(this.eagle.x, this.eagle.y, 110);
-
-        // Golden ring
-        this.belleAura.lineStyle(5, 0xFFD700, 0.7);
-        this.belleAura.strokeCircle(this.eagle.x, this.eagle.y, 95);
-
-        // Inner gold ring
-        this.belleAura.lineStyle(3, 0xFFF59D, 1);
-        this.belleAura.strokeCircle(this.eagle.x, this.eagle.y, 85);
-      }
-    }
 
     // Check if eagle is out of bounds
     if (this.eagle.y < 0 || this.eagle.y > height) {
@@ -3895,7 +3880,7 @@ export class GameScene extends Phaser.Scene {
       this.shieldGraphics.destroy();
     }
     this.shieldGraphics = this.add.graphics();
-    this.shieldGraphics.setDepth(99);
+    this.shieldGraphics.setDepth(999); // Higher depth to ensure visibility
 
     // Stage 1: Speed ×3, Coins ×2
     this.coinSpeed = this.originalCoinSpeed * 3;
