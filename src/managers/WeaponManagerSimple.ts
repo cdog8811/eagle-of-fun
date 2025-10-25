@@ -321,6 +321,37 @@ export class WeaponManagerSimple {
     return this.projectiles;
   }
 
+  public checkFakeCoinCollisions(fakeCoins: Phaser.GameObjects.Container[]): {
+    fakeCoin: Phaser.GameObjects.Container;
+    projectile: Projectile;
+  }[] {
+    const hits: { fakeCoin: Phaser.GameObjects.Container; projectile: Projectile }[] = [];
+
+    for (const projectile of this.projectiles) {
+      if (!projectile.active) continue;
+
+      for (const fakeCoin of fakeCoins) {
+        if (!fakeCoin.active || fakeCoin.getData('collected')) continue;
+
+        const distance = Phaser.Math.Distance.Between(
+          projectile.x,
+          projectile.y,
+          fakeCoin.x,
+          fakeCoin.y
+        );
+
+        // Fake coins have similar size to real coins (~50px radius)
+        if (distance < 60) {
+          hits.push({ fakeCoin, projectile });
+          projectile.active = false;
+          break;
+        }
+      }
+    }
+
+    return hits;
+  }
+
   public cleanup(): void {
     this.projectiles.forEach(p => {
       if (p.sprite && p.sprite.active) {

@@ -114,6 +114,8 @@ export class GameScene extends Phaser.Scene {
   private valorAuraParticles: Phaser.GameObjects.Particles.ParticleEmitter[] = [];
   private valorScreenGlow?: Phaser.GameObjects.Rectangle;
   private valorModeText?: Phaser.GameObjects.Text;
+  private valorModeIcon?: Phaser.GameObjects.Text;
+  private valorModeTimerText?: Phaser.GameObjects.Text;
 
   private magnetTimer?: Phaser.Time.TimerEvent;
   private shieldTimer?: Phaser.Time.TimerEvent;
@@ -437,28 +439,29 @@ export class GameScene extends Phaser.Scene {
     // ========== POWER-UP PANEL - Larger with transparent backgrounds ==========
     const powerupIconY = height - 65; // More space from bottom
 
-    // Magnet/Buyback Mode - LARGER with background
+    // Magnet/Buyback Mode - LARGER with background (200px wide for long text)
     const magnetBg = this.add.graphics();
     magnetBg.fillStyle(0x002868, 0.8); // Navy blue transparent
-    magnetBg.fillRoundedRect(width / 2 - 370, powerupIconY - 35, 180, 70, 8);
+    magnetBg.fillRoundedRect(width / 2 - 380, powerupIconY - 35, 200, 70, 8);
     magnetBg.lineStyle(2, 0xFFD700, 1); // Gold border
-    magnetBg.strokeRoundedRect(width / 2 - 370, powerupIconY - 35, 180, 70, 8);
+    magnetBg.strokeRoundedRect(width / 2 - 380, powerupIconY - 35, 200, 70, 8);
     magnetBg.setVisible(false);
     magnetBg.setDepth(999);
     (this as any).magnetBg = magnetBg;
 
-    this.magnetIcon = this.add.text(width / 2 - 330, powerupIconY - 10, '🧲', {
+    this.magnetIcon = this.add.text(width / 2 - 340, powerupIconY, '🧲', {
       fontSize: '48px'
     }).setOrigin(0.5);
     this.magnetIcon.setVisible(false);
     this.magnetIcon.setDepth(1000);
 
-    this.magnetTimerText = this.add.text(width / 2 - 280, powerupIconY - 10, 'BUYBACK\n10s', {
-      fontSize: '18px',
+    this.magnetTimerText = this.add.text(width / 2 - 280, powerupIconY, 'BUYBACK\n10s', {
+      fontSize: '17px',
       color: '#FFFFFF',
       fontFamily: 'Arial',
       fontStyle: 'bold',
-      align: 'center'
+      align: 'left',
+      lineSpacing: 2
     }).setOrigin(0, 0.5);
     this.magnetTimerText.setVisible(false);
     this.magnetTimerText.setDepth(1000);
@@ -473,18 +476,19 @@ export class GameScene extends Phaser.Scene {
     shieldBg.setDepth(999);
     (this as any).shieldBg = shieldBg;
 
-    this.shieldIcon = this.add.text(width / 2 - 130, powerupIconY - 10, '🛡️', {
+    this.shieldIcon = this.add.text(width / 2 - 135, powerupIconY, '🛡️', {
       fontSize: '48px'
     }).setOrigin(0.5);
     this.shieldIcon.setVisible(false);
     this.shieldIcon.setDepth(1000);
 
-    this.shieldTimerText = this.add.text(width / 2 - 80, powerupIconY - 10, 'SHIELD\n8s', {
-      fontSize: '18px',
+    this.shieldTimerText = this.add.text(width / 2 - 80, powerupIconY, 'SHIELD\n8s', {
+      fontSize: '17px',
       color: '#FFFFFF',
       fontFamily: 'Arial',
       fontStyle: 'bold',
-      align: 'center'
+      align: 'left',
+      lineSpacing: 2
     }).setOrigin(0, 0.5);
     this.shieldTimerText.setVisible(false);
     this.shieldTimerText.setDepth(1000);
@@ -499,18 +503,19 @@ export class GameScene extends Phaser.Scene {
     belleBg.setDepth(999);
     (this as any).belleBg = belleBg;
 
-    this.belleIcon = this.add.text(width / 2 + 50, powerupIconY - 10, '👁️', {
+    this.belleIcon = this.add.text(width / 2 + 45, powerupIconY, '👁️', {
       fontSize: '48px'
     }).setOrigin(0.5);
     this.belleIcon.setVisible(false);
     this.belleIcon.setDepth(1000);
 
-    this.belleTimerText = this.add.text(width / 2 + 100, powerupIconY - 10, 'BELLE\n15s', {
-      fontSize: '18px',
+    this.belleTimerText = this.add.text(width / 2 + 100, powerupIconY, 'BELLE\n15s', {
+      fontSize: '17px',
       color: '#FFFFFF',
       fontFamily: 'Arial',
       fontStyle: 'bold',
-      align: 'center'
+      align: 'left',
+      lineSpacing: 2
     }).setOrigin(0, 0.5);
     this.belleTimerText.setVisible(false);
     this.belleTimerText.setDepth(1000);
@@ -525,21 +530,49 @@ export class GameScene extends Phaser.Scene {
     bullBg.setDepth(999);
     (this as any).bullBg = bullBg;
 
-    this.bullMarketIcon = this.add.text(width / 2 + 230, powerupIconY - 10, '🐂', {
+    this.bullMarketIcon = this.add.text(width / 2 + 225, powerupIconY, '🐂', {
       fontSize: '48px'
     }).setOrigin(0.5);
     this.bullMarketIcon.setVisible(false);
     this.bullMarketIcon.setDepth(1000);
 
-    this.bullMarketTimerText = this.add.text(width / 2 + 280, powerupIconY - 10, 'BULL\n10s', {
-      fontSize: '18px',
+    this.bullMarketTimerText = this.add.text(width / 2 + 280, powerupIconY, 'BULL\n10s', {
+      fontSize: '17px',
       color: '#FFFFFF',
       fontFamily: 'Arial',
       fontStyle: 'bold',
-      align: 'center'
+      align: 'left',
+      lineSpacing: 2
     }).setOrigin(0, 0.5);
     this.bullMarketTimerText.setVisible(false);
     this.bullMarketTimerText.setDepth(1000);
+
+    // VALOR Mode - LARGER with background (far right) - 200px wide
+    const valorBg = this.add.graphics();
+    valorBg.fillStyle(0x002868, 0.8);
+    valorBg.fillRoundedRect(width / 2 + 370, powerupIconY - 35, 200, 70, 8);
+    valorBg.lineStyle(2, 0xFFD700, 1);
+    valorBg.strokeRoundedRect(width / 2 + 370, powerupIconY - 35, 200, 70, 8);
+    valorBg.setVisible(false);
+    valorBg.setDepth(999);
+    (this as any).valorBg = valorBg;
+
+    this.valorModeIcon = this.add.text(width / 2 + 410, powerupIconY, '⚡', {
+      fontSize: '48px'
+    }).setOrigin(0.5);
+    this.valorModeIcon.setVisible(false);
+    this.valorModeIcon.setDepth(1000);
+
+    this.valorModeTimerText = this.add.text(width / 2 + 450, powerupIconY, 'VALOR\n15s', {
+      fontSize: '17px',
+      color: '#FFFFFF',
+      fontFamily: 'Arial',
+      fontStyle: 'bold',
+      align: 'left',
+      lineSpacing: 2
+    }).setOrigin(0, 0.5);
+    this.valorModeTimerText.setVisible(false);
+    this.valorModeTimerText.setDepth(1000);
 
     // Tagline will be shown during gameplay, not at bottom
 
@@ -1617,7 +1650,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     // Visual feedback
-    const text = this.add.text(this.cameras.main.width / 2, 200, '🇺🇸 AMERICA HAT PROTECTION ACTIVATED!', {
+    const text = this.add.text(this.cameras.main.width / 2, 230, '🇺🇸 AMERICA HAT PROTECTION ACTIVATED!', {
       fontSize: '48px',
       color: '#FF0000',
       fontFamily: 'Arial',
@@ -1630,7 +1663,7 @@ export class GameScene extends Phaser.Scene {
     this.tweens.add({
       targets: text,
       alpha: 0,
-      y: 150,
+      y: 180,
       duration: 1500,
       onComplete: () => text.destroy()
     });
@@ -1742,8 +1775,8 @@ export class GameScene extends Phaser.Scene {
     }
 
     // Visual feedback text
-    const text = this.add.text(width / 2, 200, '⚡ FREEDOM STRIKE!\nLightning Destroys All Enemies', {
-      fontSize: '56px',
+    const text = this.add.text(width / 2, 230, '⚡ FREEDOM STRIKE!\nLightning Destroys All Enemies', {
+      fontSize: '52px',
       color: '#FFFF00',
       fontFamily: 'Arial',
       fontStyle: 'bold',
@@ -1756,7 +1789,7 @@ export class GameScene extends Phaser.Scene {
     this.tweens.add({
       targets: text,
       alpha: 0,
-      y: 150,
+      y: 180,
       duration: 2000,
       ease: 'Power2',
       onComplete: () => text.destroy()
@@ -1764,6 +1797,7 @@ export class GameScene extends Phaser.Scene {
 
     // === DESTROY ALL ENEMIES (except bosses) ===
     let enemiesDestroyed = 0;
+    let totalPoints = 0;
     this.enemies.forEach((enemy: Phaser.GameObjects.Container) => {
       const enemyData = enemy.getData('enemyType');
 
@@ -1796,7 +1830,28 @@ export class GameScene extends Phaser.Scene {
       });
 
       // Award points for destroying enemy
-      this.score += 50; // Bonus points for destroyed enemies
+      const pointsAwarded = 50;
+      this.score += pointsAwarded;
+      totalPoints += pointsAwarded;
+
+      // Show floating points text for each enemy
+      const pointsText = this.add.text(enemy.x, enemy.y, `+${pointsAwarded}`, {
+        fontSize: '28px',
+        color: '#FFFF00',
+        fontFamily: 'Arial',
+        fontStyle: 'bold',
+        stroke: '#000000',
+        strokeThickness: 3
+      }).setOrigin(0.5).setDepth(2000);
+
+      this.tweens.add({
+        targets: pointsText,
+        y: enemy.y - 80,
+        alpha: 0,
+        duration: 1200,
+        ease: 'Power2',
+        onComplete: () => pointsText.destroy()
+      });
 
       // Destroy the enemy
       enemy.destroy();
@@ -1805,7 +1860,32 @@ export class GameScene extends Phaser.Scene {
     // Clear enemies array
     this.enemies = [];
 
-    console.log(`  ⚡ Destroyed ${enemiesDestroyed} enemies!`);
+    // Update score display
+    this.scoreText.setText(`SCORE: ${this.score}`);
+
+    console.log(`  ⚡ Destroyed ${enemiesDestroyed} enemies! Total points: ${totalPoints}`);
+
+    // Show total points earned
+    if (totalPoints > 0) {
+      const totalPointsText = this.add.text(width / 2, height / 2 + 100, `+${totalPoints} POINTS!\n${enemiesDestroyed} enemies destroyed`, {
+        fontSize: '42px',
+        color: '#FFD700',
+        fontFamily: 'Arial',
+        fontStyle: 'bold',
+        align: 'center',
+        stroke: '#000000',
+        strokeThickness: 5
+      }).setOrigin(0.5).setDepth(2002);
+
+      this.tweens.add({
+        targets: totalPointsText,
+        y: height / 2 + 50,
+        alpha: 0,
+        duration: 2500,
+        ease: 'Power2',
+        onComplete: () => totalPointsText.destroy()
+      });
+    }
 
     // Deactivate after visual effect
     const duration = GameConfig.powerUps.freedomStrike.duration;
@@ -2119,8 +2199,8 @@ export class GameScene extends Phaser.Scene {
   private showMemePopup(text: string, color: string = '#E63946'): void {
     const width = this.cameras.main.width;
 
-    const memeText = this.add.text(width / 2, 150, text, {
-      fontSize: '48px',
+    const memeText = this.add.text(width / 2, 200, text, {
+      fontSize: '44px',
       color: color,
       fontFamily: 'Arial',
       fontStyle: 'bold',
@@ -2134,7 +2214,7 @@ export class GameScene extends Phaser.Scene {
     this.tweens.add({
       targets: memeText,
       alpha: 1,
-      y: 180,
+      y: 230,
       duration: 300,
       ease: 'Back.easeOut'
     });
@@ -2202,9 +2282,78 @@ export class GameScene extends Phaser.Scene {
         this.bullMarketIcon?.setScale(remaining % 2 === 0 ? 1.2 : 1); // Pulse effect
       }
     }
+
+    // Update VALOR Mode timer
+    if (this.valorModeActive && this.valorModeTimerText) {
+      let remaining = 0;
+      let stageName = 'VALOR';
+
+      if (this.valorModeStage === 1 && this.valorStage1Timer) {
+        remaining = Math.ceil((this.valorStage1Timer.delay - this.valorStage1Timer.elapsed) / 1000);
+        stageName = 'VALOR';
+      } else if (this.valorModeStage === 2 && this.valorStage2Timer) {
+        remaining = Math.ceil((this.valorStage2Timer.delay - this.valorStage2Timer.elapsed) / 1000);
+        stageName = 'ASCENSION';
+      } else if (this.valorModeStage === 3) {
+        // Afterglow stage - show a fixed time or just the stage name
+        stageName = 'AFTERGLOW';
+        remaining = 3; // Afterglow lasts 3 seconds
+      }
+
+      this.valorModeTimerText.setText(`${stageName}\n${remaining}s`);
+
+      // Blink warning when < 3 seconds - more prominent
+      if (remaining <= 3) {
+        this.valorModeTimerText.setColor(remaining % 2 === 0 ? '#FF0000' : '#FFFFFF');
+        this.valorModeIcon?.setAlpha(remaining % 2 === 0 ? 0.4 : 1);
+        this.valorModeIcon?.setScale(remaining % 2 === 0 ? 1.2 : 1); // Pulse effect
+      } else {
+        this.valorModeTimerText.setColor('#FFFFFF');
+        this.valorModeIcon?.setAlpha(1);
+        this.valorModeIcon?.setScale(1);
+      }
+    }
   }
 
   update(): void {
+    // Update shield graphics ALWAYS (even when paused) to keep it visible
+    if (this.shieldActive && this.shieldGraphics && this.eagle) {
+      this.shieldGraphics.clear();
+
+      // Check if shield is about to expire (< 3 seconds)
+      let shieldAlphaMultiplier = 1.0;
+      if (this.shieldTimer) {
+        const remaining = Math.ceil((this.shieldTimer.delay - this.shieldTimer.elapsed) / 1000);
+        if (remaining <= 3) {
+          // Blink effect when < 3 seconds remaining
+          shieldAlphaMultiplier = Math.floor(Date.now() / 250) % 2 === 0 ? 0.3 : 1;
+        }
+      }
+
+      // Draw beautiful layered shield with alpha multiplier
+      // Outer glow
+      this.shieldGraphics.fillStyle(0x00AAFF, 0.2 * shieldAlphaMultiplier);
+      this.shieldGraphics.fillCircle(this.eagle.x, this.eagle.y, 100);
+
+      // Middle ring
+      this.shieldGraphics.lineStyle(6, 0x00DDFF, 0.8 * shieldAlphaMultiplier);
+      this.shieldGraphics.strokeCircle(this.eagle.x, this.eagle.y, 85);
+
+      // Inner ring
+      this.shieldGraphics.lineStyle(4, 0x88EEFF, 1 * shieldAlphaMultiplier);
+      this.shieldGraphics.strokeCircle(this.eagle.x, this.eagle.y, 75);
+
+      // Energy particles effect (optional rotating dots)
+      const time = Date.now() / 1000;
+      for (let i = 0; i < 8; i++) {
+        const angle = (time * 2 + i * Math.PI / 4) % (Math.PI * 2);
+        const px = this.eagle.x + Math.cos(angle) * 82;
+        const py = this.eagle.y + Math.sin(angle) * 82;
+        this.shieldGraphics.fillStyle(0xFFFFFF, 0.9 * shieldAlphaMultiplier);
+        this.shieldGraphics.fillCircle(px, py, 3);
+      }
+    }
+
     if (!this.hasStarted || this.isGameOver || this.isPaused) return;
 
     // Safety check: Fix NaN score
@@ -2337,6 +2486,78 @@ export class GameScene extends Phaser.Scene {
       this.weaponManager.destroyProjectile(hit.projectile);
     }
 
+    // v3.7: Check projectile collisions with fake coins
+    const fakeCoinHits = this.weaponManager.checkFakeCoinCollisions(this.fakeCoins);
+    for (const hit of fakeCoinHits) {
+      // Skip if fake coin already destroyed or collected
+      if (!hit.fakeCoin || !hit.fakeCoin.active || hit.fakeCoin.getData('collected')) {
+        continue;
+      }
+
+      // Save coordinates BEFORE destroying
+      const hitX = hit.fakeCoin.x;
+      const hitY = hit.fakeCoin.y;
+
+      // Mark as collected to prevent double-hit
+      hit.fakeCoin.setData('collected', true);
+
+      // Play hit sound
+      if (this.sound.get('coin')) {
+        this.sound.play('coin', { volume: 0.5 });
+      }
+
+      // Visual feedback - destroyed fake coin
+      const feedbackText = this.add.text(hitX, hitY, 'DESTROYED!', {
+        fontSize: '28px',
+        color: '#00FF00',
+        fontFamily: 'Arial',
+        fontStyle: 'bold',
+        stroke: '#000000',
+        strokeThickness: 3
+      }).setOrigin(0.5).setDepth(500);
+
+      this.tweens.add({
+        targets: feedbackText,
+        y: hitY - 60,
+        alpha: 0,
+        duration: 800,
+        ease: 'Power2',
+        onComplete: () => feedbackText.destroy()
+      });
+
+      // Small explosion effect
+      for (let i = 0; i < 5; i++) {
+        const angle = (i / 5) * Math.PI * 2;
+        const particle = this.add.graphics();
+        particle.fillStyle(0xFFD700, 1);
+        particle.fillCircle(0, 0, 3);
+        particle.x = hitX;
+        particle.y = hitY;
+        particle.setDepth(500);
+
+        this.tweens.add({
+          targets: particle,
+          x: hitX + Math.cos(angle) * 30,
+          y: hitY + Math.sin(angle) * 30,
+          alpha: 0,
+          duration: 300,
+          onComplete: () => particle.destroy()
+        });
+      }
+
+      // Remove from array first
+      const index = this.fakeCoins.indexOf(hit.fakeCoin);
+      if (index > -1) {
+        this.fakeCoins.splice(index, 1);
+      }
+
+      // Destroy fake coin LAST
+      hit.fakeCoin.destroy();
+
+      // Destroy projectile
+      this.weaponManager.destroyProjectile(hit.projectile);
+    }
+
     // v3.2: Track time for missions
     this.missionManager.onTimeUpdate(this.gameTime);
 
@@ -2413,44 +2634,6 @@ export class GameScene extends Phaser.Scene {
 
     // Update power-up timers
     this.updatePowerupTimers();
-
-    // Update shield graphics to follow eagle
-    if (this.shieldActive && this.shieldGraphics) {
-      this.shieldGraphics.clear();
-
-      // Check if shield is about to expire (< 3 seconds)
-      let shieldAlphaMultiplier = 1.0;
-      if (this.shieldTimer) {
-        const remaining = Math.ceil((this.shieldTimer.delay - this.shieldTimer.elapsed) / 1000);
-        if (remaining <= 3) {
-          // Blink effect when < 3 seconds remaining
-          shieldAlphaMultiplier = Math.floor(Date.now() / 250) % 2 === 0 ? 0.3 : 1;
-        }
-      }
-
-      // Draw beautiful layered shield with alpha multiplier
-      // Outer glow
-      this.shieldGraphics.fillStyle(0x00AAFF, 0.2 * shieldAlphaMultiplier);
-      this.shieldGraphics.fillCircle(this.eagle.x, this.eagle.y, 100);
-
-      // Middle ring
-      this.shieldGraphics.lineStyle(6, 0x00DDFF, 0.8 * shieldAlphaMultiplier);
-      this.shieldGraphics.strokeCircle(this.eagle.x, this.eagle.y, 85);
-
-      // Inner ring
-      this.shieldGraphics.lineStyle(4, 0x88EEFF, 1 * shieldAlphaMultiplier);
-      this.shieldGraphics.strokeCircle(this.eagle.x, this.eagle.y, 75);
-
-      // Energy particles effect (optional rotating dots)
-      const time = Date.now() / 1000;
-      for (let i = 0; i < 8; i++) {
-        const angle = (time * 2 + i * Math.PI / 4) % (Math.PI * 2);
-        const px = this.eagle.x + Math.cos(angle) * 82;
-        const py = this.eagle.y + Math.sin(angle) * 82;
-        this.shieldGraphics.fillStyle(0xFFFFFF, 0.9 * shieldAlphaMultiplier);
-        this.shieldGraphics.fillCircle(px, py, 3);
-      }
-    }
 
     // Update Belle MOD companion and aura
     if (this.belleModActive) {
@@ -3504,19 +3687,19 @@ export class GameScene extends Phaser.Scene {
     overlay.setScrollFactor(0); // Fixed to camera
     tutorialElements.push(overlay);
 
-    // Tutorial box - Smaller and cleaner
+    // Tutorial box - Bigger for better spacing
     const tutorialBg = this.add.graphics();
     tutorialBg.fillStyle(0x222222, 0.98);
-    tutorialBg.fillRoundedRect(width / 2 - 280, height / 2 - 150, 560, 300, 16);
+    tutorialBg.fillRoundedRect(width / 2 - 300, height / 2 - 180, 600, 360, 16);
     tutorialBg.lineStyle(4, 0xFFD700, 1); // Gold border
-    tutorialBg.strokeRoundedRect(width / 2 - 280, height / 2 - 150, 560, 300, 16);
+    tutorialBg.strokeRoundedRect(width / 2 - 300, height / 2 - 180, 600, 360, 16);
     tutorialBg.setDepth(5001);
     tutorialBg.setScrollFactor(0);
     tutorialElements.push(tutorialBg);
 
-    // Title
-    const title = this.add.text(width / 2, height / 2 - 100, '⚡ WEAPON UNLOCKED ⚡', {
-      fontSize: '36px',
+    // Title - at top with more space
+    const title = this.add.text(width / 2, height / 2 - 140, '⚡ WEAPON UNLOCKED ⚡', {
+      fontSize: '30px',
       color: '#FFD700',
       fontFamily: 'Arial',
       fontStyle: 'bold',
@@ -3526,26 +3709,77 @@ export class GameScene extends Phaser.Scene {
     title.setScrollFactor(0);
     tutorialElements.push(title);
 
-    // Instructions - Shorter and clearer
-    const instructions = this.add.text(width / 2, height / 2 - 10,
-      'Q - Shoot Forward\n' +
-      'W - Shoot Up\n' +
-      'E - Shoot Down\n\n' +
-      'Coins charge energy · Shooting uses energy',
+    // Instructions - Each control on separate line with left alignment for better readability
+    const controlsY = height / 2 - 70;
+    const lineHeight = 35;
+
+    const qControl = this.add.text(width / 2 - 120, controlsY, 'Q', {
+      fontSize: '24px',
+      color: '#FFD700',
+      fontFamily: 'Arial',
+      fontStyle: 'bold'
+    }).setOrigin(0, 0.5).setDepth(5002);
+    qControl.setScrollFactor(0);
+    tutorialElements.push(qControl);
+
+    const qLabel = this.add.text(width / 2 - 80, controlsY, 'Shoot Forward', {
+      fontSize: '20px',
+      color: '#FFFFFF',
+      fontFamily: 'Arial'
+    }).setOrigin(0, 0.5).setDepth(5002);
+    qLabel.setScrollFactor(0);
+    tutorialElements.push(qLabel);
+
+    const wControl = this.add.text(width / 2 - 120, controlsY + lineHeight, 'W', {
+      fontSize: '24px',
+      color: '#FFD700',
+      fontFamily: 'Arial',
+      fontStyle: 'bold'
+    }).setOrigin(0, 0.5).setDepth(5002);
+    wControl.setScrollFactor(0);
+    tutorialElements.push(wControl);
+
+    const wLabel = this.add.text(width / 2 - 80, controlsY + lineHeight, 'Shoot Up', {
+      fontSize: '20px',
+      color: '#FFFFFF',
+      fontFamily: 'Arial'
+    }).setOrigin(0, 0.5).setDepth(5002);
+    wLabel.setScrollFactor(0);
+    tutorialElements.push(wLabel);
+
+    const eControl = this.add.text(width / 2 - 120, controlsY + lineHeight * 2, 'E', {
+      fontSize: '24px',
+      color: '#FFD700',
+      fontFamily: 'Arial',
+      fontStyle: 'bold'
+    }).setOrigin(0, 0.5).setDepth(5002);
+    eControl.setScrollFactor(0);
+    tutorialElements.push(eControl);
+
+    const eLabel = this.add.text(width / 2 - 80, controlsY + lineHeight * 2, 'Shoot Down', {
+      fontSize: '20px',
+      color: '#FFFFFF',
+      fontFamily: 'Arial'
+    }).setOrigin(0, 0.5).setDepth(5002);
+    eLabel.setScrollFactor(0);
+    tutorialElements.push(eLabel);
+
+    // Energy info with more spacing
+    const energyInfo = this.add.text(width / 2, height / 2 + 80,
+      'Coins charge energy • Shooting uses energy',
       {
-        fontSize: '22px',
-        color: '#FFFFFF',
+        fontSize: '16px',
+        color: '#AAAAAA',
         fontFamily: 'Arial',
-        align: 'center',
-        lineSpacing: 10
+        align: 'center'
       }
     ).setOrigin(0.5).setDepth(5002);
-    instructions.setScrollFactor(0);
-    tutorialElements.push(instructions);
+    energyInfo.setScrollFactor(0);
+    tutorialElements.push(energyInfo);
 
-    // Close hint - SPACE only
-    const closeHint = this.add.text(width / 2, height / 2 + 110, 'Press SPACE to continue', {
-      fontSize: '20px',
+    // Close hint - at bottom with more space
+    const closeHint = this.add.text(width / 2, height / 2 + 150, 'Press SPACE to continue', {
+      fontSize: '18px',
       color: '#FFD700',
       fontFamily: 'Arial',
       fontStyle: 'bold'
@@ -3872,6 +4106,12 @@ export class GameScene extends Phaser.Scene {
       this.valorModeText = undefined;
     }
 
+    // Hide VALOR mode indicator at bottom
+    const valorBg = (this as any).valorBg;
+    if (valorBg) valorBg.setVisible(false);
+    if (this.valorModeIcon) this.valorModeIcon.setVisible(false);
+    if (this.valorModeTimerText) this.valorModeTimerText.setVisible(false);
+
     // Start 60s cooldown
     this.valorModeCooldown = true;
     this.valorCooldownTimer = this.time.delayedCall(60000, () => {
@@ -3903,9 +4143,15 @@ export class GameScene extends Phaser.Scene {
   private createValorModeHUD(title: string, subtitle: string): void {
     const width = this.cameras.main.width;
 
-    // VALOR MODE text at top center
-    this.valorModeText = this.add.text(width / 2, 150, `${title}\n${subtitle}`, {
-      fontSize: '42px',
+    // Show VALOR mode indicator at bottom (like other power-ups)
+    const valorBg = (this as any).valorBg;
+    if (valorBg) valorBg.setVisible(true);
+    if (this.valorModeIcon) this.valorModeIcon.setVisible(true);
+    if (this.valorModeTimerText) this.valorModeTimerText.setVisible(true);
+
+    // VALOR MODE text at top center - below top bar (top bar is ~100px high)
+    this.valorModeText = this.add.text(width / 2, 200, `${title}\n${subtitle}`, {
+      fontSize: '38px',
       color: '#FFD700',
       fontFamily: 'Arial',
       fontStyle: 'bold',
@@ -3971,6 +4217,9 @@ export class GameScene extends Phaser.Scene {
   private takeDamage(): void {
     if (this.invincible || this.shieldActive || this.belleModActive) return;
 
+    // Set invincibility IMMEDIATELY to prevent multiple hits in same frame
+    this.invincible = true;
+
     this.lives--;
     this.updateHeartDisplay();
 
@@ -3980,7 +4229,6 @@ export class GameScene extends Phaser.Scene {
     }
 
     // Invincibility frames (2 seconds)
-    this.invincible = true;
 
     // Blink effect during invincibility
     let blinkCount = 0;

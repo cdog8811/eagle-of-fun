@@ -136,10 +136,11 @@ export default class UIScene extends Phaser.Scene {
     const missionHeight = 70; // Smaller height
     const spacing = 12;
     const x = width - this.EDGE_PADDING - missionWidth;
+    const bottomPadding = 120; // Extra space from bottom to avoid power-up displays
 
     // Create 3 mission slots
     for (let i = 0; i < 3; i++) {
-      const y = height - this.EDGE_PADDING - (missionHeight * (i + 1)) - (spacing * i);
+      const y = height - bottomPadding - (missionHeight * (i + 1)) - (spacing * i);
 
       // Background - Navy Blue
       const bg = this.add.graphics();
