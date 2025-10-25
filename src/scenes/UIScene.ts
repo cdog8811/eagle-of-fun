@@ -1,4 +1,6 @@
 import Phaser from 'phaser';
+import { getXPSystem } from '../systems/xpSystem';
+import type { XPState } from '../systems/xpSystem';
 
 /**
  * UIScene - Separate Scene für alle UI-Elemente
@@ -11,6 +13,7 @@ import Phaser from 'phaser';
  * Design: Modern, clean, transparent, gut lesbar
  */
 export default class UIScene extends Phaser.Scene {
+  private xpSystem = getXPSystem();
   // XP System
   private levelText?: Phaser.GameObjects.Text;
   private xpText?: Phaser.GameObjects.Text;
@@ -55,6 +58,56 @@ export default class UIScene extends Phaser.Scene {
     this.createXPDisplay();
     this.createMissionDisplay();
     this.createWeaponDisplay();
+
+    // Subscribe to XP changes
+    this.xpSystem.onXPChange((xpState: XPState) => {
+      console.log('📊 XP Changed - Updating UI:', xpState);
+      this.updateXP(xpState.level, xpState.xp, xpState.xpToNext);
+    });
+
+    // Subscribe to level ups
+    this.xpSystem.onLevelUp((newLevel: number) => {
+      this.showLevelUpAnimation();
+    });
+
+    // Initialize with current XP
+    const xpState = this.xpSystem.getState();
+    console.log('🎮 UIScene - Initial XP state:', xpState);
+    console.log('📦 localStorage eof_xp_state:', localStorage.getItem('eof_xp_state'));
+    this.updateXP(xpState.level, xpState.xp, xpState.xpToNext);
+
+    // Get initial missions from GameScene
+    // Note: GameScene will also send missions via updateMissions() after launch
+    const gameScene = this.scene.get('GameScene') as any;
+    if (gameScene && gameScene.missionManager) {
+      console.log('🎮 UIScene - Getting initial missions from GameScene');
+      const missions = gameScene.missionManager.getDailyMissions();
+      if (missions && missions.length > 0) {
+        this.updateMissions(missions);
+      }
+    }
+
+    // Listen for scene wake events (when returning from other scenes)
+    this.events.on('wake', () => {
+      console.log('🔄 UIScene woke up - refreshing displays');
+
+      // Refresh XP display
+      const currentXP = this.xpSystem.getState();
+      console.log('🔄 Current XP on wake:', currentXP);
+      this.updateXP(currentXP.level, currentXP.xp, currentXP.xpToNext);
+
+      // Refresh missions - get from GameScene
+      const gameScene = this.scene.get('GameScene') as any;
+      if (gameScene && gameScene.missionManager) {
+        // Refresh missions based on current Meta-Level
+        gameScene.missionManager.refreshMissions();
+
+        // Get updated missions
+        const missions = gameScene.missionManager.getDailyMissions();
+        console.log('🔄 Refreshing missions on wake:', missions);
+        this.updateMissions(missions);
+      }
+    });
   }
 
   // ========== XP DISPLAY (TOP RIGHT) ==========
@@ -242,17 +295,19 @@ export default class UIScene extends Phaser.Scene {
    * Update XP Display
    */
   public updateXP(level: number, xp: number, xpToNext: number): void {
-    if (!this.scene.isActive()) {
-      console.warn('UIScene: Cannot update XP - scene not active');
-      return;
-    }
+    console.log(`🔄 updateXP called - Level: ${level}, XP: ${xp}/${xpToNext}, Scene Active: ${this.scene.isActive()}`);
 
+    // Always update internal state, even if scene not active
     this.currentLevel = level;
     this.currentXP = xp;
     this.xpToNextLevel = xpToNext;
 
+    // Update text objects (they exist even if scene is not active)
     if (this.levelText) {
       this.levelText.setText(`LEVEL ${level}`);
+      console.log(`✅ Level text updated to: LEVEL ${level}`);
+    } else {
+      console.warn('⚠️ levelText not found');
     }
 
     if (this.xpText) {

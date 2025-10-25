@@ -97,8 +97,9 @@ export class Eagle extends Phaser.GameObjects.Container {
     }
   }
 
-  public flap(): void {
-    this.physicsBody.setVelocityY(GameConfig.flapVelocity);
+  public flap(flapBoost: number = 0): void {
+    const boostedVelocity = GameConfig.flapVelocity * (1 + flapBoost);
+    this.physicsBody.setVelocityY(boostedVelocity);
 
     // Play wing flap sound for eagle flight
     this.scene.sound.play('wing-flap', { volume: 0.5 });

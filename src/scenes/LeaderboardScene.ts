@@ -90,7 +90,7 @@ export class LeaderboardScene extends Phaser.Scene {
     // Buttons - professional, better positioned
     this.createButton(width / 2 - 250, height - 100, 'PLAY AGAIN', () => {
       this.sound.stopAll();
-      this.scene.start('GameScene');
+      this.scene.start('UpgradeScene');
     });
 
     this.createButton(width / 2 + 250, height - 100, 'MAIN MENU', () => {

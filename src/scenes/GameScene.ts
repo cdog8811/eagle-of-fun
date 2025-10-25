@@ -6,8 +6,13 @@ import { MARKET_PHASES, MICRO_EVENTS, determinePhase, MarketPhase, MicroEvent } 
 import { WeaponManagerSimple } from '../managers/WeaponManagerSimple';
 import { BossManagerV37 } from '../managers/BossManagerV37';
 import { BandanaPowerUp } from '../managers/BandanaPowerUp';
+import { getXPSystem, getXPForCoin } from '../systems/xpSystem';
+import { getUpgradeSystem } from '../systems/upgradeSystem';
 
 export class GameScene extends Phaser.Scene {
+  // XP & Upgrade Systems
+  private xpSystem = getXPSystem();
+  private upgradeSystem = getUpgradeSystem();
   private eagle!: Eagle;
   private coins: Phaser.GameObjects.Container[] = [];
   private enemies: Phaser.GameObjects.Container[] = [];
@@ -233,8 +238,10 @@ export class GameScene extends Phaser.Scene {
     this.coinSpeed = 300;
     this.enemySpeed = 250;
 
-    // v3.7: Reset lives to 3 on restart
-    this.lives = 3;
+    // v3.7: Reset lives based on upgrades
+    const playerStats = this.upgradeSystem.getPlayerStats();
+    this.maxLives = 3 + playerStats.maxHeartsBonus;
+    this.lives = this.maxLives;
     this.invincible = false;
     this.shieldOwner = 'none';
 
@@ -305,6 +312,10 @@ export class GameScene extends Phaser.Scene {
     // v3.2: Initialize Mission System
     this.missionManager = MissionManager.getInstance();
 
+    // v3.7: Refresh missions based on current Meta-Level
+    // (important when returning from UpgradeScene after leveling up)
+    this.missionManager.refreshMissions();
+
     // v3.7: Initialize Weapon & Boss Systems
     this.weaponManager = new WeaponManagerSimple(this);
     this.bossManager = new BossManagerV37(this);
@@ -313,8 +324,23 @@ export class GameScene extends Phaser.Scene {
     // Pause physics immediately - will resume after countdown
     this.physics.pause();
 
-    // Launch UIScene as overlay
-    this.scene.launch('UIScene');
+    // Launch or wake UIScene as overlay
+    if (this.scene.isActive('UIScene')) {
+      console.log('🔄 UIScene already running - waking it up');
+      this.scene.wake('UIScene');
+    } else {
+      console.log('🚀 Launching UIScene for the first time');
+      this.scene.launch('UIScene');
+    }
+
+    // Wait for UIScene to be ready, then send missions
+    this.time.delayedCall(100, () => {
+      const uiScene = this.scene.get('UIScene') as any;
+      if (uiScene && uiScene.updateMissions) {
+        console.log('🚀 GameScene: Sending initial missions to UIScene');
+        uiScene.updateMissions(this.missionManager.getDailyMissions());
+      }
+    });
 
     // v3.2: NEWS TICKER - At very top (BREAKING)
     this.createNewsTicker();
@@ -374,18 +400,11 @@ export class GameScene extends Phaser.Scene {
     this.burgerCounterText.setDepth(1000);
 
     // v3.2: XP & LEVEL - Now handled by UIScene
-    // Send initial XP data to UIScene
-    const progress = this.missionManager.getProgress();
-    const uiScene = this.scene.get('UIScene') as any;
-    if (uiScene && uiScene.updateXP) {
-      uiScene.updateXP(progress.level, progress.xp, progress.xpToNextLevel);
-    }
+    // v3.7: XP display is now handled by UIScene listening to xpSystem
+    // No need to manually update here - UIScene subscribes to xpSystem changes
 
     // v3.2: MISSION SYSTEM - Now handled by UIScene
-    // Send initial missions to UIScene
-    if (uiScene && uiScene.updateMissions) {
-      uiScene.updateMissions(this.missionManager.getDailyMissions());
-    }
+    // Missions are sent to UIScene after launch (see delayedCall above)
 
     // v3.7: Weapon UI will be created when weapon is collected
     // (Don't create it at start)
@@ -601,7 +620,8 @@ export class GameScene extends Phaser.Scene {
           instructions = null;
         }
       } else if (!this.isPaused && this.hasStarted && !this.controlBlocked) {
-        this.eagle.flap();
+        const playerStats = this.upgradeSystem.getPlayerStats();
+        this.eagle.flap(playerStats.flapBoost);
       }
     });
 
@@ -618,7 +638,8 @@ export class GameScene extends Phaser.Scene {
       } else if (!this.isPaused && this.hasStarted && !this.controlBlocked) {
         if (!this.spacePressed) {
           // First press - immediate flap
-          this.eagle.flap();
+          const playerStats = this.upgradeSystem.getPlayerStats();
+          this.eagle.flap(playerStats.flapBoost);
           this.spacePressed = true;
           this.spaceStartTime = Date.now();
         }
@@ -1675,8 +1696,9 @@ export class GameScene extends Phaser.Scene {
     this.shieldGraphics = this.add.graphics();
     this.shieldGraphics.setDepth(999); // Higher depth to ensure visibility
 
-    // Deactivate after duration
-    const duration = GameConfig.powerUps.freedomShield.duration;
+    // Deactivate after duration (with upgrade bonus)
+    const playerStats = this.upgradeSystem.getPlayerStats();
+    const duration = (GameConfig.powerUps.freedomShield.duration + playerStats.shieldExtraSeconds * 1000);
     this.shieldTimer = this.time.delayedCall(duration, () => {
       // Only deactivate if we still own the shield
       if (this.shieldOwner === 'powerup') {
@@ -1818,6 +1840,13 @@ export class GameScene extends Phaser.Scene {
       const pointsAwarded = 50;
       this.score += pointsAwarded;
       totalPoints += pointsAwarded;
+
+      // v3.7: Award XP for enemy kill
+      this.xpSystem.addXP({
+        delta: 4,
+        source: 'enemyKill',
+        meta: { enemyType: 'freedom_strike' }
+      });
 
       // Show floating points text for each enemy
       const pointsText = this.add.text(enemy.x, enemy.y, `+${pointsAwarded}`, {
@@ -2487,6 +2516,14 @@ export class GameScene extends Phaser.Scene {
       this.score += pointsAwarded;
       this.scoreText.setText(`SCORE: ${this.score}`);
 
+      // v3.7: Award XP for enemy kill
+      const enemyType = hit.enemy.getData('type') || 'unknown';
+      this.xpSystem.addXP({
+        delta: 4,
+        source: 'enemyKill',
+        meta: { enemyType }
+      });
+
       // Show floating points text
       const pointsText = this.add.text(hitX, hitY, `+${pointsAwarded}`, {
         fontSize: '32px',
@@ -2693,7 +2730,10 @@ export class GameScene extends Phaser.Scene {
         const dy = this.eagle.y - coin.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
 
-        if (distance < 400 && distance > 0) {
+        const playerStats = this.upgradeSystem.getPlayerStats();
+        const magnetRange = 400 + playerStats.magnetRadius;
+
+        if (distance < magnetRange && distance > 0) {
           const speed = 200 * (this.game.loop.delta / 1000);
           coin.x += (dx / distance) * speed;
           coin.y += (dy / distance) * speed;
@@ -2767,6 +2807,16 @@ export class GameScene extends Phaser.Scene {
           // v3.2: Track score for missions
           this.missionManager.onScoreUpdate(this.score);
           this.updateMissionUI();
+
+          // v3.7: Award XP for coin collection
+          const coinXP = getXPForCoin(type);
+          const playerStats = this.upgradeSystem.getPlayerStats();
+          const xpWithBonus = Math.floor(coinXP * playerStats.coinGainMul);
+          this.xpSystem.addXP({
+            delta: xpWithBonus,
+            source: 'coin',
+            meta: { coinType: type, baseXP: coinXP, multiplier: playerStats.coinGainMul }
+          });
 
           // Score blink animation
           this.tweens.add({
@@ -4287,13 +4337,11 @@ export class GameScene extends Phaser.Scene {
     this.updateXPDisplay();
   }
 
-  // v3.2: Update XP display - now sends to UIScene
+  // v3.7: XP display update - UIScene now listens to xpSystem automatically
   private updateXPDisplay(): void {
-    const progress = this.missionManager.getProgress();
-    const uiScene = this.scene.get('UIScene') as any;
-    if (uiScene && uiScene.updateXP) {
-      uiScene.updateXP(progress.level, progress.xp, progress.xpToNextLevel);
-    }
+    // REMOVED: Old mission-based XP system
+    // UIScene now subscribes to xpSystem.onXPChange() and updates automatically
+    // No manual updates needed here anymore
   }
 
   // v3.7: NEWS TICKER FRAME - Simplified continuous ticker on all 4 sides

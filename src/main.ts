@@ -9,6 +9,7 @@ import { LeaderboardScene } from './scenes/LeaderboardScene';
 import { HowToPlayScene } from './scenes/HowToPlayScene';
 import { CreditsScene } from './scenes/CreditsScene';
 import UIScene from './scenes/UIScene';
+import UpgradeScene from './scenes/UpgradeScene';
 import { GameConfig } from './config/GameConfig';
 
 const config: Phaser.Types.Core.GameConfig = {
@@ -36,6 +37,7 @@ const config: Phaser.Types.Core.GameConfig = {
     GameScene,
     UIScene,
     GameOverScene,
+    UpgradeScene,
     LeaderboardScene,
     HowToPlayScene,
     CreditsScene
