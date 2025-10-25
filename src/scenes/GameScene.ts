@@ -434,80 +434,109 @@ export class GameScene extends Phaser.Scene {
     this.valorCountText.setOrigin(0, 0.5);
     this.valorCountText.setDepth(1000);
 
-    // ========== POWER-UP PANEL - NO BACKGROUND (removed white bar) ==========
-    const powerupIconY = height - 40; // Closer to bottom
-    const powerupTimerY = height - 20;
+    // ========== POWER-UP PANEL - Larger with transparent backgrounds ==========
+    const powerupIconY = height - 65; // More space from bottom
 
-    // No background bar anymore - icons float freely
+    // Magnet/Buyback Mode - LARGER with background
+    const magnetBg = this.add.graphics();
+    magnetBg.fillStyle(0x002868, 0.8); // Navy blue transparent
+    magnetBg.fillRoundedRect(width / 2 - 370, powerupIconY - 35, 180, 70, 8);
+    magnetBg.lineStyle(2, 0xFFD700, 1); // Gold border
+    magnetBg.strokeRoundedRect(width / 2 - 370, powerupIconY - 35, 180, 70, 8);
+    magnetBg.setVisible(false);
+    magnetBg.setDepth(999);
+    (this as any).magnetBg = magnetBg;
 
-    // Magnet/Buyback Mode - compact
-    this.magnetIcon = this.add.text(width / 2 - 270, powerupIconY - 8, '🧲', {
-      fontSize: '24px',
-      color: '#E63946',
-      fontFamily: 'Arial'
+    this.magnetIcon = this.add.text(width / 2 - 330, powerupIconY - 10, '🧲', {
+      fontSize: '48px'
     }).setOrigin(0.5);
     this.magnetIcon.setVisible(false);
     this.magnetIcon.setDepth(1000);
 
-    this.magnetTimerText = this.add.text(width / 2 - 240, powerupIconY - 8, 'BUYBACK 10s', {
-      fontSize: '14px',
-      color: '#666666',
+    this.magnetTimerText = this.add.text(width / 2 - 280, powerupIconY - 10, 'BUYBACK\n10s', {
+      fontSize: '18px',
+      color: '#FFFFFF',
       fontFamily: 'Arial',
-      fontStyle: 'bold'
+      fontStyle: 'bold',
+      align: 'center'
     }).setOrigin(0, 0.5);
     this.magnetTimerText.setVisible(false);
     this.magnetTimerText.setDepth(1000);
 
-    // Shield/America Hat - compact
-    this.shieldIcon = this.add.text(width / 2 - 90, powerupIconY - 8, '🛡️', {
-      fontSize: '24px',
-      color: '#E63946',
-      fontFamily: 'Arial'
+    // Shield/America Hat - LARGER with background
+    const shieldBg = this.add.graphics();
+    shieldBg.fillStyle(0x002868, 0.8);
+    shieldBg.fillRoundedRect(width / 2 - 170, powerupIconY - 35, 160, 70, 8);
+    shieldBg.lineStyle(2, 0xFFD700, 1);
+    shieldBg.strokeRoundedRect(width / 2 - 170, powerupIconY - 35, 160, 70, 8);
+    shieldBg.setVisible(false);
+    shieldBg.setDepth(999);
+    (this as any).shieldBg = shieldBg;
+
+    this.shieldIcon = this.add.text(width / 2 - 130, powerupIconY - 10, '🛡️', {
+      fontSize: '48px'
     }).setOrigin(0.5);
     this.shieldIcon.setVisible(false);
     this.shieldIcon.setDepth(1000);
 
-    this.shieldTimerText = this.add.text(width / 2 - 60, powerupIconY - 8, 'SHIELD 8s', {
-      fontSize: '14px',
-      color: '#666666',
+    this.shieldTimerText = this.add.text(width / 2 - 80, powerupIconY - 10, 'SHIELD\n8s', {
+      fontSize: '18px',
+      color: '#FFFFFF',
       fontFamily: 'Arial',
-      fontStyle: 'bold'
+      fontStyle: 'bold',
+      align: 'center'
     }).setOrigin(0, 0.5);
     this.shieldTimerText.setVisible(false);
     this.shieldTimerText.setDepth(1000);
 
-    // Belle MOD - compact
-    this.belleIcon = this.add.text(width / 2 + 70, powerupIconY - 8, '👁️', {
-      fontSize: '24px',
-      color: '#E63946',
-      fontFamily: 'Arial'
+    // Belle MOD - LARGER with background
+    const belleBg = this.add.graphics();
+    belleBg.fillStyle(0x002868, 0.8);
+    belleBg.fillRoundedRect(width / 2 + 10, powerupIconY - 35, 160, 70, 8);
+    belleBg.lineStyle(2, 0xFFD700, 1);
+    belleBg.strokeRoundedRect(width / 2 + 10, powerupIconY - 35, 160, 70, 8);
+    belleBg.setVisible(false);
+    belleBg.setDepth(999);
+    (this as any).belleBg = belleBg;
+
+    this.belleIcon = this.add.text(width / 2 + 50, powerupIconY - 10, '👁️', {
+      fontSize: '48px'
     }).setOrigin(0.5);
     this.belleIcon.setVisible(false);
     this.belleIcon.setDepth(1000);
 
-    this.belleTimerText = this.add.text(width / 2 + 100, powerupIconY - 8, 'BELLE 15s', {
-      fontSize: '14px',
-      color: '#666666',
+    this.belleTimerText = this.add.text(width / 2 + 100, powerupIconY - 10, 'BELLE\n15s', {
+      fontSize: '18px',
+      color: '#FFFFFF',
       fontFamily: 'Arial',
-      fontStyle: 'bold'
+      fontStyle: 'bold',
+      align: 'center'
     }).setOrigin(0, 0.5);
     this.belleTimerText.setVisible(false);
     this.belleTimerText.setDepth(1000);
 
-    // Bull Market Mode - compact
-    this.bullMarketIcon = this.add.text(width / 2 + 230, powerupIconY - 8, '🐂', {
-      fontSize: '24px',
-      color: '#E63946',
-      fontFamily: 'Arial'
+    // Bull Market Mode - LARGER with background
+    const bullBg = this.add.graphics();
+    bullBg.fillStyle(0x002868, 0.8);
+    bullBg.fillRoundedRect(width / 2 + 190, powerupIconY - 35, 160, 70, 8);
+    bullBg.lineStyle(2, 0xFFD700, 1);
+    bullBg.strokeRoundedRect(width / 2 + 190, powerupIconY - 35, 160, 70, 8);
+    bullBg.setVisible(false);
+    bullBg.setDepth(999);
+    (this as any).bullBg = bullBg;
+
+    this.bullMarketIcon = this.add.text(width / 2 + 230, powerupIconY - 10, '🐂', {
+      fontSize: '48px'
     }).setOrigin(0.5);
     this.bullMarketIcon.setVisible(false);
     this.bullMarketIcon.setDepth(1000);
 
-    this.bullMarketTimerText = this.add.text(width / 2 + 260, powerupIconY - 8, 'BULL 10s', {
-      fontSize: '14px',
-      color: '#666666',
+    this.bullMarketTimerText = this.add.text(width / 2 + 280, powerupIconY - 10, 'BULL\n10s', {
+      fontSize: '18px',
+      color: '#FFFFFF',
       fontFamily: 'Arial',
-      fontStyle: 'bold'
+      fontStyle: 'bold',
+      align: 'center'
     }).setOrigin(0, 0.5);
     this.bullMarketTimerText.setVisible(false);
     this.bullMarketTimerText.setDepth(1000);
@@ -1514,6 +1543,7 @@ export class GameScene extends Phaser.Scene {
 
     this.magnetIcon?.setVisible(true);
     this.magnetTimerText?.setVisible(true);
+    (this as any).magnetBg?.setVisible(true);
 
     // Play buyback voice sound
     this.sound.play('buyback-voice', { volume: 0.7 });
@@ -1546,6 +1576,7 @@ export class GameScene extends Phaser.Scene {
       this.magnetActive = false;
       this.magnetIcon?.setVisible(false);
       this.magnetTimerText?.setVisible(false);
+      (this as any).magnetBg?.setVisible(false);
     });
   }
 
@@ -1566,6 +1597,7 @@ export class GameScene extends Phaser.Scene {
     this.shieldOwner = 'powerup';
     this.shieldIcon?.setVisible(true);
     this.shieldTimerText?.setVisible(true);
+    (this as any).shieldBg?.setVisible(true);
 
     console.log('🛡️ America Hat shield activated - Owner: powerup');
 
@@ -1635,6 +1667,7 @@ export class GameScene extends Phaser.Scene {
         this.shieldOwner = 'none';
         this.shieldIcon?.setVisible(false);
         this.shieldTimerText?.setVisible(false);
+        (this as any).shieldBg?.setVisible(false);
         if (this.shieldGraphics) {
           this.shieldGraphics.destroy();
           this.shieldGraphics = undefined;
@@ -1787,6 +1820,7 @@ export class GameScene extends Phaser.Scene {
     this.belleModActive = true;
     this.belleIcon?.setVisible(true);
     this.belleTimerText?.setVisible(true);
+    (this as any).belleBg?.setVisible(true);
 
     // Play Belle collection sound
     this.sound.play('belle-collect', { volume: 0.6 });
@@ -1852,6 +1886,7 @@ export class GameScene extends Phaser.Scene {
       this.belleModActive = false;
       this.belleIcon?.setVisible(false);
       this.belleTimerText?.setVisible(false);
+      (this as any).belleBg?.setVisible(false);
       if (this.belleSprite) {
         this.belleSprite.destroy();
         this.belleSprite = undefined;
@@ -2119,11 +2154,11 @@ export class GameScene extends Phaser.Scene {
     // Update Magnet/Buyback timer
     if (this.magnetActive && this.magnetTimer && this.magnetTimerText) {
       const remaining = Math.ceil((this.magnetTimer.delay - this.magnetTimer.elapsed) / 1000);
-      this.magnetTimerText.setText(`BUYBACK ${remaining}s`);
+      this.magnetTimerText.setText(`BUYBACK\n${remaining}s`);
 
       // Blink warning when < 3 seconds - more prominent
       if (remaining <= 3) {
-        this.magnetTimerText.setColor(remaining % 2 === 0 ? '#FF0000' : '#666666');
+        this.magnetTimerText.setColor(remaining % 2 === 0 ? '#FF0000' : '#FFFFFF');
         this.magnetIcon?.setAlpha(remaining % 2 === 0 ? 0.4 : 1);
         this.magnetIcon?.setScale(remaining % 2 === 0 ? 1.2 : 1); // Pulse effect
       }
@@ -2132,11 +2167,11 @@ export class GameScene extends Phaser.Scene {
     // Update Shield timer
     if (this.shieldActive && this.shieldTimer && this.shieldTimerText) {
       const remaining = Math.ceil((this.shieldTimer.delay - this.shieldTimer.elapsed) / 1000);
-      this.shieldTimerText.setText(`SHIELD ${remaining}s`);
+      this.shieldTimerText.setText(`SHIELD\n${remaining}s`);
 
       // Blink warning when < 3 seconds - more prominent
       if (remaining <= 3) {
-        this.shieldTimerText.setColor(remaining % 2 === 0 ? '#FF0000' : '#666666');
+        this.shieldTimerText.setColor(remaining % 2 === 0 ? '#FF0000' : '#FFFFFF');
         this.shieldIcon?.setAlpha(remaining % 2 === 0 ? 0.4 : 1);
         this.shieldIcon?.setScale(remaining % 2 === 0 ? 1.2 : 1); // Pulse effect
       }
@@ -2145,11 +2180,11 @@ export class GameScene extends Phaser.Scene {
     // Update Belle MOD timer
     if (this.belleModActive && this.belleModTimer && this.belleTimerText) {
       const remaining = Math.ceil((this.belleModTimer.delay - this.belleModTimer.elapsed) / 1000);
-      this.belleTimerText.setText(`BELLE ${remaining}s`);
+      this.belleTimerText.setText(`BELLE\n${remaining}s`);
 
       // Blink warning when < 3 seconds - more prominent
       if (remaining <= 3) {
-        this.belleTimerText.setColor(remaining % 2 === 0 ? '#FF0000' : '#666666');
+        this.belleTimerText.setColor(remaining % 2 === 0 ? '#FF0000' : '#FFFFFF');
         this.belleIcon?.setAlpha(remaining % 2 === 0 ? 0.4 : 1);
         this.belleIcon?.setScale(remaining % 2 === 0 ? 1.2 : 1); // Pulse effect
       }
@@ -2158,11 +2193,11 @@ export class GameScene extends Phaser.Scene {
     // Update Bull Market timer
     if (this.bullMarketActive && this.bullMarketTimer && this.bullMarketTimerText) {
       const remaining = Math.ceil((this.bullMarketTimer.delay - this.bullMarketTimer.elapsed) / 1000);
-      this.bullMarketTimerText.setText(`BULL ${remaining}s`);
+      this.bullMarketTimerText.setText(`BULL\n${remaining}s`);
 
       // Blink warning when < 3 seconds - more prominent
       if (remaining <= 3) {
-        this.bullMarketTimerText.setColor(remaining % 2 === 0 ? '#FF0000' : '#666666');
+        this.bullMarketTimerText.setColor(remaining % 2 === 0 ? '#FF0000' : '#FFFFFF');
         this.bullMarketIcon?.setAlpha(remaining % 2 === 0 ? 0.4 : 1);
         this.bullMarketIcon?.setScale(remaining % 2 === 0 ? 1.2 : 1); // Pulse effect
       }
@@ -3302,6 +3337,7 @@ export class GameScene extends Phaser.Scene {
     // Show bull market indicator
     this.bullMarketIcon?.setVisible(true);
     this.bullMarketTimerText?.setVisible(true);
+    (this as any).bullBg?.setVisible(true);
 
     // Slow down game speed
     const originalCoinSpeed = this.coinSpeed;
@@ -3315,6 +3351,7 @@ export class GameScene extends Phaser.Scene {
       this.bullMarketActive = false;
       this.bullMarketIcon?.setVisible(false);
       this.bullMarketTimerText?.setVisible(false);
+      (this as any).bullBg?.setVisible(false);
       this.coinSpeed = originalCoinSpeed;
       this.enemySpeed = originalEnemySpeed;
     });
@@ -3467,50 +3504,48 @@ export class GameScene extends Phaser.Scene {
     overlay.setScrollFactor(0); // Fixed to camera
     tutorialElements.push(overlay);
 
-    // Tutorial box
+    // Tutorial box - Smaller and cleaner
     const tutorialBg = this.add.graphics();
     tutorialBg.fillStyle(0x222222, 0.98);
-    tutorialBg.fillRoundedRect(width / 2 - 350, height / 2 - 180, 700, 360, 20);
-    tutorialBg.lineStyle(5, 0x0088FF, 1);
-    tutorialBg.strokeRoundedRect(width / 2 - 350, height / 2 - 180, 700, 360, 20);
+    tutorialBg.fillRoundedRect(width / 2 - 280, height / 2 - 150, 560, 300, 16);
+    tutorialBg.lineStyle(4, 0xFFD700, 1); // Gold border
+    tutorialBg.strokeRoundedRect(width / 2 - 280, height / 2 - 150, 560, 300, 16);
     tutorialBg.setDepth(5001);
     tutorialBg.setScrollFactor(0);
     tutorialElements.push(tutorialBg);
 
     // Title
-    const title = this.add.text(width / 2, height / 2 - 120, '⚡ WEAPON UNLOCKED ⚡', {
-      fontSize: '42px',
-      color: '#0088FF',
+    const title = this.add.text(width / 2, height / 2 - 100, '⚡ WEAPON UNLOCKED ⚡', {
+      fontSize: '36px',
+      color: '#FFD700',
       fontFamily: 'Arial',
       fontStyle: 'bold',
       stroke: '#000000',
-      strokeThickness: 4
+      strokeThickness: 3
     }).setOrigin(0.5).setDepth(5002);
     title.setScrollFactor(0);
     tutorialElements.push(title);
 
-    // Instructions
-    const instructions = this.add.text(width / 2, height / 2 - 20,
-      'Q - Shoot straight\n' +
-      'W - Shoot up\n' +
-      'E - Shoot down\n\n' +
-      'Coins charge weapon energy\n' +
-      'Shooting depletes energy\n\n' +
-      'Energy bar shown bottom right',
+    // Instructions - Shorter and clearer
+    const instructions = this.add.text(width / 2, height / 2 - 10,
+      'Q - Shoot Forward\n' +
+      'W - Shoot Up\n' +
+      'E - Shoot Down\n\n' +
+      'Coins charge energy · Shooting uses energy',
       {
-        fontSize: '26px',
+        fontSize: '22px',
         color: '#FFFFFF',
         fontFamily: 'Arial',
         align: 'center',
-        lineSpacing: 8
+        lineSpacing: 10
       }
     ).setOrigin(0.5).setDepth(5002);
     instructions.setScrollFactor(0);
     tutorialElements.push(instructions);
 
     // Close hint - SPACE only
-    const closeHint = this.add.text(width / 2, height / 2 + 140, 'Press SPACE to continue', {
-      fontSize: '22px',
+    const closeHint = this.add.text(width / 2, height / 2 + 110, 'Press SPACE to continue', {
+      fontSize: '20px',
       color: '#FFD700',
       fontFamily: 'Arial',
       fontStyle: 'bold'

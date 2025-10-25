@@ -28,13 +28,21 @@ export default class UIScene extends Phaser.Scene {
   private weaponContainer?: Phaser.GameObjects.Container;
   private weaponText?: Phaser.GameObjects.Text;
   private weaponIcon?: Phaser.GameObjects.Text;
+  private weaponEnergyBarBg?: Phaser.GameObjects.Graphics;
+  private weaponEnergyBar?: Phaser.GameObjects.Graphics;
+  private weaponEnergyText?: Phaser.GameObjects.Text;
 
-  // Constants
+  // Constants - America.Fun Patriotic Theme
   private readonly EDGE_PADDING = 35; // Same as top bar
-  private readonly UI_BG_COLOR = 0x000000;
-  private readonly UI_BG_ALPHA = 0.6; // Transparent
-  private readonly UI_BORDER_COLOR = 0x444444;
-  private readonly UI_BORDER_WIDTH = 2;
+
+  // Patriotic Colors (US Flag inspired)
+  private readonly NAVY_BLUE = 0x002868; // Navy blue from US flag
+  private readonly CRIMSON_RED = 0xDC143C; // Red from US flag
+  private readonly PURE_WHITE = 0xFFFFFF; // White
+  private readonly GOLD = 0xFFD700; // Gold for accents
+
+  private readonly UI_BG_ALPHA = 0.75; // Slightly more visible
+  private readonly UI_BORDER_WIDTH = 3; // Thicker border
   private readonly UI_CORNER_RADIUS = 8;
 
   constructor() {
@@ -55,14 +63,14 @@ export default class UIScene extends Phaser.Scene {
     const x = width - this.EDGE_PADDING - 250; // 250px width for XP bar
     const y = this.EDGE_PADDING + 120; // Below top bar + 20px extra
 
-    // Background
+    // Background - Navy Blue
     const bg = this.add.graphics();
-    bg.fillStyle(this.UI_BG_COLOR, this.UI_BG_ALPHA);
+    bg.fillStyle(this.NAVY_BLUE, this.UI_BG_ALPHA);
     bg.fillRoundedRect(x, y, 250, 70, this.UI_CORNER_RADIUS);
-    bg.lineStyle(this.UI_BORDER_WIDTH, this.UI_BORDER_COLOR, 1);
+    bg.lineStyle(this.UI_BORDER_WIDTH, this.GOLD, 1); // Gold border
     bg.strokeRoundedRect(x, y, 250, 70, this.UI_CORNER_RADIUS);
 
-    // Level Text (Large, bold)
+    // Level Text (Large, bold) - White
     this.levelText = this.add.text(x + 20, y + 15, 'LEVEL 1', {
       fontSize: '20px',
       fontFamily: 'Arial',
@@ -70,25 +78,25 @@ export default class UIScene extends Phaser.Scene {
       fontStyle: 'bold'
     });
 
-    // XP Bar Background
+    // XP Bar Background - Dark blue
     const barX = x + 20;
     const barY = y + 45;
     const barWidth = 210;
     const barHeight = 12;
 
     this.xpBarBg = this.add.graphics();
-    this.xpBarBg.fillStyle(0x333333, 1);
+    this.xpBarBg.fillStyle(0x001845, 1); // Darker navy
     this.xpBarBg.fillRoundedRect(barX, barY, barWidth, barHeight, 6);
 
-    // XP Bar Fill
+    // XP Bar Fill - Red/White stripes effect
     this.xpBarFill = this.add.graphics();
     this.updateXPBar();
 
-    // XP Text
+    // XP Text - Gold
     this.xpText = this.add.text(x + 125, y + 15, '0 / 1000 XP', {
       fontSize: '14px',
       fontFamily: 'Arial',
-      color: '#AAAAAA'
+      color: '#FFD700' // Gold
     });
   }
 
@@ -107,8 +115,17 @@ export default class UIScene extends Phaser.Scene {
     const fillWidth = barWidth * progress;
 
     this.xpBarFill.clear();
-    this.xpBarFill.fillStyle(0x4CAF50, 1); // Green
-    this.xpBarFill.fillRoundedRect(barX, barY, fillWidth, barHeight, 6);
+
+    // Patriotic gradient: Red to White to Blue
+    if (fillWidth > 0) {
+      // Red fill with white stars effect
+      this.xpBarFill.fillStyle(0xDC143C, 1); // Crimson red
+      this.xpBarFill.fillRoundedRect(barX, barY, fillWidth, barHeight, 6);
+
+      // Add white highlight on top
+      this.xpBarFill.fillStyle(0xFFFFFF, 0.3);
+      this.xpBarFill.fillRoundedRect(barX, barY, fillWidth, barHeight / 3, 6);
+    }
   }
 
   // ========== MISSION DISPLAY (BOTTOM RIGHT) ==========
@@ -124,14 +141,16 @@ export default class UIScene extends Phaser.Scene {
     for (let i = 0; i < 3; i++) {
       const y = height - this.EDGE_PADDING - (missionHeight * (i + 1)) - (spacing * i);
 
-      // Background
+      // Background - Navy Blue
       const bg = this.add.graphics();
-      bg.fillStyle(this.UI_BG_COLOR, this.UI_BG_ALPHA);
+      bg.fillStyle(this.NAVY_BLUE, this.UI_BG_ALPHA);
       bg.fillRoundedRect(x, y, missionWidth, missionHeight, this.UI_CORNER_RADIUS);
-      bg.lineStyle(this.UI_BORDER_WIDTH, this.UI_BORDER_COLOR, 1);
+
+      // Gold border
+      bg.lineStyle(this.UI_BORDER_WIDTH, this.GOLD, 1);
       bg.strokeRoundedRect(x, y, missionWidth, missionHeight, this.UI_CORNER_RADIUS);
 
-      // Mission Title (emoji + title)
+      // Mission Title (emoji + title) - White
       const titleText = this.add.text(x + 15, y + 15, '🎯 Mission', {
         fontSize: '18px',
         fontFamily: 'Arial',
@@ -139,18 +158,18 @@ export default class UIScene extends Phaser.Scene {
         fontStyle: 'bold'
       });
 
-      // Progress Text (bigger, centered)
+      // Progress Text (bigger, centered) - White
       const progressText = this.add.text(x + 15, y + 42, '0 / 0', {
         fontSize: '16px',
         fontFamily: 'Arial',
-        color: '#AAAAAA'
+        color: '#FFFFFF'
       });
 
-      // Reward Text (right side)
+      // Reward Text (right side) - Gold
       const rewardText = this.add.text(x + missionWidth - 80, y + 42, '+0 XP', {
         fontSize: '16px',
         fontFamily: 'Arial',
-        color: '#4CAF50',
+        color: '#FFD700', // Gold
         fontStyle: 'bold'
       });
 
@@ -164,38 +183,56 @@ export default class UIScene extends Phaser.Scene {
   private createWeaponDisplay(): void {
     const height = this.cameras.main.height;
     const x = this.EDGE_PADDING;
-    const y = height - this.EDGE_PADDING - 100;
-    const boxWidth = 280;
-    const boxHeight = 100;
+    const y = height - this.EDGE_PADDING - 90;
+    const boxWidth = 260;
+    const boxHeight = 90;
 
-    // Background
+    // Background - Navy Blue (simple)
     const bg = this.add.graphics();
-    bg.fillStyle(this.UI_BG_COLOR, this.UI_BG_ALPHA);
+    bg.fillStyle(this.NAVY_BLUE, this.UI_BG_ALPHA);
     bg.fillRoundedRect(x, y, boxWidth, boxHeight, this.UI_CORNER_RADIUS);
-    bg.lineStyle(this.UI_BORDER_WIDTH, this.UI_BORDER_COLOR, 1);
+
+    // Gold border
+    bg.lineStyle(this.UI_BORDER_WIDTH, this.GOLD, 1);
     bg.strokeRoundedRect(x, y, boxWidth, boxHeight, this.UI_CORNER_RADIUS);
 
-    // Weapon Icon (Large emoji)
-    this.weaponIcon = this.add.text(x + 20, y + 25, '🔫', {
-      fontSize: '48px'
+    // Weapon Icon (emoji)
+    this.weaponIcon = this.add.text(x + 15, y + 15, '🔫', {
+      fontSize: '32px'
     });
 
-    // Weapon Name
-    this.weaponText = this.add.text(x + 90, y + 20, 'No Weapon', {
-      fontSize: '20px',
+    // Weapon Name - White
+    this.weaponText = this.add.text(x + 60, y + 18, 'No Weapon', {
+      fontSize: '16px',
       fontFamily: 'Arial',
       color: '#FFFFFF',
       fontStyle: 'bold'
     });
 
-    // Weapon Ammo/Info
-    const ammoText = this.add.text(x + 90, y + 50, 'Press SPACE to pick up', {
+    // Energy Bar Background
+    this.weaponEnergyBarBg = this.add.graphics();
+    this.weaponEnergyBarBg.fillStyle(0x001845, 1); // Dark navy
+    this.weaponEnergyBarBg.fillRoundedRect(x + 15, y + 58, 230, 20, 4);
+
+    // Energy Bar Fill
+    this.weaponEnergyBar = this.add.graphics();
+
+    // Energy Text (percentage) - inside bar
+    this.weaponEnergyText = this.add.text(x + 130, y + 62, '100%', {
       fontSize: '14px',
       fontFamily: 'Arial',
-      color: '#AAAAAA'
-    });
+      color: '#FFFFFF',
+      fontStyle: 'bold'
+    }).setOrigin(0.5, 0);
 
-    this.weaponContainer = this.add.container(0, 0, [bg, this.weaponIcon, this.weaponText, ammoText]);
+    this.weaponContainer = this.add.container(0, 0, [
+      bg,
+      this.weaponIcon,
+      this.weaponText,
+      this.weaponEnergyBarBg,
+      this.weaponEnergyBar,
+      this.weaponEnergyText
+    ]);
   }
 
   // ========== PUBLIC UPDATE METHODS ==========
@@ -277,12 +314,12 @@ export default class UIScene extends Phaser.Scene {
       if (texts[1]) {
         if (mission.completed) {
           texts[1].setText('✅ Done');
-          texts[1].setColor('#4CAF50');
+          texts[1].setColor('#FFD700'); // Gold for completed
         } else {
           const progress = mission.progress || 0;
           const target = mission.target || 0;
           texts[1].setText(`${progress} / ${target}`);
-          texts[1].setColor('#CCCCCC');
+          texts[1].setColor('#FFFFFF'); // White for progress
         }
       }
 
@@ -298,13 +335,16 @@ export default class UIScene extends Phaser.Scene {
           xpValue = mission.xpReward;
         }
         texts[2].setText(`+${xpValue} XP`);
-        texts[2].setColor('#4CAF50');
+        texts[2].setColor('#FFD700'); // Gold for rewards
       }
     }
   }
 
   /**
    * Update Weapon Display
+   * @param weaponName - Name of the weapon
+   * @param weaponIcon - Emoji icon for the weapon
+   * @param info - Info string like "Lv2 | Energy: 75%"
    */
   public updateWeapon(weaponName: string, weaponIcon: string, info: string): void {
     if (this.weaponText) {
@@ -315,12 +355,36 @@ export default class UIScene extends Phaser.Scene {
       this.weaponIcon.setText(weaponIcon);
     }
 
-    // Update info text (ammo, cooldown, etc.)
-    if (this.weaponContainer) {
-      const texts = this.weaponContainer.list.filter(obj => obj.type === 'Text') as Phaser.GameObjects.Text[];
-      if (texts[2]) {
-        texts[2].setText(info);
-      }
+    // Extract energy percentage from info string
+    const energyMatch = info.match(/Energy:\s*(\d+)%/);
+    let energyPercent = 100;
+    if (energyMatch) {
+      energyPercent = parseInt(energyMatch[1]);
+    }
+
+    // Update energy bar
+    if (this.weaponEnergyBar && this.weaponEnergyBarBg) {
+      const height = this.cameras.main.height;
+      const x = this.EDGE_PADDING;
+      const y = height - this.EDGE_PADDING - 90;
+
+      this.weaponEnergyBar.clear();
+
+      const barWidth = 230;
+      const fillWidth = (barWidth * energyPercent) / 100;
+
+      // Color based on energy level
+      let barColor = 0x00FF00; // Green
+      if (energyPercent < 30) barColor = 0xFF0000; // Red
+      else if (energyPercent < 60) barColor = 0xFFAA00; // Orange
+
+      this.weaponEnergyBar.fillStyle(barColor, 1);
+      this.weaponEnergyBar.fillRoundedRect(x + 15, y + 58, fillWidth, 20, 4);
+    }
+
+    // Update energy text
+    if (this.weaponEnergyText) {
+      this.weaponEnergyText.setText(`${energyPercent}%`);
     }
   }
 
