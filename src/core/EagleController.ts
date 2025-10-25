@@ -18,7 +18,7 @@ export interface EagleState {
 
 export class EagleController {
   private scene: Phaser.Scene;
-  private eagle: Eagle;
+  private eagle?: Eagle;
 
   // State
   private lives: number = 3;
@@ -39,6 +39,7 @@ export class EagleController {
   private baseSpeed: number = 300;
   private currentSpeed: number = 300;
   private speedBonus: number = 0; // From upgrades
+  private speedBoostMultiplier: number = 1.0; // Temporary boost from power-ups
 
   // Invincibility timing
   private invincibilityTimer?: Phaser.Time.TimerEvent;
@@ -49,15 +50,23 @@ export class EagleController {
   private onDeathCallback?: () => void;
   private onLifeGainCallback?: () => void;
 
-  constructor(scene: Phaser.Scene, x: number, y: number) {
+  constructor(scene: Phaser.Scene) {
     this.scene = scene;
-    this.eagle = new Eagle(scene, x, y);
+  }
+
+  /**
+   * Set the eagle sprite to control
+   */
+  public setEagle(eagle: Eagle, speedBonus: number = 0): void {
+    this.eagle = eagle;
+    this.speedBonus = speedBonus;
+    this.updateSpeed();
   }
 
   /**
    * Initialize the controller
    */
-  public init(): void {
+  public init(startingLives: number = 3): void {
     // Setup input
     if (this.scene.input.keyboard) {
       this.cursors = this.scene.input.keyboard.createCursorKeys();
@@ -70,11 +79,19 @@ export class EagleController {
     }
 
     // Reset state
-    this.lives = this.maxLives;
+    this.maxLives = startingLives;
+    this.lives = startingLives;
     this.invincible = false;
     this.shielded = false;
 
     console.log('🦅 EagleController initialized');
+  }
+
+  /**
+   * Update speed based on bonus and boost
+   */
+  private updateSpeed(): void {
+    this.currentSpeed = (this.baseSpeed + this.speedBonus) * this.speedBoostMultiplier;
   }
 
   /**
@@ -266,6 +283,51 @@ export class EagleController {
     console.log('🛡️ Shield deactivated');
   }
 
+  /**
+   * Set shield state (for power-ups)
+   */
+  public setShield(active: boolean): void {
+    this.shielded = active;
+    console.log(`🛡️ Shield ${active ? 'activated' : 'deactivated'}`);
+  }
+
+  // ========== POWER-UPS ==========
+
+  /**
+   * Set invincibility (for power-ups)
+   */
+  public setInvincibility(durationSeconds: number): void {
+    this.invincible = true;
+
+    // Clear existing timer
+    if (this.invincibilityTimer) {
+      this.invincibilityTimer.destroy();
+    }
+
+    // Flash animation
+    this.createFlashAnimation();
+
+    // Set timer
+    this.invincibilityTimer = this.scene.time.delayedCall(
+      durationSeconds * 1000,
+      () => {
+        this.invincible = false;
+        (this.eagle as any).setAlpha(1);
+      }
+    );
+
+    console.log(`⚡ Invincibility activated for ${durationSeconds}s`);
+  }
+
+  /**
+   * Set speed boost multiplier (for power-ups)
+   */
+  public setSpeedBoost(multiplier: number): void {
+    this.speedBoostMultiplier = multiplier;
+    this.updateSpeed();
+    console.log(`⚡ Speed boost: ${multiplier}x`);
+  }
+
   // ========== UPGRADES ==========
 
   /**
@@ -273,6 +335,7 @@ export class EagleController {
    */
   public setSpeedBonus(bonus: number): void {
     this.speedBonus = bonus;
+    this.updateSpeed();
     console.log(`⚡ Speed bonus: +${bonus}`);
   }
 

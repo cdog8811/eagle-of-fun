@@ -29,6 +29,9 @@ export class ScoringSystem {
   private scene: Phaser.Scene;
   private score: number = 0;
 
+  // Kill tracking
+  private totalKills: number = 0;
+
   // Combo tracking
   private comboKills: number = 0;
   private comboTimer: number = 0;
@@ -51,7 +54,7 @@ export class ScoringSystem {
 
   // Callbacks
   private onScoreChangeCallback?: (score: number) => void;
-  private onComboChangeCallback?: (kills: number, multiplier: number) => void;
+  private onComboChangeCallback?: (kills: number, multiplier: number, timer: number) => void;
   private onStyleBonusCallback?: (bonus: StyleBonus, points: number) => void;
 
   constructor(scene: Phaser.Scene) {
@@ -64,6 +67,7 @@ export class ScoringSystem {
    */
   public init(startPhase: number = 1): void {
     this.score = 0;
+    this.totalKills = 0;
     this.currentPhase = startPhase;
     this.comboKills = 0;
     this.comboTimer = 0;
@@ -180,6 +184,7 @@ export class ScoringSystem {
    */
   private incrementCombo(): void {
     this.comboKills++;
+    this.totalKills++;
 
     // Extend timer
     this.comboTimer = Math.min(
@@ -189,7 +194,7 @@ export class ScoringSystem {
 
     if (this.onComboChangeCallback) {
       const mult = calculateComboMultiplier(this.comboKills);
-      this.onComboChangeCallback(this.comboKills, mult);
+      this.onComboChangeCallback(this.comboKills, mult, this.comboTimer);
     }
   }
 
@@ -205,7 +210,7 @@ export class ScoringSystem {
     this.comboTimer = 0;
 
     if (this.onComboChangeCallback) {
-      this.onComboChangeCallback(0, 1.0);
+      this.onComboChangeCallback(0, 1.0, 0);
     }
   }
 
@@ -360,6 +365,10 @@ export class ScoringSystem {
     return this.score;
   }
 
+  public getTotalKills(): number {
+    return this.totalKills;
+  }
+
   public getCombo(): { kills: number; timer: number; multiplier: number } {
     return {
       kills: this.comboKills,
@@ -384,7 +393,7 @@ export class ScoringSystem {
     this.onScoreChangeCallback = callback;
   }
 
-  public onComboChange(callback: (kills: number, multiplier: number) => void): void {
+  public onComboChange(callback: (kills: number, multiplier: number, timer: number) => void): void {
     this.onComboChangeCallback = callback;
   }
 
