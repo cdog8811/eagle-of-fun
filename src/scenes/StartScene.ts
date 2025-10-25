@@ -16,29 +16,12 @@ export class StartScene extends Phaser.Scene {
     // Clean white background
     this.cameras.main.setBackgroundColor('#FFFFFF');
 
-    // Resume audio context on first interaction (required by browsers)
+    // Try to autoplay music (will work if user has interacted with page before)
+    this.tryAutoplayMusic();
+
+    // Fallback: Resume audio context on ANY interaction (required by browsers)
     this.input.on('pointerdown', () => {
-      if (!this.musicStarted) {
-        this.musicStarted = true;
-        console.log('StartScene: User clicked, resuming AudioContext');
-        if (this.sound.context) {
-          this.sound.context.resume().then(() => {
-            console.log('AudioContext resumed, state:', this.sound.context.state);
-            // Start menu music after AudioContext is resumed
-            if (this.cache.audio.exists('menu-music')) {
-              console.log('Playing menu music');
-              const music = this.sound.play('menu-music', {
-                volume: 0.5,
-                loop: true
-              });
-              console.log('Menu music playing:', music);
-              console.log('Sound manager volume:', this.sound.volume);
-            } else {
-              console.log('menu-music not found in cache');
-            }
-          });
-        }
-      }
+      this.startMusicIfNeeded();
     });
 
     // Minimal floating elements
@@ -236,6 +219,54 @@ export class StartScene extends Phaser.Scene {
       // Keep only last 10 characters
       if (this.easterEggInput.length > 10) {
         this.easterEggInput = this.easterEggInput.slice(-10);
+      }
+    }
+  }
+
+  // Try to autoplay music (works if user interacted with page before)
+  private tryAutoplayMusic(): void {
+    if (!this.musicStarted && this.cache.audio.exists('menu-music')) {
+      console.log('Attempting to autoplay menu music...');
+
+      // Try to play music
+      try {
+        const music = this.sound.play('menu-music', {
+          volume: 0.5,
+          loop: true
+        });
+
+        if (music) {
+          this.musicStarted = true;
+          console.log('✅ Music autoplayed successfully!');
+        }
+      } catch (error) {
+        console.log('⚠️ Autoplay blocked by browser - will start on user interaction');
+      }
+    }
+  }
+
+  // Start music if not already started
+  private startMusicIfNeeded(): void {
+    if (!this.musicStarted) {
+      this.musicStarted = true;
+      console.log('StartScene: User clicked, resuming AudioContext');
+
+      if (this.sound.context) {
+        this.sound.context.resume().then(() => {
+          console.log('AudioContext resumed, state:', this.sound.context.state);
+
+          // Start menu music after AudioContext is resumed
+          if (this.cache.audio.exists('menu-music')) {
+            console.log('Playing menu music');
+            const music = this.sound.play('menu-music', {
+              volume: 0.5,
+              loop: true
+            });
+            console.log('Menu music playing:', music);
+          } else {
+            console.log('menu-music not found in cache');
+          }
+        });
       }
     }
   }

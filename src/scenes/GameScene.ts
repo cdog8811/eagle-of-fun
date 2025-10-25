@@ -21,7 +21,8 @@ export class GameScene extends Phaser.Scene {
   private scoreText!: Phaser.GameObjects.Text;
   private timerText!: Phaser.GameObjects.Text;
   private phaseText!: Phaser.GameObjects.Text;
-  private burgerCountText?: Phaser.GameObjects.Text;
+  private burgerCountText?: Phaser.GameObjects.Text; // Actually shows AOL combo (legacy name)
+  private burgerCounterText?: Phaser.GameObjects.Text; // Shows burger count in top bar
 
   // Coin counters
   private bonkCount: number = 0;
@@ -85,7 +86,9 @@ export class GameScene extends Phaser.Scene {
 
   // === POWERUPS ===
   private aolCombo: number = 0; // Track consecutive AOL pickups
+  private burgerCombo: number = 0; // Track consecutive Burger pickups
   private burgerMultiplierActive: boolean = false;
+  private eatTheDipActive: boolean = false; // v3.7: Burger combo power-up
   private magnetActive: boolean = false;
   private shieldActive: boolean = false;
   private freedomStrikeActive: boolean = false;
@@ -96,7 +99,7 @@ export class GameScene extends Phaser.Scene {
 
   // === v3.2: LIFE SYSTEM ===
   private lives: number = 3; // Start with 3 hearts
-  private maxLives: number = 5; // v3.5: Maximum 5 hearts (was 3)
+  private maxLives: number = 3; // Maximum 3 hearts
   private invincible: boolean = false; // Invincibility frames after hit
   private invincibilityTimer?: Phaser.Time.TimerEvent;
   private heartSprites: Phaser.GameObjects.Image[] = [];
@@ -115,6 +118,7 @@ export class GameScene extends Phaser.Scene {
   private magnetTimer?: Phaser.Time.TimerEvent;
   private shieldTimer?: Phaser.Time.TimerEvent;
   private burgerMultiplierTimer?: Phaser.Time.TimerEvent;
+  private eatTheDipTimer?: Phaser.Time.TimerEvent; // v3.7: Eat the Dip timer
   private freedomStrikeTimer?: Phaser.Time.TimerEvent;
   private belleModTimer?: Phaser.Time.TimerEvent;
   private controlBlockTimer?: Phaser.Time.TimerEvent;
@@ -166,7 +170,10 @@ export class GameScene extends Phaser.Scene {
   private xpBarFill?: Phaser.GameObjects.Graphics;
 
   // v3.2: News Ticker
-  private newsTickerText?: Phaser.GameObjects.Text;
+  private newsTickerText?: Phaser.GameObjects.Text; // Top ticker
+  private newsTickerTextLeft?: Phaser.GameObjects.Text; // Left ticker
+  private newsTickerTextRight?: Phaser.GameObjects.Text; // Right ticker
+  private newsTickerTextBottom?: Phaser.GameObjects.Text; // Bottom ticker
   private newsTickerBg?: Phaser.GameObjects.Graphics;
   private newsMessages: string[] = [];
   private currentNewsIndex: number = 0;
@@ -224,9 +231,16 @@ export class GameScene extends Phaser.Scene {
     this.coinSpeed = 300;
     this.enemySpeed = 250;
 
+    // v3.7: Reset lives to 3 on restart
+    this.lives = 3;
+    this.invincible = false;
+    this.shieldOwner = 'none';
+
     // Power-ups
     this.aolCombo = 0;
+    this.burgerCombo = 0; // v3.7: Reset burger combo
     this.burgerMultiplierActive = false;
+    this.eatTheDipActive = false; // v3.7: Reset Eat the Dip
     this.magnetActive = false;
     this.shieldActive = false;
     this.freedomStrikeActive = false;
@@ -300,15 +314,15 @@ export class GameScene extends Phaser.Scene {
     // v3.2: NEWS TICKER - At very top (BREAKING)
     this.createNewsTicker();
 
-    // ========== GAME HUD - TOP BAR (DESIGN REMAKE) ==========
-    const hudY = 55;
+    // ========== GAME HUD - TOP BAR (WHITE BACKGROUND - SAME HEIGHT AS BLUE BAR) ==========
+    const hudY = 62; // Adjusted for thicker bar (55px height)
 
-    // Background bar for HUD - Pink/Red gradient
+    // Background bar for HUD - WHITE, same height as blue bar (55px)
     const hudBg = this.add.graphics();
-    hudBg.fillStyle(0xFFB3BA, 0.95); // Light pink/red
-    hudBg.fillRoundedRect(35, 35, width - 70, 45, 10);
-    hudBg.lineStyle(3, 0xFF6B7A, 1); // Pink border
-    hudBg.strokeRoundedRect(35, 35, width - 70, 45, 10);
+    hudBg.fillStyle(0xFFFFFF, 1); // White background
+    hudBg.fillRoundedRect(35, 35, width - 70, 55, 10);
+    hudBg.lineStyle(3, 0xCCCCCC, 1); // Light gray border
+    hudBg.strokeRoundedRect(35, 35, width - 70, 55, 10);
     hudBg.setDepth(999);
 
     const hudStyle = {
@@ -319,38 +333,40 @@ export class GameScene extends Phaser.Scene {
       letterSpacing: 0
     };
 
-    // Timer - left side
+    // Timer - left side (proper spacing from edge)
     this.timerText = this.add.text(65, hudY, 'TIME: 0s', hudStyle);
     this.timerText.setOrigin(0, 0.5);
     this.timerText.setDepth(1000);
 
     // Phase - left-center
-    this.phaseText = this.add.text(width * 0.30, hudY, 'PHASE: 1', hudStyle);
+    this.phaseText = this.add.text(width * 0.25, hudY, 'PHASE: 1', hudStyle);
     this.phaseText.setOrigin(0.5, 0.5);
     this.phaseText.setDepth(1000);
 
-    // Score - center-right
-    this.scoreText = this.add.text(width * 0.55, hudY, 'SCORE: 0', hudStyle);
+    // Score - center
+    this.scoreText = this.add.text(width * 0.45, hudY, 'SCORE: 0', hudStyle);
     this.scoreText.setOrigin(0.5, 0.5);
     this.scoreText.setDepth(1000);
 
     // v3.2: Hearts inline in top bar
     this.createHeartDisplay();
 
-    // v3.2: AOL Logo counter (AOL combo) - with image
-    const aolLogo = this.add.image(width - 215, hudY, 'coin-aol');
+    // v3.2: AOL Logo counter (AOL combo) - moved inside bar
+    const aolLogo = this.add.image(width - 280, hudY, 'coin-aol');
     aolLogo.setScale(0.08); // Small size for top bar
     aolLogo.setOrigin(0.5, 0.5);
     aolLogo.setDepth(1000);
 
-    this.burgerCountText = this.add.text(width - 185, hudY, '0/3', hudStyle);
-    this.burgerCountText.setOrigin(0, 0.5);
-    this.burgerCountText.setDepth(1000);
+    // AOL Combo counter (shows combo progress: 0/3, 1/3, 2/3, 3/3)
+    const aolComboText = this.add.text(width - 250, hudY, '0/3', hudStyle);
+    aolComboText.setOrigin(0, 0.5);
+    aolComboText.setDepth(1000);
+    this.burgerCountText = aolComboText; // Store reference (legacy property name)
 
-    // v3.2: Burger counter
-    const burgerCounterText = this.add.text(width - 80, hudY, '🍔 0/5', hudStyle);
-    burgerCounterText.setOrigin(0, 0.5);
-    burgerCounterText.setDepth(1000);
+    // v3.7: Burger counter - moved inside bar (shows combo progress: 0/5, 1/5, etc.)
+    this.burgerCounterText = this.add.text(width - 160, hudY, '🍔 0/5', hudStyle);
+    this.burgerCounterText.setOrigin(0, 0.5);
+    this.burgerCounterText.setDepth(1000);
 
     // v3.2: XP & LEVEL - Top right corner
     this.createXPDisplay();
@@ -361,8 +377,8 @@ export class GameScene extends Phaser.Scene {
     // v3.7: Weapon UI will be created when weapon is collected
     // (Don't create it at start)
 
-    // ========== COIN COUNTERS - SECOND ROW (BLUE BAR) ==========
-    const coinCounterY = 105;
+    // ========== COIN COUNTERS - SECOND ROW (BLUE BAR) - 20px thicker ==========
+    const coinCounterY = 115; // Adjusted for thicker bar
     const coinStyle = {
       fontSize: '22px',
       color: '#FFFFFF',
@@ -372,10 +388,10 @@ export class GameScene extends Phaser.Scene {
       strokeThickness: 2
     };
 
-    // Background for coin counters - Deep blue like design
+    // Background for coin counters - Deep blue, 20px thicker (55px instead of 35px)
     const coinBg = this.add.graphics();
     coinBg.fillStyle(0x1A3A8A, 0.95); // Deep blue
-    coinBg.fillRoundedRect(35, 90, width - 70, 35, 8);
+    coinBg.fillRoundedRect(35, 90, width - 70, 55, 8);
     coinBg.setDepth(998);
 
     // Calculate spacing for 5 coins
@@ -1249,18 +1265,13 @@ export class GameScene extends Phaser.Scene {
     enemy.setData('zigzagDirection', 1); // 1 = down, -1 = up
     enemy.setData('dashCooldown', 0);
 
-    // Special behavior for Paper Hands Pete - drops fake coins more frequently
+    // Special behavior for Paper Hands Pete - drops ONE fake coin less frequently
     if (randomEnemyType === 'paperHands') {
-      const dropInterval = Phaser.Math.Between(2000, 3500);
+      const dropInterval = Phaser.Math.Between(4000, 6000); // Doubled delay
       this.time.delayedCall(dropInterval, () => {
         if (enemy.active) {
           this.spawnFakeCoin(enemy.x, enemy.y);
-          // Drop another one if still alive
-          this.time.delayedCall(dropInterval, () => {
-            if (enemy.active) {
-              this.spawnFakeCoin(enemy.x, enemy.y);
-            }
-          });
+          // Only ONE fake coin per paperHands (removed second drop)
         }
       });
     }
@@ -1496,15 +1507,17 @@ export class GameScene extends Phaser.Scene {
     // Play buyback voice sound
     this.sound.play('buyback-voice', { volume: 0.7 });
 
-    // Visual feedback
-    const text = this.add.text(this.cameras.main.width / 2, 200, '🧲 BUYBACK ACTIVATED!\nCoins fly to you like liquidity 💸', {
-      fontSize: '42px',
+    // Visual feedback - centered
+    const width = this.cameras.main.width;
+    const height = this.cameras.main.height;
+    const text = this.add.text(width / 2, height / 2 - 50, '🧲 BUYBACK ACTIVATED!\nCoins fly to you like liquidity 💸', {
+      fontSize: '56px',
       color: '#FBB13C',
       fontFamily: 'Arial',
       fontStyle: 'bold',
       align: 'center',
       stroke: '#FFFFFF',
-      strokeThickness: 4
+      strokeThickness: 6
     }).setOrigin(0.5);
     text.setDepth(2000);
 
@@ -1770,14 +1783,14 @@ export class GameScene extends Phaser.Scene {
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
 
-    // Visual feedback text
-    const text = this.add.text(width / 2, 200, 'Κρόνος Belle is watching 👁️', {
-      fontSize: '48px',
+    // Visual feedback text - centered
+    const text = this.add.text(width / 2, height / 2 - 50, 'Κρόνος Belle is watching 👁️', {
+      fontSize: '56px',
       color: '#FFD700',
       fontFamily: 'Arial',
       fontStyle: 'bold',
       stroke: '#000000',
-      strokeThickness: 4
+      strokeThickness: 6
     }).setOrigin(0.5);
     text.setDepth(2000);
 
@@ -1872,15 +1885,17 @@ export class GameScene extends Phaser.Scene {
 
     this.burgerMultiplierActive = true;
 
-    // Visual feedback
-    const text = this.add.text(this.cameras.main.width / 2, 200, '🍔 BURGER MULTIPLIER!\nScore x2 for 5 seconds', {
-      fontSize: '48px',
+    // Visual feedback - centered
+    const width = this.cameras.main.width;
+    const height = this.cameras.main.height;
+    const text = this.add.text(width / 2, height / 2 - 50, '🍔 BURGER MULTIPLIER!\nScore x2 for 5 seconds', {
+      fontSize: '56px',
       color: '#FBB13C',
       fontFamily: 'Arial',
       fontStyle: 'bold',
       align: 'center',
       stroke: '#FFFFFF',
-      strokeThickness: 4
+      strokeThickness: 6
     }).setOrigin(0.5);
     text.setDepth(2000);
 
@@ -1900,7 +1915,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private updateAOLCombo(): void {
-    this.burgerCountText?.setText(`AOL: ${this.aolCombo}/3`);
+    this.burgerCountText?.setText(`${this.aolCombo}/3`);
 
     // Animation
     this.tweens.add({
@@ -1911,22 +1926,143 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  private showComboText(combo: number, bonusPoints: number): void {
-    // Show combo above eagle
-    const comboText = this.add.text(this.eagle.x, this.eagle.y - 80, `🔥 ${combo}x COMBO!\n+${bonusPoints}`, {
+  // v3.7: Update burger combo counter
+  private updateBurgerCombo(): void {
+    if (this.burgerCounterText) {
+      this.burgerCounterText.setText(`🍔 ${this.burgerCombo}/5`);
+    }
+
+    // Animation
+    this.tweens.add({
+      targets: this.burgerCounterText,
+      scale: 1.2,
+      duration: 150,
+      yoyo: true,
+      ease: 'Back.easeOut'
+    });
+  }
+
+  // v3.7: EAT THE DIP - Burger combo power-up (5 burgers)
+  private activateEatTheDip(): void {
+    if (this.eatTheDipActive) return;
+
+    console.log('🍔💰 EAT THE DIP ACTIVATED!');
+    this.eatTheDipActive = true;
+    this.burgerCombo = 0; // Reset combo
+    this.updateBurgerCombo();
+
+    // Play burger combo sound
+    this.sound.play('burgercombo', { volume: 0.9 });
+
+    const width = this.cameras.main.width;
+    const height = this.cameras.main.height;
+
+    // Golden screen glow overlay
+    const dipGlow = this.add.rectangle(width / 2, height / 2, width, height, 0xFFD700, 0.3);
+    dipGlow.setDepth(1500);
+
+    // Pulsing animation
+    this.tweens.add({
+      targets: dipGlow,
+      alpha: 0.15,
+      duration: 500,
+      yoyo: true,
+      repeat: 19, // 10 seconds total (500ms * 20 = 10s)
+      ease: 'Sine.easeInOut'
+    });
+
+    // Main title text
+    const titleText = this.add.text(width / 2, height / 2 - 50, '🍔 EAT THE DIP! 🍔', {
+      fontSize: '72px',
+      color: '#FFD700',
+      fontFamily: 'Arial',
+      fontStyle: 'bold',
+      align: 'center',
+      stroke: '#8B4513',
+      strokeThickness: 8
+    }).setOrigin(0.5);
+    titleText.setDepth(2000);
+
+    // Subtitle text
+    const subtitleText = this.add.text(width / 2, height / 2 + 30, 'Coin Rain x2 • Score x3 • 10 seconds', {
       fontSize: '36px',
+      color: '#FFFFFF',
+      fontFamily: 'Arial',
+      fontStyle: 'bold',
+      align: 'center',
+      stroke: '#000000',
+      strokeThickness: 4
+    }).setOrigin(0.5);
+    subtitleText.setDepth(2000);
+
+    // Animate texts
+    this.tweens.add({
+      targets: [titleText, subtitleText],
+      alpha: 0,
+      y: '-=100',
+      duration: 2000,
+      delay: 500,
+      ease: 'Quad.easeIn',
+      onComplete: () => {
+        titleText.destroy();
+        subtitleText.destroy();
+      }
+    });
+
+    // EFFECT 1: Double coin spawn rate
+    const originalCoinDelay = this.coinSpawnTimer?.delay || 1500;
+    if (this.coinSpawnTimer) {
+      this.coinSpawnTimer.remove();
+    }
+    this.coinSpawnTimer = this.time.addEvent({
+      delay: originalCoinDelay / 2, // DOUBLE spawn rate
+      callback: this.spawnCoin,
+      callbackScope: this,
+      loop: true
+    });
+
+    // EFFECT 2: Score multiplier is handled in collectCoin (check eatTheDipActive)
+
+    // Deactivate after 10 seconds
+    this.eatTheDipTimer = this.time.delayedCall(10000, () => {
+      console.log('🍔 EAT THE DIP ended');
+      this.eatTheDipActive = false;
+
+      // Remove glow
+      dipGlow.destroy();
+
+      // Restore normal coin spawn rate
+      if (this.coinSpawnTimer) {
+        this.coinSpawnTimer.remove();
+      }
+      this.coinSpawnTimer = this.time.addEvent({
+        delay: originalCoinDelay,
+        callback: this.spawnCoin,
+        callbackScope: this,
+        loop: true
+      });
+    });
+  }
+
+  private showComboText(combo: number, bonusPoints: number): void {
+    // Show combo centered on screen
+    const width = this.cameras.main.width;
+    const height = this.cameras.main.height;
+
+    const comboText = this.add.text(width / 2, height / 2 - 50, `🔥 ${combo}x COMBO!\n+${bonusPoints}`, {
+      fontSize: '56px',
       color: '#FF6B00',
       fontFamily: 'Arial',
       fontStyle: 'bold',
       align: 'center',
       stroke: '#FFFFFF',
-      strokeThickness: 5
+      strokeThickness: 6
     }).setOrigin(0.5);
     comboText.setDepth(1500);
 
     this.tweens.add({
       targets: comboText,
-      y: comboText.y - 60,
+      scale: 1.2,
       alpha: 0,
       duration: 1200,
       ease: 'Power2',
@@ -2052,6 +2188,9 @@ export class GameScene extends Phaser.Scene {
       // === ENHANCED HIT EFFECTS ===
       const hitX = hit.enemy.x;
       const hitY = hit.enemy.y;
+
+      // Play enemy hit sound
+      this.sound.play('enemyhit', { volume: 0.6 });
 
       // Screen shake on hit
       this.cameras.main.shake(100, 0.003);
@@ -2395,6 +2534,11 @@ export class GameScene extends Phaser.Scene {
             finalPoints *= 2;
           }
 
+          // v3.7: Apply "Eat the Dip" multiplier (×3)
+          if (this.eatTheDipActive) {
+            finalPoints *= 3;
+          }
+
           // Apply bull market bonus (×2 coin value)
           if (this.bullMarketActive) {
             finalPoints *= 2;
@@ -2417,6 +2561,27 @@ export class GameScene extends Phaser.Scene {
         } else {
           console.error('Invalid points value:', points);
         }
+
+        // v3.7: Track BURGER combo for "Eat the Dip" (collect 5 burgers total)
+        if (type === 'burger') {
+          this.burgerCombo++;
+          this.burgerCount++;
+          this.updateBurgerCombo(); // Show combo progress (0/5, 1/5, etc.)
+
+          // Update blue bar counter (total burgers)
+          if (this.burgerCountDisplayText) {
+            this.burgerCountDisplayText.setText(`🍔 $BURGER: ${this.burgerCount}`);
+          }
+
+          // Activate single-burger multiplier
+          this.activateBurgerMultiplier();
+
+          // Check if we hit 5 burgers for "Eat the Dip"
+          if (this.burgerCombo >= 5) {
+            this.activateEatTheDip();
+          }
+        }
+        // Note: Burger combo does NOT reset when collecting other coins (counts total burgers)
 
         // Track AOL combo for Buyback Mode
         if (type === 'aol') {
@@ -2442,12 +2607,6 @@ export class GameScene extends Phaser.Scene {
           if (this.bonkCountText) {
             this.bonkCountText.setText(`🐕 $BONK: ${this.bonkCount}`);
           }
-        } else if (type === 'burger') {
-          this.burgerCount++;
-          if (this.burgerCountDisplayText) {
-            this.burgerCountDisplayText.setText(`🍔 $BURGER: ${this.burgerCount}`);
-          }
-          this.activateBurgerMultiplier();
         } else if (type === 'usd1') {
           this.usd1Count++;
           if (this.usd1CountText) {
@@ -2460,10 +2619,10 @@ export class GameScene extends Phaser.Scene {
             this.valorCountText.setText(`🦅 $VALOR: ${this.valorCount}`);
           }
 
-          // 5% chance to spawn Gold Feather (only if not in cooldown)
+          // 7% chance to spawn Gold Feather (only if not in cooldown)
           if (!this.valorModeActive && !this.valorModeCooldown) {
             const goldFeatherRoll = Math.random() * 100;
-            if (goldFeatherRoll < 5) {
+            if (goldFeatherRoll < 7) { // Reduced from 15% to 7% - less frequent
               this.spawnGoldFeather(coin.y);
               console.log('✨ Gold Feather spawned from $VALOR coin!');
             }
@@ -2580,7 +2739,7 @@ export class GameScene extends Phaser.Scene {
           case 'goldFeather':
             // v3.2: Activate VALOR MODE
             this.activateValorMode();
-            this.sound.play('buyback-voice', { volume: 0.9 });
+            this.sound.play('valorawakens', { volume: 0.9 });
             break;
           case 'bandana':
             // v3.7: Activate BANDANA MODE
@@ -2961,6 +3120,9 @@ export class GameScene extends Phaser.Scene {
     if (this.score > currentHighScore) {
       this.registry.set('highScore', this.score);
       localStorage.setItem('eagleOfFun_highScore', this.score.toString());
+
+      // Play new record sound
+      this.sound.play('newrecord', { volume: 0.9 });
     }
 
     // Store current score
@@ -3101,16 +3263,17 @@ export class GameScene extends Phaser.Scene {
     this.addLife();
 
     const width = this.cameras.main.width;
+    const height = this.cameras.main.height;
 
-    // Visual feedback
-    const text = this.add.text(width / 2, 200, `🐂 BULL MARKET MODE!\n+1 Extra Life | Coins ×2\n"${this.getRandomWisdom()}"`, {
-      fontSize: '42px',
+    // Visual feedback - centered
+    const text = this.add.text(width / 2, height / 2 - 50, `🐂 BULL MARKET MODE!\n+1 Extra Life | Coins ×2\n"${this.getRandomWisdom()}"`, {
+      fontSize: '56px',
       color: '#00FF00',
       fontFamily: 'Arial',
       fontStyle: 'bold',
       align: 'center',
       stroke: '#000000',
-      strokeThickness: 4
+      strokeThickness: 6
     }).setOrigin(0.5);
     text.setDepth(2000);
 
@@ -3270,6 +3433,15 @@ export class GameScene extends Phaser.Scene {
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
 
+    // PAUSE THE GAME COMPLETELY - freeze gameplay so player can read tutorial
+    this.isPaused = true; // This stops the update loop from processing game logic
+    this.controlBlocked = true;
+    this.physics.pause();
+    this.time.paused = true; // Pause all timers
+    this.tweens.pauseAll(); // Pause all animations
+
+    console.log('🎮 GAME PAUSED - Weapon tutorial showing');
+
     // Create a container for all tutorial elements
     const tutorialElements: Phaser.GameObjects.GameObject[] = [];
 
@@ -3361,6 +3533,7 @@ export class GameScene extends Phaser.Scene {
       this.input.keyboard?.off('keydown-SPACE', closeFunction);
 
       // UNFREEZE gameplay - resume physics, timers, tweens and controls
+      this.isPaused = false; // Resume update loop processing
       this.controlBlocked = false;
       this.physics.resume();
       this.time.paused = false; // Resume all timers
@@ -3466,7 +3639,7 @@ export class GameScene extends Phaser.Scene {
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
 
-    const overlay = this.add.text(width / 2, height / 2, '⚡🦅 VALOR MODE STAGE 1 🦅⚡\nSPEED ×3 | COINS ×2\nSCORE ×2', {
+    const overlay = this.add.text(width / 2, height / 2 + 80, '⚡🦅 VALOR MODE STAGE 1 🦅⚡\nSPEED ×3 | COINS ×2\nSCORE ×2', {
       fontSize: '48px',
       color: '#FFD700',
       fontFamily: 'Arial',
@@ -3527,7 +3700,7 @@ export class GameScene extends Phaser.Scene {
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
 
-    const overlay = this.add.text(width / 2, height / 2, '⚡🦅 VALOR MODE STAGE 2 🦅⚡\nSPEED ×4.5 | COINS ×4\nSCORE ×3', {
+    const overlay = this.add.text(width / 2, height / 2 + 80, '⚡🦅 VALOR MODE STAGE 2 🦅⚡\nSPEED ×4.5 | COINS ×4\nSCORE ×3', {
       fontSize: '52px',
       color: '#FFD700',
       fontFamily: 'Arial',
@@ -3617,6 +3790,14 @@ export class GameScene extends Phaser.Scene {
       console.log('🦅 VALOR MODE END: Switching back to normal eagle sprite...');
       this.eagle.switchToNormalSprite();
       console.log('🦅 Normal sprite switch complete');
+
+      // Additional safety check after 500ms to ensure sprite switched
+      this.time.delayedCall(500, () => {
+        if (this.eagle && this.eagle.active) {
+          // Call switch again if needed (switchToNormalSprite has internal checks)
+          this.eagle.switchToNormalSprite();
+        }
+      });
     }
 
     // Remove shield and destroy graphics - only if VALOR owns it
@@ -3696,8 +3877,8 @@ export class GameScene extends Phaser.Scene {
   // v3.2: LIFE SYSTEM - Create heart display (inline in top bar)
   private createHeartDisplay(): void {
     const width = this.cameras.main.width;
-    const heartStartX = width * 0.70; // Position in top bar, after SCORE
-    const heartY = 55; // Same as hudY
+    const heartStartX = width * 0.62; // Position in top bar, after SCORE (better spacing)
+    const heartY = 62; // Same as hudY (adjusted for 55px bar)
     const heartSpacing = 35;
 
     // Clear existing hearts
@@ -3905,7 +4086,7 @@ export class GameScene extends Phaser.Scene {
       // Show completion animation
       if (mission.completed && !container.getData('animated')) {
         container.setData('animated', true);
-        this.sound.play('buyback-voice', { volume: 0.6 });
+        this.sound.play('missioncleared', { volume: 0.8 });
 
         this.tweens.add({
           targets: container,
@@ -3986,18 +4167,26 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  // v3.2: NEWS TICKER - Create scrolling ticker (BREAKING format)
+  // v3.7: NEWS TICKER FRAME - Create full screen frame (top, left, right, bottom)
   private createNewsTicker(): void {
     const width = this.cameras.main.width;
+    const height = this.cameras.main.height;
+    const frameThickness = 28; // Thickness of the frame bars
 
-    // Background bar - Red like design
+    // Create frame graphics - Deep red background (will change with market phase)
     this.newsTickerBg = this.add.graphics();
     this.newsTickerBg.fillStyle(0xC62828, 0.95); // Deep red
-    this.newsTickerBg.fillRect(0, 0, width, 28);
+
+    // Draw frame: TOP, LEFT, RIGHT, BOTTOM
+    this.newsTickerBg.fillRect(0, 0, width, frameThickness); // Top bar
+    this.newsTickerBg.fillRect(0, 0, frameThickness, height); // Left bar
+    this.newsTickerBg.fillRect(width - frameThickness, 0, frameThickness, height); // Right bar
+    this.newsTickerBg.fillRect(0, height - frameThickness, width, frameThickness); // Bottom bar
+
     this.newsTickerBg.setDepth(2000);
 
-    // BREAKING: label (static, left side)
-    const breakingLabel = this.add.text(15, 14, '🚨 BREAKING:', {
+    // BREAKING: label (static, top-left corner)
+    const breakingLabel = this.add.text(frameThickness + 15, 14, '🚨 BREAKING:', {
       fontSize: '16px',
       color: '#FFFFFF',
       fontFamily: 'Arial',
@@ -4005,45 +4194,119 @@ export class GameScene extends Phaser.Scene {
     }).setOrigin(0, 0.5);
     breakingLabel.setDepth(2002);
 
-    // Create repeating ticker message like a real ticker
+    // Create repeating ticker message
     const tickerMessage = ' Gary sues another meme coin!  •  $BONK hits new ATH  •  Whales accumulating  •  Bear market cancelled  •  Diamond hands prevail  •  ';
-
-    // Repeat message 10 times to create seamless loop
     const repeatedMessage = tickerMessage.repeat(10);
 
-    // Create ticker text (starts after BREAKING label)
-    this.newsTickerText = this.add.text(width, 14, repeatedMessage, {
+    const tickerStyle = {
       fontSize: '15px',
       color: '#FFFFFF',
       fontFamily: 'Arial',
       fontStyle: 'normal'
-    }).setOrigin(0, 0.5);
-    this.newsTickerText.setDepth(2001);
+    };
 
-    // Start scrolling animation
+    const edgeGap = 10; // 10px gap before frame edge
+
+    // TOP ticker (horizontal, left to right)
+    // Visible area: from frameThickness to width - frameThickness - edgeGap
+    this.newsTickerText = this.add.text(width, 14, repeatedMessage, tickerStyle);
+    this.newsTickerText.setOrigin(0, 0.5);
+    this.newsTickerText.setDepth(2001);
+    // Clip to visible area of top bar
+    const topMask = this.add.graphics();
+    topMask.fillRect(frameThickness + edgeGap, 0, width - (frameThickness * 2) - (edgeGap * 2), frameThickness);
+    this.newsTickerText.setMask(topMask.createGeometryMask());
+
+    // LEFT ticker (vertical, top to bottom)
+    // Visible area: from frameThickness + 3px to height - frameThickness - edgeGap
+    this.newsTickerTextLeft = this.add.text(14, -500, repeatedMessage, tickerStyle);
+    this.newsTickerTextLeft.setOrigin(0.5, 0);
+    this.newsTickerTextLeft.setAngle(90);
+    this.newsTickerTextLeft.setDepth(2001);
+    const leftMask = this.add.graphics();
+    leftMask.fillRect(3, frameThickness + edgeGap, frameThickness - 3, height - (frameThickness * 2) - (edgeGap * 2));
+    this.newsTickerTextLeft.setMask(leftMask.createGeometryMask());
+
+    // RIGHT ticker (vertical, bottom to top)
+    // Visible area: from frameThickness + 3px to height - frameThickness - edgeGap
+    this.newsTickerTextRight = this.add.text(width - 14, height + 500, repeatedMessage, tickerStyle);
+    this.newsTickerTextRight.setOrigin(0.5, 0);
+    this.newsTickerTextRight.setAngle(90);
+    this.newsTickerTextRight.setDepth(2001);
+    const rightMask = this.add.graphics();
+    rightMask.fillRect(width - frameThickness + 3, frameThickness + edgeGap, frameThickness - 3, height - (frameThickness * 2) - (edgeGap * 2));
+    this.newsTickerTextRight.setMask(rightMask.createGeometryMask());
+
+    // BOTTOM ticker (horizontal, right to left)
+    // Visible area: from frameThickness to width - frameThickness - edgeGap
+    this.newsTickerTextBottom = this.add.text(-width, height - 14, repeatedMessage, tickerStyle);
+    this.newsTickerTextBottom.setOrigin(0, 0.5);
+    this.newsTickerTextBottom.setDepth(2001);
+    const bottomMask = this.add.graphics();
+    bottomMask.fillRect(frameThickness + edgeGap, height - frameThickness, width - (frameThickness * 2) - (edgeGap * 2), frameThickness);
+    this.newsTickerTextBottom.setMask(bottomMask.createGeometryMask());
+
+    // Start scrolling animation for all tickers
     this.startNewsTickerScroll();
   }
 
-  // Animate ticker scroll
+  // Animate ticker scroll on all 4 sides
   private startNewsTickerScroll(): void {
     if (!this.newsTickerText) return;
 
     const width = this.cameras.main.width;
+    const height = this.cameras.main.height;
 
-    // Start from right edge
-    this.newsTickerText.x = width;
-
-    // Calculate one message length for seamless loop
     const singleMessageLength = this.newsTickerText.width / 10; // Divided by repeat count
+    const scrollDuration = 30000; // 30 seconds for one full loop
 
-    // Scroll continuously
-    this.tweens.add({
-      targets: this.newsTickerText,
-      x: -singleMessageLength,
-      duration: 30000, // 30 seconds
-      ease: 'Linear',
-      repeat: -1 // Infinite loop
-    });
+    // TOP ticker: Scroll from right to left
+    if (this.newsTickerText) {
+      this.newsTickerText.x = width;
+      this.tweens.add({
+        targets: this.newsTickerText,
+        x: -singleMessageLength,
+        duration: scrollDuration,
+        ease: 'Linear',
+        repeat: -1
+      });
+    }
+
+    // LEFT ticker: Scroll from top to bottom (vertical)
+    if (this.newsTickerTextLeft) {
+      this.newsTickerTextLeft.y = -singleMessageLength;
+      this.tweens.add({
+        targets: this.newsTickerTextLeft,
+        y: height + singleMessageLength,
+        duration: scrollDuration,
+        ease: 'Linear',
+        repeat: -1
+      });
+    }
+
+    // RIGHT ticker: Scroll from bottom to top (vertical)
+    if (this.newsTickerTextRight) {
+      this.newsTickerTextRight.y = height + singleMessageLength;
+      this.tweens.add({
+        targets: this.newsTickerTextRight,
+        y: -singleMessageLength,
+        duration: scrollDuration,
+        ease: 'Linear',
+        repeat: -1
+      });
+    }
+
+    // BOTTOM ticker: Scroll from left to right
+    if (this.newsTickerTextBottom) {
+      this.newsTickerTextBottom.x = -singleMessageLength;
+      this.tweens.add({
+        targets: this.newsTickerTextBottom,
+        x: width + singleMessageLength,
+        duration: scrollDuration,
+        ease: 'Linear',
+        repeat: -1
+      });
+    }
   }
 
   private getRandomWisdom(): string {
@@ -4264,16 +4527,37 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
-    // Update ticker background color
+    // Update full frame background color to match market phase
+    const width = this.cameras.main.width;
+    const height = this.cameras.main.height;
+    const frameThickness = 28;
+
     this.newsTickerBg.clear();
     this.newsTickerBg.fillStyle(phase.tickerColor, 0.95);
-    this.newsTickerBg.fillRect(0, 0, this.cameras.main.width, 28);
 
-    // Update ticker message
+    // Redraw complete frame: TOP, LEFT, RIGHT, BOTTOM
+    this.newsTickerBg.fillRect(0, 0, width, frameThickness); // Top bar
+    this.newsTickerBg.fillRect(0, 0, frameThickness, height); // Left bar
+    this.newsTickerBg.fillRect(width - frameThickness, 0, frameThickness, height); // Right bar
+    this.newsTickerBg.fillRect(0, height - frameThickness, width, frameThickness); // Bottom bar
+
+    // Update ticker message on all 4 sides
     const tickerMessage = `  ${phase.tickerMessage}  •  `.repeat(10);
-    this.newsTickerText.setText(tickerMessage);
 
-    console.log(`📰 Ticker updated: ${phase.tickerMessage}`);
+    if (this.newsTickerText) {
+      this.newsTickerText.setText(tickerMessage);
+    }
+    if (this.newsTickerTextLeft) {
+      this.newsTickerTextLeft.setText(tickerMessage);
+    }
+    if (this.newsTickerTextRight) {
+      this.newsTickerTextRight.setText(tickerMessage);
+    }
+    if (this.newsTickerTextBottom) {
+      this.newsTickerTextBottom.setText(tickerMessage);
+    }
+
+    console.log(`📰 Ticker updated on all 4 sides: ${phase.tickerMessage}`);
   }
 
   // ========== v3.4: SPEED & DIFFICULTY SCALING SYSTEM ==========

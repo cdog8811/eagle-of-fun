@@ -25,7 +25,7 @@ export const GameConfig = {
       enemies: ['jeeter'],
       difficulty: 'easy',
       speedMultiplier: 1.3,
-      spawnRate: 3500, // ms between enemy spawns
+      spawnRate: 5000, // ms between enemy spawns (increased from 3500 - less enemies)
       background: '#FFFFFF',
       description: 'Get started, collect burgers!'
     },
@@ -36,7 +36,7 @@ export const GameConfig = {
       enemies: ['jeeter', 'paperHands'],
       difficulty: 'medium',
       speedMultiplier: 1.5,
-      spawnRate: 3000,
+      spawnRate: 4500, // increased from 3000
       background: '#F0F8FF',
       description: 'Watch out for fake coins! Speed +50%'
     },
@@ -47,7 +47,7 @@ export const GameConfig = {
       enemies: ['jeeter', 'paperHands', 'redCandles'],
       difficulty: 'hard',
       speedMultiplier: 1.7,
-      spawnRate: 2500,
+      spawnRate: 4000, // increased from 2500
       background: '#FFF5E6',
       description: 'Barriers incoming! Higher difficulty'
     },
@@ -58,7 +58,7 @@ export const GameConfig = {
       enemies: ['jeeter', 'paperHands', 'redCandles', 'gary'],
       difficulty: 'very_hard',
       speedMultiplier: 1.9,
-      spawnRate: 2200,
+      spawnRate: 3500, // increased from 2200
       background: '#FFF0E6',
       description: 'Lawsuit storm! Power-ups needed'
     },

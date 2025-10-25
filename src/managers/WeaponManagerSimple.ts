@@ -27,9 +27,9 @@ export class WeaponManagerSimple {
 
   // Weapon stats per level
   private weaponStats = {
-    1: { fireRate: 500, damage: 1, energyCost: 10, color: 0x0088FF, speed: 600, name: 'Basic Blaster' },
-    2: { fireRate: 400, damage: 2, energyCost: 8, color: 0xFF6600, speed: 700, name: 'Rapid Cannon' },
-    3: { fireRate: 300, damage: 3, energyCost: 5, color: 0xFF0000, speed: 800, name: 'Power Laser' }
+    1: { fireRate: 500, damage: 1, energyCost: 10, color: 0x0088FF, speed: 900, name: 'Basic Blaster' },
+    2: { fireRate: 400, damage: 2, energyCost: 8, color: 0xFF6600, speed: 1100, name: 'Rapid Cannon' },
+    3: { fireRate: 300, damage: 3, energyCost: 5, color: 0xFF0000, speed: 1300, name: 'Power Laser' }
   };
 
   constructor(scene: Phaser.Scene) {
@@ -116,31 +116,57 @@ export class WeaponManagerSimple {
     // Update fire time
     this.lastFireTime = Date.now();
 
-    // Play sound
-    if (this.scene.sound.get('shoot')) {
-      this.scene.sound.play('shoot', { volume: 0.4 });
-    }
+    // Play blaster shot sound
+    this.scene.sound.play('blastershot', { volume: 0.5 });
 
     return true;
   }
 
   private createProjectile(x: number, y: number, angle: number, stats: any): void {
-    // === MUZZLE FLASH ===
+    // === ENHANCED MUZZLE FLASH ===
     const flash = this.scene.add.graphics();
-    flash.fillStyle(stats.color, 0.8);
+
+    // Outer explosion ring
+    flash.fillStyle(stats.color, 0.6);
+    flash.fillCircle(x, y, 30);
+
+    // Middle bright ring
+    flash.fillStyle(0xFFFFFF, 0.8);
     flash.fillCircle(x, y, 20);
-    flash.fillStyle(0xFFFFFF, 0.6);
+
+    // Inner core
+    flash.fillStyle(stats.color, 1);
     flash.fillCircle(x, y, 12);
+
     flash.setDepth(1499);
 
+    // Explosive flash animation
     this.scene.tweens.add({
       targets: flash,
       alpha: 0,
-      scaleX: 2,
-      scaleY: 2,
-      duration: 150,
-      ease: 'Power2',
+      scaleX: 2.5,
+      scaleY: 2.5,
+      duration: 120,
+      ease: 'Cubic.easeOut',
       onComplete: () => flash.destroy()
+    });
+
+    // Add directional blast streak
+    const streak = this.scene.add.graphics();
+    const angleRad = Phaser.Math.DegToRad(angle);
+    const streakLength = 40;
+    const endX = x + Math.cos(angleRad) * streakLength;
+    const endY = y + Math.sin(angleRad) * streakLength;
+
+    streak.lineStyle(8, stats.color, 0.7);
+    streak.lineBetween(x, y, endX, endY);
+    streak.setDepth(1498);
+
+    this.scene.tweens.add({
+      targets: streak,
+      alpha: 0,
+      duration: 100,
+      onComplete: () => streak.destroy()
     });
 
     // Create projectile graphics with glow

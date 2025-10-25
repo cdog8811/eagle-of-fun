@@ -232,10 +232,22 @@ export class Eagle extends Phaser.GameObjects.Container {
 
       console.log('  - Switching to:', goldAnimKey);
 
-      // Switch to gold texture and play corresponding gold animation
-      this.eagleSprite.setTexture('eagleGold');
-      this.eagleSprite.play(goldAnimKey, true);
+      // FORCE stop current animation first
+      this.eagleSprite.anims.stop();
+
+      // Switch to gold texture
+      this.eagleSprite.setTexture('eagleGold', 0);
+
+      // Wait one frame, then play the gold animation
+      this.scene.time.delayedCall(10, () => {
+        if (this.eagleSprite && this.eagleSprite.active) {
+          this.eagleSprite.play(goldAnimKey, true);
+        }
+      });
+
       console.log('  - Gold sprite switch complete');
+      console.log('  - Current texture is now:', this.eagleSprite.texture.key);
+      console.log('  - Animation will start:', goldAnimKey);
     } catch (error) {
       console.error('❌ Error switching to gold sprite:', error);
     }
@@ -249,35 +261,57 @@ export class Eagle extends Phaser.GameObjects.Container {
 
     try {
       console.log('🦅 Switching to NORMAL sprite');
+      console.log('  - Current texture BEFORE switch:', this.eagleSprite.texture.key);
 
-      // Get current animation name and progress
+      // Get current animation name
       const currentAnim = this.eagleSprite.anims.currentAnim;
-      if (!currentAnim) {
-        // No animation running, just switch texture and start fly animation
-        this.eagleSprite.setTexture('eagle');
-        this.eagleSprite.play('eagle_fly', true);
-        console.log('  - Normal sprite switch complete (no anim)');
-        return;
-      }
+      const currentAnimKey = currentAnim ? currentAnim.key : 'none';
+      console.log('  - Current animation BEFORE switch:', currentAnimKey);
 
-      console.log('  - Current animation:', currentAnim.key);
-
-      // Map gold animations to normal versions
+      // Map to normal animation
       let normalAnimKey = 'eagle_fly';
-      if (currentAnim.key === 'eagleGold_fly' || currentAnim.key === 'eagle_fly') {
-        normalAnimKey = 'eagle_fly';
-      } else if (currentAnim.key === 'eagleGold_dive' || currentAnim.key === 'eagle_dive') {
+      if (currentAnimKey.includes('dive')) {
         normalAnimKey = 'eagle_dive';
-      } else if (currentAnim.key === 'eagleGold_hit' || currentAnim.key === 'eagle_hit') {
+      } else if (currentAnimKey.includes('hit')) {
         normalAnimKey = 'eagle_hit';
       }
 
-      console.log('  - Switching to:', normalAnimKey);
+      console.log('  - Target animation:', normalAnimKey);
 
-      // Switch to normal texture and play corresponding normal animation
-      this.eagleSprite.setTexture('eagle');
-      this.eagleSprite.play(normalAnimKey, true);
-      console.log('  - Normal sprite switch complete');
+      // CRITICAL: Stop ALL animations and effects first
+      this.eagleSprite.anims.stop();
+      this.eagleSprite.clearTint();
+
+      // FORCE texture switch to normal eagle (frame 0)
+      this.eagleSprite.setTexture('eagle', 0);
+
+      console.log('  - Texture switched to:', this.eagleSprite.texture.key);
+
+      // Wait 10ms for texture system to fully process, then start animation
+      this.scene.time.delayedCall(10, () => {
+        if (this.eagleSprite && this.eagleSprite.active) {
+          console.log('  - Starting normal animation:', normalAnimKey);
+          this.eagleSprite.play(normalAnimKey, true);
+
+          // Verify after animation starts
+          this.scene.time.delayedCall(50, () => {
+            if (this.eagleSprite && this.eagleSprite.active) {
+              console.log('  - FINAL CHECK: Texture is:', this.eagleSprite.texture.key);
+              console.log('  - FINAL CHECK: Animation is:', this.eagleSprite.anims.currentAnim?.key || 'none');
+
+              // Safety check: if texture is still gold, force it again
+              if (this.eagleSprite.texture.key === 'eagleGold') {
+                console.error('❌ WARNING: Texture still gold after switch! Force-fixing...');
+                this.eagleSprite.anims.stop();
+                this.eagleSprite.setTexture('eagle', 0);
+                this.eagleSprite.play(normalAnimKey, true);
+              }
+            }
+          });
+        }
+      });
+
+      console.log('  - Normal sprite switch initiated');
     } catch (error) {
       console.error('❌ Error switching to normal sprite:', error);
     }

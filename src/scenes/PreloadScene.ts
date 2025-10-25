@@ -76,6 +76,12 @@ export class PreloadScene extends Phaser.Scene {
     this.load.audio('background-music-2', 'assets/audio/Eagle of Fun Kopie.mp3');
     this.load.audio('countdown', 'assets/audio/321gobradford.mp3');
     this.load.audio('buyback-voice', 'assets/audio/ElevenLabs_2025-10-17T21_02_09_Drill Sergeant_pvc_sp100_s50_sb75_v3.mp3');
+    this.load.audio('burgercombo', 'assets/audio/burgercombo.mp3'); // v3.7: Eat the Dip combo sound
+    this.load.audio('missioncleared', 'assets/audio/missioncleared.mp3'); // v3.7: Mission completed sound
+    this.load.audio('newrecord', 'assets/audio/newrecord.mp3'); // v3.7: New highscore sound
+    this.load.audio('valorawakens', 'assets/audio/valor awakens.mp3'); // v3.7: VALOR mode activation sound
+    this.load.audio('blastershot', 'assets/audio/blaster-shot.mp3'); // v3.7: Weapon fire sound
+    this.load.audio('enemyhit', 'assets/audio/attack-fire-384913.mp3'); // v3.7: Enemy hit sound
     this.load.audio('level-up', 'assets/audio/new-level.mp3');
 
     // Scene Music
