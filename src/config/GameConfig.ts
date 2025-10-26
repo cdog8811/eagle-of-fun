@@ -257,6 +257,17 @@ export const GameConfig = {
       sound: 'Moderator online.',
       text: 'Κρόνος Belle is watching 👁️',
       blockHits: true
+    },
+    vesper0x: {
+      name: 'Vesper0x',
+      icon: '🦌',
+      description: 'America.Fun Team Member - Grants extra life!',
+      duration: 0, // Instant pickup
+      trigger: 'pickup',
+      spawnChance: 5, // % chance to spawn (rare)
+      sound: 'Vesper0x appears!',
+      text: 'Vesper0x grants you an extra life! 🦌❤️',
+      effect: 'extraLife'
     }
   },
 

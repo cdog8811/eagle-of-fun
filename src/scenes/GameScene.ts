@@ -1548,8 +1548,15 @@ export class GameScene extends Phaser.Scene {
     }
 
     // Randomly choose powerup type (excluding buyback which is triggered by AOL combo)
-    const powerupTypes = ['shield', 'freedomStrike', 'belleMod'];
-    const randomType = powerupTypes[Phaser.Math.Between(0, powerupTypes.length - 1)];
+    // 5% chance for Vesper0x (rare), otherwise choose from common power-ups
+    let randomType: string;
+    const vesperRoll = Phaser.Math.Between(1, 100);
+    if (vesperRoll <= 5) {
+      randomType = 'vesper0x';
+    } else {
+      const powerupTypes = ['shield', 'freedomStrike', 'belleMod'];
+      randomType = powerupTypes[Phaser.Math.Between(0, powerupTypes.length - 1)];
+    }
 
     const powerup = this.add.container(width + 100, y);
 
@@ -1570,6 +1577,11 @@ export class GameScene extends Phaser.Scene {
         icon = this.add.image(0, 0, 'mod-belle');
         icon.setScale(0.1); // Smaller icon
         glowColor = 0xFFD700; // Gold glow for MOD
+        break;
+      case 'vesper0x':
+        icon = this.add.image(0, 0, 'vesper');
+        icon.setScale(0.15); // Same size as hat and bandana
+        glowColor = 0xFF69B4; // Pink glow for Vesper0x
         break;
       default:
         icon = this.add.image(0, 0, 'america-hat');
@@ -3005,6 +3017,10 @@ export class GameScene extends Phaser.Scene {
             break;
           case 'vesper':
             this.activateBullMarket();
+            break;
+          case 'vesper0x':
+            // Extra life from Vesper0x
+            this.addExtraLife();
             break;
           case 'goldFeather':
             // v3.2: Activate VALOR MODE
@@ -4493,6 +4509,94 @@ export class GameScene extends Phaser.Scene {
       });
 
       this.sound.play('buyback-voice', { volume: 0.7 });
+    }
+  }
+
+  // v3.8: Add extra life from Vesper0x power-up
+  private addExtraLife(): void {
+    if (this.lives < this.maxLives) {
+      this.lives++;
+      this.updateHeartDisplay();
+
+      // Visual feedback with Vesper0x branding
+      const width = this.cameras.main.width;
+      const height = this.cameras.main.height;
+
+      // Background panel
+      const panel = this.add.graphics();
+      panel.fillStyle(0x000000, 0.8);
+      panel.fillRoundedRect(width / 2 - 200, height / 2 - 80, 400, 160, 16);
+      panel.setDepth(9999);
+
+      // Title
+      const title = this.add.text(width / 2, height / 2 - 40, '🦌 VESPER0X APPEARS! 🦌', {
+        fontSize: '28px',
+        color: '#FF69B4',
+        fontFamily: 'Arial Black, Arial',
+        fontStyle: 'bold',
+        stroke: '#000000',
+        strokeThickness: 6
+      }).setOrigin(0.5);
+      title.setDepth(10000);
+
+      // Message
+      const message = this.add.text(width / 2, height / 2 + 10, 'Extra Life Granted! ❤️', {
+        fontSize: '24px',
+        color: '#FFFFFF',
+        fontFamily: 'Arial',
+        fontStyle: 'bold',
+        stroke: '#000000',
+        strokeThickness: 4
+      }).setOrigin(0.5);
+      message.setDepth(10000);
+
+      // America.Fun Team label
+      const team = this.add.text(width / 2, height / 2 + 45, 'America.Fun Team Member', {
+        fontSize: '16px',
+        color: '#FFD700',
+        fontFamily: 'Arial',
+        fontStyle: 'italic'
+      }).setOrigin(0.5);
+      team.setDepth(10000);
+
+      // Fade out after 2.5 seconds
+      this.time.delayedCall(2500, () => {
+        this.tweens.add({
+          targets: [panel, title, message, team],
+          alpha: 0,
+          duration: 500,
+          onComplete: () => {
+            panel.destroy();
+            title.destroy();
+            message.destroy();
+            team.destroy();
+          }
+        });
+      });
+
+      // Play sound
+      this.sound.play('belle-collect', { volume: 0.8 });
+    } else {
+      // Already at max lives - still show message
+      const width = this.cameras.main.width;
+      const text = this.add.text(width / 2, 300, 'ALREADY AT MAX LIVES!', {
+        fontSize: '32px',
+        color: '#FFD700',
+        fontFamily: 'Arial',
+        fontStyle: 'bold',
+        stroke: '#000000',
+        strokeThickness: 4
+      }).setOrigin(0.5);
+      text.setDepth(10000);
+
+      this.tweens.add({
+        targets: text,
+        alpha: 0,
+        y: text.y - 60,
+        duration: 1500,
+        ease: 'Cubic.easeOut',
+        onComplete: () => text.destroy()
+      });
     }
   }
 
