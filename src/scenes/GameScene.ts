@@ -1376,11 +1376,8 @@ export class GameScene extends Phaser.Scene {
     enemy.setData('zigzagDirection', 1); // 1 = down, -1 = up
     enemy.setData('dashCooldown', 0);
 
-    // v3.8: Add HP system with difficulty scaling
-    const baseHP = enemyConfig.hp || 50; // Default 50 HP if not specified
-    const scaledHP = this.calculateEnemyHP(baseHP);
-    enemy.setData('hp', scaledHP);
-    enemy.setData('maxHp', scaledHP);
+    // v3.8: HP system removed for performance (caused 15-27 FPS)
+    // Back to one-shot kills
 
     // Special behavior for Paper Hands Pete - drops ONE fake coin less frequently
     if (randomEnemyType === 'paperHands') {
@@ -2504,62 +2501,34 @@ export class GameScene extends Phaser.Scene {
         });
       }
 
-      // Removed explosion ring and flash for performance
-      // Only show on kill (below)
+      // v3.8: REVERTED - Back to one-shot kills for performance
+      // HP system caused 15-27 FPS, too slow
 
-      // v3.8: Damage enemy instead of instant kill
-      const currentHP = hit.enemy.getData('hp') || 50;
-      const damage = hit.projectile.damage || 25;
-      const newHP = currentHP - damage;
-      hit.enemy.setData('hp', newHP);
+      // Screen shake on kill
+      this.cameras.main.shake(100, 0.003);
 
-      // Show damage number
-      const damageText = this.add.text(hitX, hitY - 30, `-${damage}`, {
-        fontSize: '24px',
-        color: '#FF0000',
-        fontFamily: 'Arial Black',
-        stroke: '#000000',
-        strokeThickness: 4
-      });
-      damageText.setOrigin(0.5);
-      damageText.setDepth(1700);
+      // Destroy enemy (one-shot kill)
+      hit.enemy.destroy();
+      const index = this.enemies.indexOf(hit.enemy);
+      if (index > -1) {
+        this.enemies.splice(index, 1);
+      }
 
-      this.tweens.add({
-        targets: damageText,
-        y: hitY - 80,
-        alpha: 0,
-        duration: 800,
-        ease: 'Power2',
-        onComplete: () => damageText.destroy()
+      // Award points with visual feedback
+      const pointsAwarded = 50;
+      this.score += pointsAwarded;
+      this.scoreText.setText(`SCORE: ${this.score}`);
+
+      // v3.7: Award XP for enemy kill
+      const enemyType = hit.enemy.getData('type') || 'unknown';
+      this.xpSystem.addXP({
+        delta: 4,
+        source: 'enemyKill',
+        meta: { enemyType }
       });
 
-      // Check if enemy is dead
-      if (newHP <= 0) {
-        // Screen shake on kill
-        this.cameras.main.shake(100, 0.003);
-
-        // Destroy enemy
-        hit.enemy.destroy();
-        const index = this.enemies.indexOf(hit.enemy);
-        if (index > -1) {
-          this.enemies.splice(index, 1);
-        }
-
-        // Award points with visual feedback
-        const pointsAwarded = 50;
-        this.score += pointsAwarded;
-        this.scoreText.setText(`SCORE: ${this.score}`);
-
-        // v3.7: Award XP for enemy kill
-        const enemyType = hit.enemy.getData('type') || 'unknown';
-        this.xpSystem.addXP({
-          delta: 4,
-          source: 'enemyKill',
-          meta: { enemyType }
-        });
-
-        // Show floating points text
-        const pointsText = this.add.text(hitX, hitY, `+${pointsAwarded}`, {
+      // Show floating points text
+      const pointsText = this.add.text(hitX, hitY, `+${pointsAwarded}`, {
           fontSize: '32px',
           color: '#FFD700',
           fontFamily: 'Arial',
@@ -2581,9 +2550,6 @@ export class GameScene extends Phaser.Scene {
         if (this.sound.get('explosion')) {
           this.sound.play('explosion', { volume: 0.5 });
         }
-      } else {
-        // Enemy survived - show HP bar
-        this.showEnemyHPBar(hit.enemy);
       }
 
       // Destroy projectile
