@@ -387,10 +387,11 @@ export class GameScene extends Phaser.Scene {
     this.scoreText.setOrigin(0.5, 0.5);
     this.scoreText.setDepth(1000);
 
-    // v3.8: FPS Overlay (enhanced debug UI)
-    this.fpsOverlay = new FPSOverlay(this);
-    this.fpsOverlay.setPosition(width - 110, 10);
-    this.fpsOverlay.setOrigin(0, 0);
+    // v3.8: FPS Overlay (disabled - performance fixed! 60 FPS achieved!)
+    // Uncomment for debugging if needed:
+    // this.fpsOverlay = new FPSOverlay(this);
+    // this.fpsOverlay.setPosition(width - 110, 10);
+    // this.fpsOverlay.setOrigin(0, 0);
 
     // v3.2: Hearts inline in top bar
     this.createHeartDisplay();
