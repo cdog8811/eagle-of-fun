@@ -2490,39 +2490,13 @@ export class GameScene extends Phaser.Scene {
       const hitX = hit.enemy.x;
       const hitY = hit.enemy.y;
 
+      // v3.8 PERFORMANCE: Removed particle effects for 60 FPS
       // Play enemy hit sound
       this.sound.play('enemyhit', { volume: 0.6 });
 
-      // Screen shake on hit (only on kill, not every hit)
-      // Moved to kill section below
-
-      // Reduced particles (only 4 instead of 8 for performance)
-      for (let i = 0; i < 4; i++) {
-        const angle = (i / 4) * Math.PI * 2;
-        const distance = Phaser.Math.Between(15, 30);
-        const particle = this.add.graphics();
-        particle.fillStyle(0xFF6600, 1);
-        particle.fillCircle(0, 0, 4);
-        particle.x = hitX;
-        particle.y = hitY;
-        particle.setDepth(1600);
-
-        this.tweens.add({
-          targets: particle,
-          x: hitX + Math.cos(angle) * distance,
-          y: hitY + Math.sin(angle) * distance,
-          alpha: 0,
-          duration: 300,
-          ease: 'Power2',
-          onComplete: () => particle.destroy()
-        });
-      }
-
       // v3.8: REVERTED - Back to one-shot kills for performance
       // HP system caused 15-27 FPS, too slow
-
-      // Screen shake on kill
-      this.cameras.main.shake(100, 0.003);
+      // v3.8 PERFORMANCE: Removed screen shake for 60 FPS
 
       // Destroy enemy (one-shot kill)
       hit.enemy.destroy();
@@ -2531,7 +2505,7 @@ export class GameScene extends Phaser.Scene {
         this.enemies.splice(index, 1);
       }
 
-      // Award points with visual feedback
+      // Award points
       const pointsAwarded = 50;
       this.score += pointsAwarded;
       this.scoreText.setText(`SCORE: ${this.score}`);
@@ -2544,24 +2518,7 @@ export class GameScene extends Phaser.Scene {
         meta: { enemyType }
       });
 
-      // Show floating points text
-      const pointsText = this.add.text(hitX, hitY, `+${pointsAwarded}`, {
-          fontSize: '32px',
-          color: '#FFD700',
-          fontFamily: 'Arial',
-          fontStyle: 'bold',
-          stroke: '#000000',
-          strokeThickness: 4
-        }).setOrigin(0.5).setDepth(2000);
-
-        this.tweens.add({
-          targets: pointsText,
-          y: hitY - 80,
-          alpha: 0,
-          duration: 1000,
-          ease: 'Power2',
-          onComplete: () => pointsText.destroy()
-        });
+      // v3.8 PERFORMANCE: Removed floating score text for 60 FPS
 
       // Play explosion sound
       if (this.sound.get('explosion')) {
