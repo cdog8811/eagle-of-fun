@@ -3651,7 +3651,7 @@ export class GameScene extends Phaser.Scene {
     // Auto-upgrade weapon based on player XP level
     if (!this.weaponManager.hasWeapon()) return;
 
-    const playerLevel = this.xpSystem.getLevel();
+    const playerLevel = this.xpSystem.getState().level;
     const currentWeaponLevel = this.weaponManager.getWeaponLevel();
 
     // Level 1-2: Basic weapons (already unlocked)
