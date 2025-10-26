@@ -135,7 +135,10 @@ export class EagleController {
 
     // Apply speed
     const speed = this.currentSpeed + this.speedBonus;
-    eagle.setVelocity(velocityX * speed, velocityY * speed);
+    const body = eagle.body as Phaser.Physics.Arcade.Body;
+    if (body) {
+      body.setVelocity(velocityX * speed, velocityY * speed);
+    }
 
     // Keep within bounds
     this.clampToBounds();

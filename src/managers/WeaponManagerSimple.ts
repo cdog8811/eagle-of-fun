@@ -11,14 +11,19 @@ export interface Projectile {
   y: number;
   velocityX: number;
   velocityY: number;
+  velocityYInitial?: number; // For gravity-based weapons
   damage: number;
   active: boolean;
+  pierce?: number; // How many enemies this can pierce through
+  splashRadius?: number; // Splash damage radius on hit
+  splashDamage?: number; // Splash damage amount
+  hasGravity?: boolean; // Apply gravity to projectile
 }
 
 export class WeaponManagerSimple {
   private scene: Phaser.Scene;
   private weaponUnlocked: boolean = false;
-  private weaponLevel: number = 1; // 1, 2, 3
+  private weaponLevel: number = 1; // 1-6
   private weaponEnergy: number = 0; // 0-100
   private maxEnergy: number = 100;
   private energyPerCoin: number = 3; // Each coin adds 3% energy
@@ -29,7 +34,10 @@ export class WeaponManagerSimple {
   private weaponStats = {
     1: { fireRate: 500, damage: 1, energyCost: 10, color: 0x0088FF, speed: 900, name: 'Basic Blaster' },
     2: { fireRate: 400, damage: 2, energyCost: 8, color: 0xFF6600, speed: 1100, name: 'Rapid Cannon' },
-    3: { fireRate: 300, damage: 3, energyCost: 5, color: 0xFF0000, speed: 1300, name: 'Power Laser' }
+    3: { fireRate: 300, damage: 3, energyCost: 5, color: 0xFF0000, speed: 1300, name: 'Power Laser' },
+    4: { fireRate: 450, damage: 2, energyCost: 12, color: 0xFFAA00, speed: 850, name: 'Eagle Spread', special: 'spread' },
+    5: { fireRate: 550, damage: 4, energyCost: 15, color: 0x00FFFF, speed: 1400, name: 'Rail AOL', special: 'pierce' },
+    6: { fireRate: 650, damage: 3, energyCost: 18, color: 0xFF6B35, speed: 600, name: 'Burger Mortar', special: 'mortar' }
   };
 
   constructor(scene: Phaser.Scene) {
@@ -48,9 +56,10 @@ export class WeaponManagerSimple {
   }
 
   public upgradeWeapon(): void {
-    if (this.weaponLevel < 3) {
+    if (this.weaponLevel < 6) {
       this.weaponLevel++;
-      console.log(`⬆️ Weapon upgraded to Level ${this.weaponLevel}!`);
+      const stats = this.weaponStats[this.weaponLevel as keyof typeof this.weaponStats];
+      console.log(`⬆️ Weapon upgraded to Level ${this.weaponLevel}: ${stats.name}!`);
     }
   }
 
@@ -110,8 +119,18 @@ export class WeaponManagerSimple {
     // Deduct energy
     this.weaponEnergy = Math.max(0, this.weaponEnergy - stats.energyCost);
 
-    // Create projectile
-    this.createProjectile(x, y, angle, stats);
+    // Check for special weapon type
+    const special = (stats as any).special;
+
+    if (special === 'spread') {
+      // Eagle Spread: Fire 3 projectiles in a spread pattern
+      this.createProjectile(x, y, angle - 15, stats); // Left
+      this.createProjectile(x, y, angle, stats);      // Center
+      this.createProjectile(x, y, angle + 15, stats); // Right
+    } else {
+      // Normal single projectile
+      this.createProjectile(x, y, angle, stats);
+    }
 
     // Update fire time
     this.lastFireTime = Date.now();
@@ -206,14 +225,23 @@ export class WeaponManagerSimple {
     const velocityX = Math.cos(angleRad) * stats.speed;
     const velocityY = Math.sin(angleRad) * stats.speed;
 
+    const special = stats.special;
     const projectile: Projectile = {
       sprite: graphics,
       x: x,
       y: y,
       velocityX: velocityX,
       velocityY: velocityY,
+      velocityYInitial: velocityY, // Store for gravity calculations
       damage: stats.damage,
-      active: true
+      active: true,
+      // Pierce feature (Rail AOL)
+      pierce: special === 'pierce' ? 3 : undefined,
+      // Splash damage (Burger Mortar)
+      splashRadius: special === 'mortar' ? 80 : undefined,
+      splashDamage: special === 'mortar' ? 50 : undefined,
+      // Gravity (Burger Mortar)
+      hasGravity: special === 'mortar'
     };
 
     this.projectiles.push(projectile);
@@ -238,11 +266,22 @@ export class WeaponManagerSimple {
         continue;
       }
 
+      // Apply gravity if projectile has gravity (Mortar)
+      if (projectile.hasGravity) {
+        projectile.velocityY += 800 * deltaSeconds; // Gravity acceleration
+      }
+
       // Move projectile
       projectile.x += projectile.velocityX * deltaSeconds;
       projectile.y += projectile.velocityY * deltaSeconds;
       projectile.sprite.x = projectile.x;
       projectile.sprite.y = projectile.y;
+
+      // Update rotation for mortar projectiles
+      if (projectile.hasGravity) {
+        const angle = Math.atan2(projectile.velocityY, projectile.velocityX);
+        projectile.sprite.setRotation(angle);
+      }
 
       // Create continuous trail effect
       const color = (projectile as any).color || 0x0088FF;
@@ -301,13 +340,74 @@ export class WeaponManagerSimple {
 
         if (distance < hitRadius + 10) {
           hits.push({ enemy, projectile });
-          projectile.active = false;
-          break;
+
+          // Handle splash damage (Mortar)
+          if (projectile.splashRadius && projectile.splashDamage) {
+            // Create explosion visual
+            this.createExplosion(projectile.x, projectile.y, projectile.splashRadius);
+
+            // Find all enemies in splash radius
+            for (const splashEnemy of enemies) {
+              if (!splashEnemy.active || splashEnemy === enemy) continue;
+
+              const splashDist = Phaser.Math.Distance.Between(
+                projectile.x,
+                projectile.y,
+                splashEnemy.x,
+                splashEnemy.y
+              );
+
+              if (splashDist < projectile.splashRadius) {
+                // Add splash hit with reduced damage
+                const splashProjectile = { ...projectile, damage: projectile.splashDamage! };
+                hits.push({ enemy: splashEnemy, projectile: splashProjectile });
+              }
+            }
+          }
+
+          // Handle pierce (Rail)
+          if (projectile.pierce && projectile.pierce > 0) {
+            projectile.pierce--;
+            if (projectile.pierce === 0) {
+              projectile.active = false;
+            }
+          } else {
+            projectile.active = false;
+          }
+
+          if (!projectile.pierce || projectile.pierce === 0) {
+            break; // Stop checking this projectile
+          }
         }
       }
     }
 
     return hits;
+  }
+
+  private createExplosion(x: number, y: number, radius: number): void {
+    // Explosion flash
+    const explosion = this.scene.add.graphics();
+    explosion.fillStyle(0xFF6B35, 0.6);
+    explosion.fillCircle(x, y, radius);
+    explosion.fillStyle(0xFFAA00, 0.8);
+    explosion.fillCircle(x, y, radius * 0.7);
+    explosion.fillStyle(0xFFFFFF, 1);
+    explosion.fillCircle(x, y, radius * 0.4);
+    explosion.setDepth(1500);
+
+    this.scene.tweens.add({
+      targets: explosion,
+      alpha: 0,
+      scaleX: 1.5,
+      scaleY: 1.5,
+      duration: 300,
+      ease: 'Cubic.easeOut',
+      onComplete: () => explosion.destroy()
+    });
+
+    // Explosion sound
+    this.scene.sound.play('explosion', { volume: 0.3 });
   }
 
   public destroyProjectile(projectile: Projectile): void {

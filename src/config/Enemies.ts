@@ -278,3 +278,16 @@ export function getSpawnPool(score: number): PhaseSpawnPool {
   }
   return PHASE_SPAWN_POOLS[0];
 }
+
+/**
+ * Get spawn pool enemy IDs for a specific phase number
+ */
+export function getPhaseSpawnPool(phase: number): string[] {
+  // Find pool for this phase
+  const pool = PHASE_SPAWN_POOLS.find(p => p.phase === phase);
+  if (!pool) {
+    // Default to phase 1
+    return PHASE_SPAWN_POOLS[0].enemies;
+  }
+  return pool.enemies;
+}

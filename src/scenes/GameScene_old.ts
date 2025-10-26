@@ -321,9 +321,6 @@ export class GameScene extends Phaser.Scene {
     this.bossManager = new BossManagerV37(this);
     this.bandanaPowerUp = new BandanaPowerUp(this);
 
-    // Auto-upgrade weapon based on player level
-    this.checkWeaponAutoUpgrade();
-
     // Pause physics immediately - will resume after countdown
     this.physics.pause();
 
@@ -3647,41 +3644,11 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  private checkWeaponAutoUpgrade(): void {
-    // Auto-upgrade weapon based on player XP level
-    if (!this.weaponManager.hasWeapon()) return;
-
-    const playerLevel = this.xpSystem.getLevel();
-    const currentWeaponLevel = this.weaponManager.getWeaponLevel();
-
-    // Level 1-2: Basic weapons (already unlocked)
-    // Level 3: Upgrade to Level 3
-    // Level 5: Upgrade to Level 4 (Eagle Spread)
-    // Level 7: Upgrade to Level 5 (Rail AOL)
-    // Level 10: Upgrade to Level 6 (Burger Mortar)
-
-    const upgradeLevels = [
-      { playerLevel: 3, weaponLevel: 3 },
-      { playerLevel: 5, weaponLevel: 4 },
-      { playerLevel: 7, weaponLevel: 5 },
-      { playerLevel: 10, weaponLevel: 6 }
-    ];
-
-    for (const upgrade of upgradeLevels) {
-      if (playerLevel >= upgrade.playerLevel && currentWeaponLevel < upgrade.weaponLevel) {
-        while (this.weaponManager.getWeaponLevel() < upgrade.weaponLevel) {
-          this.weaponManager.upgradeWeapon();
-        }
-      }
-    }
-  }
-
   private collectWeaponPickup(): void {
     if (!this.weaponPickup || !this.weaponPickup.active) return;
 
     // Unlock weapon
     this.weaponManager.unlockWeapon();
-    this.checkWeaponAutoUpgrade();
 
     // Play collection sound
     if (this.sound.get('power-up')) {
