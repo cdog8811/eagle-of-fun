@@ -3670,11 +3670,95 @@ export class GameScene extends Phaser.Scene {
 
     for (const upgrade of upgradeLevels) {
       if (playerLevel >= upgrade.playerLevel && currentWeaponLevel < upgrade.weaponLevel) {
+        const oldLevel = this.weaponManager.getWeaponLevel();
+
         while (this.weaponManager.getWeaponLevel() < upgrade.weaponLevel) {
           this.weaponManager.upgradeWeapon();
         }
+
+        // Show notification if weapon was upgraded
+        if (this.weaponManager.getWeaponLevel() > oldLevel) {
+          this.showWeaponUpgradeNotification();
+        }
       }
     }
+  }
+
+  private showWeaponUpgradeNotification(): void {
+    const weaponName = this.weaponManager.getWeaponName();
+    const width = this.cameras.main.width;
+    const height = this.cameras.main.height;
+
+    // Background panel
+    const panel = this.add.graphics();
+    panel.fillStyle(0x000000, 0.8);
+    panel.fillRoundedRect(width / 2 - 250, height / 2 - 100, 500, 200, 16);
+    panel.setDepth(2000);
+
+    // Title text
+    const title = this.add.text(width / 2, height / 2 - 50, '⚡ NEW WEAPON UNLOCKED! ⚡', {
+      fontSize: '32px',
+      color: '#FFD700',
+      fontFamily: 'Arial Black, Arial',
+      fontStyle: 'bold',
+      stroke: '#000000',
+      strokeThickness: 6
+    });
+    title.setOrigin(0.5);
+    title.setDepth(2001);
+
+    // Weapon name
+    const weaponText = this.add.text(width / 2, height / 2 + 10, weaponName, {
+      fontSize: '48px',
+      color: '#FFFFFF',
+      fontFamily: 'Arial Black, Arial',
+      fontStyle: 'bold',
+      stroke: '#000000',
+      strokeThickness: 6
+    });
+    weaponText.setOrigin(0.5);
+    weaponText.setDepth(2001);
+
+    // Instruction text
+    const instruction = this.add.text(width / 2, height / 2 + 60, 'Press Q / W / E to fire!', {
+      fontSize: '24px',
+      color: '#00FF00',
+      fontFamily: 'Arial',
+      fontStyle: 'bold'
+    });
+    instruction.setOrigin(0.5);
+    instruction.setDepth(2001);
+
+    // Pulse animation
+    this.tweens.add({
+      targets: [title, weaponText],
+      scaleX: 1.1,
+      scaleY: 1.1,
+      duration: 400,
+      yoyo: true,
+      repeat: 2,
+      ease: 'Sine.easeInOut'
+    });
+
+    // Play upgrade sound
+    if (this.sound.get('power-up')) {
+      this.sound.play('power-up', { volume: 0.8 });
+    }
+
+    // Remove notification after 3 seconds
+    this.time.delayedCall(3000, () => {
+      this.tweens.add({
+        targets: [panel, title, weaponText, instruction],
+        alpha: 0,
+        duration: 500,
+        onComplete: () => {
+          panel.destroy();
+          title.destroy();
+          weaponText.destroy();
+          instruction.destroy();
+        }
+      });
+    });
   }
 
   private collectWeaponPickup(): void {
