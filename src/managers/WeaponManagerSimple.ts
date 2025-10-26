@@ -30,14 +30,14 @@ export class WeaponManagerSimple {
   private lastFireTime: number = 0;
   private projectiles: Projectile[] = [];
 
-  // Weapon stats per level
+  // Weapon stats per level (v3.8: Balanced damage for HP system)
   private weaponStats = {
-    1: { fireRate: 500, damage: 1, energyCost: 10, color: 0x0088FF, speed: 900, name: 'Basic Blaster' },
-    2: { fireRate: 400, damage: 2, energyCost: 8, color: 0xFF6600, speed: 1100, name: 'Rapid Cannon' },
-    3: { fireRate: 300, damage: 3, energyCost: 5, color: 0xFF0000, speed: 1300, name: 'Power Laser' },
-    4: { fireRate: 450, damage: 2, energyCost: 12, color: 0xFFAA00, speed: 850, name: 'Eagle Spread', special: 'spread' },
-    5: { fireRate: 550, damage: 4, energyCost: 15, color: 0x00FFFF, speed: 1400, name: 'Rail AOL', special: 'pierce' },
-    6: { fireRate: 650, damage: 3, energyCost: 18, color: 0xFF6B35, speed: 600, name: 'Burger Mortar', special: 'mortar' }
+    1: { fireRate: 500, damage: 15, energyCost: 10, color: 0x0088FF, speed: 900, name: 'Basic Blaster' },
+    2: { fireRate: 400, damage: 20, energyCost: 8, color: 0xFF6600, speed: 1100, name: 'Rapid Cannon' },
+    3: { fireRate: 300, damage: 25, energyCost: 5, color: 0xFF0000, speed: 1300, name: 'Power Laser' },
+    4: { fireRate: 450, damage: 12, energyCost: 12, color: 0xFFAA00, speed: 850, name: 'Eagle Spread', special: 'spread' }, // 3x12 = 36 total
+    5: { fireRate: 550, damage: 40, energyCost: 15, color: 0x00FFFF, speed: 1400, name: 'Rail AOL', special: 'pierce' }, // Pierces 3
+    6: { fireRate: 650, damage: 30, energyCost: 18, color: 0xFF6B35, speed: 600, name: 'Burger Mortar', special: 'mortar' } // + splash
   };
 
   constructor(scene: Phaser.Scene) {
