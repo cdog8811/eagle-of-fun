@@ -1728,6 +1728,28 @@ export class GameScene extends Phaser.Scene {
     this.shieldGraphics = this.add.graphics();
     this.shieldGraphics.setDepth(999); // Higher depth to ensure visibility
 
+    // v3.8 PERFORMANCE: Draw shield ONCE here, not every frame
+    // Outer glow
+    this.shieldGraphics.fillStyle(0x00AAFF, 0.2);
+    this.shieldGraphics.fillCircle(0, 0, 100);
+
+    // Middle ring
+    this.shieldGraphics.lineStyle(6, 0x00DDFF, 0.8);
+    this.shieldGraphics.strokeCircle(0, 0, 85);
+
+    // Inner ring
+    this.shieldGraphics.lineStyle(4, 0x88EEFF, 1);
+    this.shieldGraphics.strokeCircle(0, 0, 75);
+
+    // Energy particles effect (8 static dots in circle)
+    for (let i = 0; i < 8; i++) {
+      const angle = (i * Math.PI / 4);
+      const px = Math.cos(angle) * 82;
+      const py = Math.sin(angle) * 82;
+      this.shieldGraphics.fillStyle(0xFFFFFF, 0.9);
+      this.shieldGraphics.fillCircle(px, py, 3);
+    }
+
     // Deactivate after duration (with upgrade bonus)
     const playerStats = this.upgradeSystem.getPlayerStats();
     const duration = (GameConfig.powerUps.freedomShield.duration + playerStats.shieldExtraSeconds * 1000);
@@ -1981,6 +2003,19 @@ export class GameScene extends Phaser.Scene {
     // Create protection aura
     this.belleAura = this.add.graphics();
     this.belleAura.setDepth(99);
+
+    // v3.8 PERFORMANCE: Draw aura ONCE here, not every frame
+    // Golden glow aura
+    this.belleAura.fillStyle(0xFFD700, 0.15);
+    this.belleAura.fillCircle(0, 0, 110);
+
+    // Golden ring
+    this.belleAura.lineStyle(5, 0xFFD700, 0.7);
+    this.belleAura.strokeCircle(0, 0, 95);
+
+    // Inner gold ring
+    this.belleAura.lineStyle(3, 0xFFF59D, 1);
+    this.belleAura.strokeCircle(0, 0, 85);
 
     // Pulse animation for aura
     const duration = GameConfig.powerUps.belleMod.duration;
@@ -2370,45 +2405,24 @@ export class GameScene extends Phaser.Scene {
       this.fpsText.setColor(color);
     }
 
-    // Update shield graphics ALWAYS (even when paused) to keep it visible
+    // v3.8 PERFORMANCE: Only update shield position, don't redraw every frame
     if (this.shieldActive && this.shieldGraphics && this.eagle) {
-      this.shieldGraphics.clear();
+      // Only move shield to eagle position
+      this.shieldGraphics.setPosition(this.eagle.x, this.eagle.y);
 
-      // Check if shield is about to expire (< 3 seconds)
-      let shieldAlphaMultiplier = 1.0;
+      // Check if shield is about to expire (< 3 seconds) - only update alpha
       if (this.shieldTimer) {
         const remaining = Math.ceil((this.shieldTimer.delay - this.shieldTimer.elapsed) / 1000);
         if (remaining <= 3) {
           // Blink effect when < 3 seconds remaining
-          shieldAlphaMultiplier = Math.floor(Date.now() / 250) % 2 === 0 ? 0.3 : 1;
+          this.shieldGraphics.setAlpha(Math.floor(Date.now() / 250) % 2 === 0 ? 0.3 : 1);
+        } else {
+          this.shieldGraphics.setAlpha(1);
         }
-      }
-
-      // Draw beautiful layered shield with alpha multiplier
-      // Outer glow
-      this.shieldGraphics.fillStyle(0x00AAFF, 0.2 * shieldAlphaMultiplier);
-      this.shieldGraphics.fillCircle(this.eagle.x, this.eagle.y, 100);
-
-      // Middle ring
-      this.shieldGraphics.lineStyle(6, 0x00DDFF, 0.8 * shieldAlphaMultiplier);
-      this.shieldGraphics.strokeCircle(this.eagle.x, this.eagle.y, 85);
-
-      // Inner ring
-      this.shieldGraphics.lineStyle(4, 0x88EEFF, 1 * shieldAlphaMultiplier);
-      this.shieldGraphics.strokeCircle(this.eagle.x, this.eagle.y, 75);
-
-      // Energy particles effect (optional rotating dots)
-      const time = Date.now() / 1000;
-      for (let i = 0; i < 8; i++) {
-        const angle = (time * 2 + i * Math.PI / 4) % (Math.PI * 2);
-        const px = this.eagle.x + Math.cos(angle) * 82;
-        const py = this.eagle.y + Math.sin(angle) * 82;
-        this.shieldGraphics.fillStyle(0xFFFFFF, 0.9 * shieldAlphaMultiplier);
-        this.shieldGraphics.fillCircle(px, py, 3);
       }
     }
 
-    // Update Belle MOD companion and aura ALWAYS (even when paused)
+    // v3.8 PERFORMANCE: Only update positions, don't redraw every frame
     if (this.belleModActive && this.eagle) {
       // Position Belle sprite next to eagle (offset left-up)
       if (this.belleSprite) {
@@ -2420,35 +2434,26 @@ export class GameScene extends Phaser.Scene {
           if (remaining <= 3) {
             // Flash Belle sprite on/off
             this.belleSprite.setAlpha(Math.floor(Date.now() / 250) % 2 === 0 ? 0.3 : 1);
+          } else {
+            this.belleSprite.setAlpha(1);
           }
         }
       }
 
-      // Draw protection aura
+      // v3.8 PERFORMANCE: Only update aura position and alpha
       if (this.belleAura) {
-        this.belleAura.clear();
+        this.belleAura.setPosition(this.eagle.x, this.eagle.y);
 
-        // Check if warning phase
-        let auraAlpha = 0.15;
+        // Check if warning phase - only update alpha
         if (this.belleModTimer) {
           const remaining = Math.ceil((this.belleModTimer.delay - this.belleModTimer.elapsed) / 1000);
           if (remaining <= 3) {
             // Pulsing aura when time running out
-            auraAlpha = Math.floor(Date.now() / 250) % 2 === 0 ? 0.05 : 0.25;
+            this.belleAura.setAlpha(Math.floor(Date.now() / 250) % 2 === 0 ? 0.3 : 1);
+          } else {
+            this.belleAura.setAlpha(1);
           }
         }
-
-        // Golden glow aura
-        this.belleAura.fillStyle(0xFFD700, auraAlpha);
-        this.belleAura.fillCircle(this.eagle.x, this.eagle.y, 110);
-
-        // Golden ring
-        this.belleAura.lineStyle(5, 0xFFD700, 0.7);
-        this.belleAura.strokeCircle(this.eagle.x, this.eagle.y, 95);
-
-        // Inner gold ring
-        this.belleAura.lineStyle(3, 0xFFF59D, 1);
-        this.belleAura.strokeCircle(this.eagle.x, this.eagle.y, 85);
       }
     }
 
