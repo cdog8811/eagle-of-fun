@@ -54,6 +54,8 @@ export class PreloadScene extends Phaser.Scene {
     this.load.image('red-candles', 'assets/images/redcandles-pixel.png'); // Red Candles (Phase 3)
     this.load.image('gary', 'assets/images/gary-pixel.png'); // Gary/SEC (Phase 4)
     this.load.image('bear-boss', 'assets/images/bearmarket-pixel.png'); // Bear Market Boss (Phase 5)
+    this.load.image('fourmeme', 'assets/images/fourmeme-pixel.png'); // 4meme (CZ/Binance) - Kontrahent
+    this.load.image('pumpfun', 'assets/images/pumpfun-pixel.png'); // Pump.fun - Größte Memecoin-Plattform
 
     // === UI ===
     this.load.image('america-logo', 'assets/images/americalogo.png');

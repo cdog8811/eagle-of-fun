@@ -44,7 +44,7 @@ export const GameConfig = {
       id: 3,
       name: 'Candle Crash 📉',
       duration: 60,
-      enemies: ['jeeter', 'paperHands', 'redCandles'],
+      enemies: ['jeeter', 'paperHands', 'redCandles', 'fourMeme'],
       difficulty: 'hard',
       speedMultiplier: 1.7,
       spawnRate: 4000, // increased from 2500
@@ -55,7 +55,7 @@ export const GameConfig = {
       id: 4,
       name: 'Regulation Run 🧑‍💼',
       duration: 60,
-      enemies: ['jeeter', 'paperHands', 'redCandles', 'gary'],
+      enemies: ['jeeter', 'paperHands', 'redCandles', 'gary', 'fourMeme', 'pumpFun'],
       difficulty: 'very_hard',
       speedMultiplier: 1.9,
       spawnRate: 3500, // increased from 2200
@@ -66,7 +66,7 @@ export const GameConfig = {
       id: 5,
       name: 'Bear Market Finale 🐻',
       duration: 60,
-      enemies: ['jeeter', 'paperHands', 'redCandles', 'gary', 'bearBoss'],
+      enemies: ['jeeter', 'paperHands', 'redCandles', 'gary', 'fourMeme', 'pumpFun', 'bearBoss'],
       difficulty: 'extreme',
       speedMultiplier: 2.1,
       spawnRate: 1800,
@@ -77,7 +77,7 @@ export const GameConfig = {
       id: 6,
       name: 'WAGMI Mode 🦅',
       duration: -1, // Endless
-      enemies: ['jeeter', 'paperHands', 'redCandles', 'gary', 'bearBoss'],
+      enemies: ['jeeter', 'paperHands', 'redCandles', 'gary', 'fourMeme', 'pumpFun', 'bearBoss'],
       difficulty: 'variable',
       speedMultiplier: 2.3,
       spawnRate: 1500,
@@ -193,6 +193,28 @@ export const GameConfig = {
       scale: 0.35, // Slightly smaller but still intimidating
       meme: 'SELL! SELL! SELL!',
       isBoss: true
+    },
+    fourMeme: {
+      name: '4meme (CZ)',
+      description: 'Kontrahent zu America.Fun - gehört zu CZ/Binance',
+      behavior: 'horizontal',
+      speed: 230,
+      hp: 28,
+      size: { width: 95, height: 95 },
+      sprite: 'fourmeme',
+      scale: 0.20,
+      meme: '4meme > AOL 🖐️'
+    },
+    pumpFun: {
+      name: 'Pump.fun',
+      description: 'Größte Memecoin-Plattform - Kontrahent',
+      behavior: 'horizontal',
+      speed: 240,
+      hp: 30,
+      size: { width: 90, height: 90 },
+      sprite: 'pumpfun',
+      scale: 0.22,
+      meme: 'Pump it or dump it! 💎'
     }
   },
 
