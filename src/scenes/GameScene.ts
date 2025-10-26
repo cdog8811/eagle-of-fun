@@ -236,6 +236,9 @@ export class GameScene extends Phaser.Scene {
     this.hasStarted = false;
     this.countdownStarted = false;
 
+    // CRITICAL: Reset time.paused flag (prevents slowmo bug!)
+    this.time.paused = false;
+
     // Phase system
     this.currentPhase = 1;
     this.phaseStartTime = 0;
@@ -243,6 +246,8 @@ export class GameScene extends Phaser.Scene {
     // Speeds
     this.coinSpeed = 300;
     this.enemySpeed = 250;
+    this.originalCoinSpeed = 0; // Will be set after phase multiplier applies
+    this.originalEnemySpeed = 0;
 
     // v3.7: Reset lives based on upgrades
     const playerStats = this.upgradeSystem.getPlayerStats();
@@ -281,6 +286,13 @@ export class GameScene extends Phaser.Scene {
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
 
+    // Stop any leftover menu music from UpgradeScene
+    this.sound.stopByKey('menu-music');
+
+    // CRITICAL: Ensure time and tweens are not paused (prevents slowmo bug!)
+    this.time.paused = false;
+    this.tweens.resumeAll();
+
     // Background - clean white
     this.cameras.main.setBackgroundColor('#FFFFFF');
 
@@ -296,21 +308,14 @@ export class GameScene extends Phaser.Scene {
     this.backgroundImage.setDepth(0);
     this.backgroundImage.setAlpha(0.8); // Slightly transparent for better contrast
 
-    // America.Fun Logo - bottom right corner, bigger with pulse animation
-    const logo = this.add.image(width - 150, height - 80, 'america-logo');
-    logo.setScale(0.3);
+    // v3.8: America.Fun Logo - bottom right (same as StartScene)
+    const footerY = height - 30;
+    const logo = this.add.image(0, footerY, 'america-logo');
+    logo.setScale(0.36); // Same scale as StartScene
     logo.setAlpha(0.9);
     logo.setDepth(1000);
-
-    // Pulse animation for logo
-    this.tweens.add({
-      targets: logo,
-      scale: 0.32,
-      duration: 1500,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.easeInOut'
-    });
+    // Position logo so its right edge is 30px from screen edge
+    logo.setX(width - (logo.width * 0.36 / 2) - 30);
 
     // Create eagle - bigger and positioned on the left
     this.eagle = new Eagle(this, 300, height / 2);
@@ -920,6 +925,15 @@ export class GameScene extends Phaser.Scene {
     // Resume physics after countdown
     this.physics.resume();
 
+    // CRITICAL FIX: DON'T override speeds here!
+    // Speeds are already set correctly by phase progression (Phase 1: 300 × 1.3 = 390)
+    // Only ensure originalSpeeds are set for Valor Mode restoration
+    if (this.originalCoinSpeed === 0) {
+      this.originalCoinSpeed = this.coinSpeed;
+      this.originalEnemySpeed = this.enemySpeed;
+      console.log(`✅ Original speeds saved: coinSpeed=${this.originalCoinSpeed}, enemySpeed=${this.originalEnemySpeed}`);
+    }
+
     // Start game timer
     this.gameTimer = this.time.addEvent({
       delay: 1000,
@@ -1020,9 +1034,9 @@ export class GameScene extends Phaser.Scene {
       loop: true
     });
 
-    // Spawn power-ups occasionally
+    // v3.8: Spawn power-ups occasionally (reduced frequency for balance)
     this.powerupSpawnTimer = this.time.addEvent({
-      delay: 15000, // Every 15 seconds
+      delay: 25000, // Every 25 seconds (was 15s - too easy!)
       callback: this.spawnPowerup,
       callbackScope: this,
       loop: true
@@ -1803,17 +1817,17 @@ export class GameScene extends Phaser.Scene {
     const height = this.cameras.main.height;
     const y = Phaser.Math.Between(150, height - 150);
 
-    // Check if we should spawn Vesper (every 500 points)
-    if (this.score > 0 && this.score % 500 === 0 && !this.bullMarketActive) {
+    // v3.8: Check if we should spawn Vesper (every 2500 points - was 500, too easy!)
+    if (this.score > 0 && this.score % 2500 === 0 && !this.bullMarketActive) {
       this.spawnVesper();
       return;
     }
 
     // Randomly choose powerup type (excluding buyback which is triggered by AOL combo)
-    // 5% chance for Vesper0x (rare), otherwise choose from common power-ups
+    // v3.8: 2% chance for Vesper0x (rare - was 5%, reduced for balance)
     let randomType: string;
     const vesperRoll = Phaser.Math.Between(1, 100);
-    if (vesperRoll <= 5) {
+    if (vesperRoll <= 2) {
       randomType = 'vesper0x';
     } else {
       const powerupTypes = ['shield', 'freedomStrike', 'belleMod'];
@@ -2674,12 +2688,12 @@ export class GameScene extends Phaser.Scene {
       // Only move shield to eagle position
       this.shieldGraphics.setPosition(this.eagle.x, this.eagle.y);
 
-      // Check if shield is about to expire (< 3 seconds) - only update alpha
+      // v3.8 PERFORMANCE: Use game time instead of Date.now() for blinking
       if (this.shieldTimer) {
         const remaining = Math.ceil((this.shieldTimer.delay - this.shieldTimer.elapsed) / 1000);
         if (remaining <= 3) {
-          // Blink effect when < 3 seconds remaining
-          this.shieldGraphics.setAlpha(Math.floor(Date.now() / 250) % 2 === 0 ? 0.3 : 1);
+          // Blink effect when < 3 seconds remaining (use game time)
+          this.shieldGraphics.setAlpha(Math.floor(this.time.now / 250) % 2 === 0 ? 0.3 : 1);
         } else {
           this.shieldGraphics.setAlpha(1);
         }
@@ -2692,12 +2706,12 @@ export class GameScene extends Phaser.Scene {
       if (this.belleSprite) {
         this.belleSprite.setPosition(this.eagle.x - 80, this.eagle.y - 60);
 
-        // Blink warning when < 3 seconds remaining
+        // v3.8 PERFORMANCE: Use game time instead of Date.now() for blinking
         if (this.belleModTimer) {
           const remaining = Math.ceil((this.belleModTimer.delay - this.belleModTimer.elapsed) / 1000);
           if (remaining <= 3) {
-            // Flash Belle sprite on/off
-            this.belleSprite.setAlpha(Math.floor(Date.now() / 250) % 2 === 0 ? 0.3 : 1);
+            // Flash Belle sprite on/off (use game time)
+            this.belleSprite.setAlpha(Math.floor(this.time.now / 250) % 2 === 0 ? 0.3 : 1);
           } else {
             this.belleSprite.setAlpha(1);
           }
@@ -2708,12 +2722,12 @@ export class GameScene extends Phaser.Scene {
       if (this.belleAura) {
         this.belleAura.setPosition(this.eagle.x, this.eagle.y);
 
-        // Check if warning phase - only update alpha
+        // v3.8 PERFORMANCE: Use game time instead of Date.now() for blinking
         if (this.belleModTimer) {
           const remaining = Math.ceil((this.belleModTimer.delay - this.belleModTimer.elapsed) / 1000);
           if (remaining <= 3) {
-            // Pulsing aura when time running out
-            this.belleAura.setAlpha(Math.floor(Date.now() / 250) % 2 === 0 ? 0.3 : 1);
+            // Pulsing aura when time running out (use game time)
+            this.belleAura.setAlpha(Math.floor(this.time.now / 250) % 2 === 0 ? 0.3 : 1);
           } else {
             this.belleAura.setAlpha(1);
           }
@@ -2798,22 +2812,8 @@ export class GameScene extends Phaser.Scene {
         meta: { enemyType }
       });
 
-      // v3.8: Simple floating score text (lightweight)
-      const scoreText = this.add.text(hitX, hitY, `+${pointsAwarded}`, {
-        fontSize: '24px',
-        color: '#FFD700',
-        fontFamily: 'Arial',
-        fontStyle: 'bold'
-      }).setOrigin(0.5).setDepth(2000);
-
-      this.tweens.add({
-        targets: scoreText,
-        y: hitY - 40,
-        alpha: 0,
-        duration: 800,
-        ease: 'Power2',
-        onComplete: () => scoreText.destroy()
-      });
+      // v3.8 PERFORMANCE: Removed floating score text and tween for 60 FPS
+      // Score already updated in HUD, no need for floating text
 
       // Play explosion sound
       if (this.sound.get('explosion')) {
@@ -2894,44 +2894,8 @@ export class GameScene extends Phaser.Scene {
         this.sound.play('coin', { volume: 0.5 });
       }
 
-      // Visual feedback - destroyed fake coin
-      const feedbackText = this.add.text(hitX, hitY, 'DESTROYED!', {
-        fontSize: '28px',
-        color: '#00FF00',
-        fontFamily: 'Arial',
-        fontStyle: 'bold',
-        stroke: '#000000',
-        strokeThickness: 3
-      }).setOrigin(0.5).setDepth(500);
-
-      this.tweens.add({
-        targets: feedbackText,
-        y: hitY - 60,
-        alpha: 0,
-        duration: 800,
-        ease: 'Power2',
-        onComplete: () => feedbackText.destroy()
-      });
-
-      // Small explosion effect
-      for (let i = 0; i < 5; i++) {
-        const angle = (i / 5) * Math.PI * 2;
-        const particle = this.add.graphics();
-        particle.fillStyle(0xFFD700, 1);
-        particle.fillCircle(0, 0, 3);
-        particle.x = hitX;
-        particle.y = hitY;
-        particle.setDepth(500);
-
-        this.tweens.add({
-          targets: particle,
-          x: hitX + Math.cos(angle) * 30,
-          y: hitY + Math.sin(angle) * 30,
-          alpha: 0,
-          duration: 300,
-          onComplete: () => particle.destroy()
-        });
-      }
+      // v3.8 PERFORMANCE: Removed feedback text and particle effects for 60 FPS
+      // Sound feedback is sufficient
 
       // Remove from array first
       const index = this.fakeCoins.indexOf(hit.fakeCoin);
@@ -3256,41 +3220,11 @@ export class GameScene extends Phaser.Scene {
             break;
         }
 
-        const feedbackText = this.add.text(coin.x, coin.y, `${coinName} +${points}`, {
-          fontSize: '32px',
-          color: coinColor,
-          fontFamily: 'Arial',
-          fontStyle: 'bold',
-          stroke: '#FFFFFF',
-          strokeThickness: 4
-        }).setOrigin(0.5);
-        feedbackText.setDepth(500);
-
-        // Animate feedback text upwards and fade out
-        this.tweens.add({
-          targets: feedbackText,
-          y: feedbackText.y - 80,
-          alpha: 0,
-          duration: 1000,
-          ease: 'Power2',
-          onComplete: () => feedbackText.destroy()
-        });
-
-        // Visual feedback - only this coin disappears
-        // Immediately remove from array to prevent further updates
+        // v3.8 PERFORMANCE: Removed floating text and tween animations for 60 FPS
+        // These created 2 tweens + 1 text object per coin = massive performance hit
+        // Visual feedback simplified: just remove coin immediately
         this.coins.splice(i, 1);
-
-        this.tweens.add({
-          targets: coin,
-          scale: 1.5,
-          alpha: 0,
-          duration: 200,
-          onComplete: () => {
-            if (coin && coin.active) {
-              coin.destroy();
-            }
-          }
-        });
+        coin.destroy();
       }
     }
 
@@ -3398,58 +3332,16 @@ export class GameScene extends Phaser.Scene {
       if (distance < 80) {
         fakeCoin.setData('collected', true);
 
+        // v3.8 PERFORMANCE: Removed all fake coin feedback animations (text + tweens)
         // Check if shield or Belle MOD is active
         if (this.shieldActive || this.belleModActive) {
           // Shield or Belle MOD protects against fake coins
-          const feedbackMessage = this.belleModActive ? 'DELETED!' : 'BLOCKED!';
-          const feedbackColor = this.belleModActive ? '#FFD700' : '#00FF00';
-          const feedbackText = this.add.text(fakeCoin.x, fakeCoin.y, feedbackMessage, {
-            fontSize: '32px',
-            color: feedbackColor,
-            fontFamily: 'Arial',
-            fontStyle: 'bold',
-            stroke: '#FFFFFF',
-            strokeThickness: 4
-          }).setOrigin(0.5);
-          feedbackText.setDepth(500);
-
-          this.tweens.add({
-            targets: feedbackText,
-            y: feedbackText.y - 60,
-            alpha: 0,
-            duration: 600,
-            ease: 'Power2',
-            onComplete: () => feedbackText.destroy()
-          });
-
           this.fakeCoins.splice(i, 1);
           fakeCoin.destroy();
           continue;
         }
 
-        // Show death feedback for fake coin
-        const feedbackText = this.add.text(fakeCoin.x, fakeCoin.y, 'FAKE!', {
-          fontSize: '40px',
-          color: '#FF0000',
-          fontFamily: 'Arial',
-          fontStyle: 'bold',
-          stroke: '#FFFFFF',
-          strokeThickness: 5
-        }).setOrigin(0.5);
-        feedbackText.setDepth(500);
-
-        this.tweens.add({
-          targets: feedbackText,
-          y: feedbackText.y - 80,
-          alpha: 0,
-          duration: 800,
-          ease: 'Power2',
-          onComplete: () => feedbackText.destroy()
-        });
-
-        // Strong visual shake effect
-        this.cameras.main.shake(400, 0.01);
-
+        // v3.8 PERFORMANCE: Removed FAKE text, tween, and shake animations
         this.fakeCoins.splice(i, 1);
         fakeCoin.destroy();
 
@@ -3493,8 +3385,7 @@ export class GameScene extends Phaser.Scene {
           this.blockControls(duration);
         }
 
-        // Visual effect
-        this.cameras.main.shake(300, 0.008);
+        // v3.8 PERFORMANCE: Removed screen shake for 60 FPS
 
         paper.destroy();
         this.lawsuitPapers.splice(i, 1);
@@ -3576,22 +3467,38 @@ export class GameScene extends Phaser.Scene {
           break;
 
         case 'boss_chaos':
-          // Boss special movement - smoother and more predictable
+          // v3.8 PERFORMANCE: Boss special movement - direct Y change instead of tween
           enemy.x -= baseSpeed * 0.6; // Slower horizontal movement
           let chaosTimer = enemy.getData('chaosTimer') || 0;
           chaosTimer += this.game.loop.delta;
 
           if (chaosTimer > 1500) { // Increased from 800 to 1500 - slower changes
-            // Random direction change with constraints
+            // Random direction change with constraints - direct movement instead of tween
             const randomY = Phaser.Math.Between(250, this.cameras.main.height - 250);
-            this.tweens.add({
-              targets: enemy,
-              y: randomY,
-              duration: 1800, // Increased from 1200 to 1800 - smoother transition
-              ease: 'Sine.easeInOut'
-            });
+            const currentBossY = enemy.getData('chaosTargetY') || enemy.y;
+            enemy.setData('chaosTargetY', randomY);
+            enemy.setData('chaosStartY', currentBossY);
+            enemy.setData('chaosMoveProgress', 0);
             chaosTimer = 0;
           }
+
+          // Smooth interpolation to target Y (replaces tween)
+          const chaosTargetY = enemy.getData('chaosTargetY');
+          if (chaosTargetY !== undefined) {
+            let chaosMoveProgress = enemy.getData('chaosMoveProgress') || 0;
+            chaosMoveProgress += this.game.loop.delta / 1800; // 1800ms duration
+            if (chaosMoveProgress >= 1) {
+              enemy.y = chaosTargetY;
+              enemy.setData('chaosTargetY', undefined);
+            } else {
+              const chaosStartY = enemy.getData('chaosStartY') || enemy.y;
+              // Sine easing
+              const t = Math.sin(chaosMoveProgress * Math.PI / 2);
+              enemy.y = chaosStartY + (chaosTargetY - chaosStartY) * t;
+              enemy.setData('chaosMoveProgress', chaosMoveProgress);
+            }
+          }
+
           enemy.setData('chaosTimer', chaosTimer);
           break;
 
@@ -3675,29 +3582,7 @@ export class GameScene extends Phaser.Scene {
           this.missionManager.onScoreUpdate(this.score);
           this.updateMissionUI();
 
-          // Visual feedback
-          const feedbackMessage = this.belleModActive ? 'BANNED! +50' : 'BLOCKED! +50';
-          const feedbackColor = this.belleModActive ? '#FFD700' : '#00FF00';
-          const text = this.add.text(enemy.x, enemy.y, feedbackMessage, {
-            fontSize: '32px',
-            color: feedbackColor,
-            fontFamily: 'Arial',
-            fontStyle: 'bold',
-            stroke: '#FFFFFF',
-            strokeThickness: 4
-          }).setOrigin(0.5);
-          text.setDepth(2000);
-
-          this.tweens.add({
-            targets: text,
-            alpha: 0,
-            y: text.y - 50,
-            duration: 800,
-            onComplete: () => text.destroy()
-          });
-
-          // Screen shake
-          this.cameras.main.shake(150, 0.003);
+          // v3.8 PERFORMANCE: Removed visual feedback (text + tween + shake) for 60 FPS
         } else {
           // v3.2: Hit by enemy - take damage instead of instant game over
           // Play crash sound
@@ -3721,8 +3606,7 @@ export class GameScene extends Phaser.Scene {
           enemy.destroy();
           this.enemies.splice(i, 1);
 
-          // Screen shake
-          this.cameras.main.shake(200, 0.005);
+          // v3.8 PERFORMANCE: Removed screen shake for 60 FPS
         }
       }
     }
@@ -4129,42 +4013,49 @@ export class GameScene extends Phaser.Scene {
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
 
-    // Background panel
+    // v3.8: Modern white panel with black border
     const panel = this.add.graphics();
-    panel.fillStyle(0x000000, 0.8);
-    panel.fillRoundedRect(width / 2 - 250, height / 2 - 100, 500, 200, 16);
+    panel.fillStyle(0xFFFFFF, 1); // White background
+    panel.fillRoundedRect(width / 2 - 300, height / 2 - 120, 600, 240, 12);
+    panel.lineStyle(4, 0x000000, 1); // Black border
+    panel.strokeRoundedRect(width / 2 - 300, height / 2 - 120, 600, 240, 12);
     panel.setDepth(2000);
 
-    // Title text
-    const title = this.add.text(width / 2, height / 2 - 50, '⚡ NEW WEAPON UNLOCKED! ⚡', {
-      fontSize: '32px',
-      color: '#FFD700',
-      fontFamily: 'Arial Black, Arial',
+    // v3.8: Title text - clean black
+    const title = this.add.text(width / 2, height / 2 - 70, 'NEW WEAPON UNLOCKED', {
+      fontSize: '36px',
+      color: '#000000',
+      fontFamily: 'Impact, Arial Black, Arial',
       fontStyle: 'bold',
-      stroke: '#000000',
-      strokeThickness: 6
+      letterSpacing: 3
     });
     title.setOrigin(0.5);
     title.setDepth(2001);
 
-    // Weapon name
+    // Red underline accent
+    const underline = this.add.graphics();
+    underline.fillStyle(0xE63946, 1);
+    underline.fillRect(width / 2 - 160, height / 2 - 45, 320, 4);
+    underline.setDepth(2001);
+
+    // v3.8: Weapon name - red accent
     const weaponText = this.add.text(width / 2, height / 2 + 10, weaponName, {
-      fontSize: '48px',
-      color: '#FFFFFF',
-      fontFamily: 'Arial Black, Arial',
+      fontSize: '52px',
+      color: '#E63946', // Red accent for weapon name
+      fontFamily: 'Impact, Arial Black, Arial',
       fontStyle: 'bold',
-      stroke: '#000000',
-      strokeThickness: 6
+      letterSpacing: 4
     });
     weaponText.setOrigin(0.5);
     weaponText.setDepth(2001);
 
-    // Instruction text
-    const instruction = this.add.text(width / 2, height / 2 + 60, 'Press Q / W / E to fire!', {
+    // v3.8: Instruction text - black
+    const instruction = this.add.text(width / 2, height / 2 + 70, 'Press Q / W / E to fire!', {
       fontSize: '24px',
-      color: '#00FF00',
+      color: '#000000',
       fontFamily: 'Arial',
-      fontStyle: 'bold'
+      fontStyle: 'bold',
+      letterSpacing: 2
     });
     instruction.setOrigin(0.5);
     instruction.setDepth(2001);
@@ -4188,11 +4079,12 @@ export class GameScene extends Phaser.Scene {
     // Remove notification after 3 seconds
     this.time.delayedCall(3000, () => {
       this.tweens.add({
-        targets: [panel, title, weaponText, instruction],
+        targets: [panel, underline, title, weaponText, instruction],
         alpha: 0,
         duration: 500,
         onComplete: () => {
           panel.destroy();
+          underline.destroy();
           title.destroy();
           weaponText.destroy();
           instruction.destroy();
@@ -4272,110 +4164,127 @@ export class GameScene extends Phaser.Scene {
     // Create a container for all tutorial elements
     const tutorialElements: Phaser.GameObjects.GameObject[] = [];
 
-    // Dark overlay
+    // v3.8: Dark overlay for better readability
     const overlay = this.add.graphics();
-    overlay.fillStyle(0x000000, 0.8);
+    overlay.fillStyle(0x000000, 0.7); // Darker overlay
     overlay.fillRect(0, 0, width, height);
     overlay.setDepth(5000);
     overlay.setScrollFactor(0); // Fixed to camera
     tutorialElements.push(overlay);
 
-    // Tutorial box - Bigger for better spacing
+    // v3.8: Larger white box with thick black border for high contrast
+    const boxWidth = 700;
+    const boxHeight = 450;
     const tutorialBg = this.add.graphics();
-    tutorialBg.fillStyle(0x222222, 0.98);
-    tutorialBg.fillRoundedRect(width / 2 - 300, height / 2 - 180, 600, 360, 16);
-    tutorialBg.lineStyle(4, 0xFFD700, 1); // Gold border
-    tutorialBg.strokeRoundedRect(width / 2 - 300, height / 2 - 180, 600, 360, 16);
+    tutorialBg.fillStyle(0xFFFFFF, 1); // Pure white background
+    tutorialBg.fillRoundedRect(width / 2 - boxWidth / 2, height / 2 - boxHeight / 2, boxWidth, boxHeight, 16);
+    tutorialBg.lineStyle(6, 0x000000, 1); // Thick black border
+    tutorialBg.strokeRoundedRect(width / 2 - boxWidth / 2, height / 2 - boxHeight / 2, boxWidth, boxHeight, 16);
     tutorialBg.setDepth(5001);
     tutorialBg.setScrollFactor(0);
     tutorialElements.push(tutorialBg);
 
-    // Title - at top with more space
-    const title = this.add.text(width / 2, height / 2 - 140, '⚡ WEAPON UNLOCKED ⚡', {
-      fontSize: '30px',
-      color: '#FFD700',
-      fontFamily: 'Arial',
+    // v3.8: Title - larger and bolder for better visibility
+    const title = this.add.text(width / 2, height / 2 - 170, 'WEAPON UNLOCKED', {
+      fontSize: '52px', // Larger title
+      color: '#000000',
+      fontFamily: 'Impact, Arial Black, Arial',
       fontStyle: 'bold',
-      stroke: '#000000',
-      strokeThickness: 3
+      letterSpacing: 6
     }).setOrigin(0.5).setDepth(5002);
     title.setScrollFactor(0);
     tutorialElements.push(title);
 
-    // Instructions - Each control on separate line with left alignment for better readability
-    const controlsY = height / 2 - 70;
-    const lineHeight = 35;
+    // Red underline accent (like StartScene) - wider
+    const underline = this.add.graphics();
+    underline.fillStyle(0xE63946, 1); // Red accent
+    underline.fillRect(width / 2 - 180, height / 2 - 135, 360, 5); // Wider and thicker
+    underline.setDepth(5002);
+    underline.setScrollFactor(0);
+    tutorialElements.push(underline);
 
-    const qControl = this.add.text(width / 2 - 120, controlsY, 'Q', {
-      fontSize: '24px',
-      color: '#FFD700',
-      fontFamily: 'Arial',
-      fontStyle: 'bold'
+    // v3.8: Instructions - larger text for better readability
+    const controlsY = height / 2 - 80;
+    const lineHeight = 45; // More spacing between lines
+
+    const qControl = this.add.text(width / 2 - 150, controlsY, 'Q', {
+      fontSize: '36px', // Larger keys
+      color: '#E63946', // Red accent for keys
+      fontFamily: 'Arial Black, Arial',
+      fontStyle: 'bold',
+      letterSpacing: 3
     }).setOrigin(0, 0.5).setDepth(5002);
     qControl.setScrollFactor(0);
     tutorialElements.push(qControl);
 
-    const qLabel = this.add.text(width / 2 - 80, controlsY, 'Shoot Forward', {
-      fontSize: '20px',
-      color: '#FFFFFF',
-      fontFamily: 'Arial'
+    const qLabel = this.add.text(width / 2 - 100, controlsY, 'Shoot Forward', {
+      fontSize: '26px', // Larger labels
+      color: '#000000',
+      fontFamily: 'Arial',
+      fontStyle: 'bold'
     }).setOrigin(0, 0.5).setDepth(5002);
     qLabel.setScrollFactor(0);
     tutorialElements.push(qLabel);
 
-    const wControl = this.add.text(width / 2 - 120, controlsY + lineHeight, 'W', {
-      fontSize: '24px',
-      color: '#FFD700',
-      fontFamily: 'Arial',
-      fontStyle: 'bold'
+    const wControl = this.add.text(width / 2 - 150, controlsY + lineHeight, 'W', {
+      fontSize: '36px', // Larger keys
+      color: '#E63946', // Red accent for keys
+      fontFamily: 'Arial Black, Arial',
+      fontStyle: 'bold',
+      letterSpacing: 3
     }).setOrigin(0, 0.5).setDepth(5002);
     wControl.setScrollFactor(0);
     tutorialElements.push(wControl);
 
-    const wLabel = this.add.text(width / 2 - 80, controlsY + lineHeight, 'Shoot Up', {
-      fontSize: '20px',
-      color: '#FFFFFF',
-      fontFamily: 'Arial'
+    const wLabel = this.add.text(width / 2 - 100, controlsY + lineHeight, 'Shoot Up', {
+      fontSize: '26px', // Larger labels
+      color: '#000000',
+      fontFamily: 'Arial',
+      fontStyle: 'bold'
     }).setOrigin(0, 0.5).setDepth(5002);
     wLabel.setScrollFactor(0);
     tutorialElements.push(wLabel);
 
-    const eControl = this.add.text(width / 2 - 120, controlsY + lineHeight * 2, 'E', {
-      fontSize: '24px',
-      color: '#FFD700',
-      fontFamily: 'Arial',
-      fontStyle: 'bold'
+    const eControl = this.add.text(width / 2 - 150, controlsY + lineHeight * 2, 'E', {
+      fontSize: '36px', // Larger keys
+      color: '#E63946', // Red accent for keys
+      fontFamily: 'Arial Black, Arial',
+      fontStyle: 'bold',
+      letterSpacing: 3
     }).setOrigin(0, 0.5).setDepth(5002);
     eControl.setScrollFactor(0);
     tutorialElements.push(eControl);
 
-    const eLabel = this.add.text(width / 2 - 80, controlsY + lineHeight * 2, 'Shoot Down', {
-      fontSize: '20px',
-      color: '#FFFFFF',
-      fontFamily: 'Arial'
+    const eLabel = this.add.text(width / 2 - 100, controlsY + lineHeight * 2, 'Shoot Down', {
+      fontSize: '26px', // Larger labels
+      color: '#000000',
+      fontFamily: 'Arial',
+      fontStyle: 'bold'
     }).setOrigin(0, 0.5).setDepth(5002);
     eLabel.setScrollFactor(0);
     tutorialElements.push(eLabel);
 
-    // Energy info with more spacing
-    const energyInfo = this.add.text(width / 2, height / 2 + 80,
+    // v3.8: Energy info - larger and clearer
+    const energyInfo = this.add.text(width / 2, height / 2 + 110,
       'Coins charge energy • Shooting uses energy',
       {
-        fontSize: '16px',
-        color: '#AAAAAA',
+        fontSize: '22px', // Larger info text
+        color: '#555555', // Slightly darker gray
         fontFamily: 'Arial',
+        fontStyle: 'bold',
         align: 'center'
       }
     ).setOrigin(0.5).setDepth(5002);
     energyInfo.setScrollFactor(0);
     tutorialElements.push(energyInfo);
 
-    // Close hint - at bottom with more space
-    const closeHint = this.add.text(width / 2, height / 2 + 150, 'Press SPACE to continue', {
-      fontSize: '18px',
-      color: '#FFD700',
+    // v3.8: Close hint - larger and more prominent
+    const closeHint = this.add.text(width / 2, height / 2 + 180, 'Press SPACE to continue', {
+      fontSize: '26px', // Larger hint
+      color: '#E63946', // Red accent
       fontFamily: 'Arial',
-      fontStyle: 'bold'
+      fontStyle: 'bold',
+      letterSpacing: 3
     }).setOrigin(0.5).setDepth(5002);
     closeHint.setScrollFactor(0);
     tutorialElements.push(closeHint);
@@ -4490,16 +4399,16 @@ export class GameScene extends Phaser.Scene {
     this.shieldGraphics = this.add.graphics();
     this.shieldGraphics.setDepth(999); // Higher depth to ensure visibility
 
-    // Stage 1: Speed ×3, Coins ×2
-    this.coinSpeed = this.originalCoinSpeed * 3;
-    this.enemySpeed = this.originalEnemySpeed * 3;
+    // v3.8: Stage 1: Speed ×2, Coins ×1.5 (reduced for performance)
+    this.coinSpeed = this.originalCoinSpeed * 2;  // Was 3x
+    this.enemySpeed = this.originalEnemySpeed * 2;  // Was 3x
 
-    // Coin spawn rate ×2
+    // Coin spawn rate ×1.5 (was 2x - reduced for performance)
     if (this.coinSpawnTimer) {
       this.coinSpawnTimer.remove();
     }
     this.coinSpawnTimer = this.time.addEvent({
-      delay: 750, // 2x faster
+      delay: 1000, // 1.5x faster (was 750ms = 2x)
       callback: this.spawnCoin,
       callbackScope: this,
       loop: true
@@ -4536,7 +4445,7 @@ export class GameScene extends Phaser.Scene {
 
     // Play sound
     this.sound.play('buyback-voice', { volume: 0.9 });
-    this.cameras.main.shake(600, 0.006);
+    // v3.8 PERFORMANCE: Removed shake, kept flash for visual feedback
     this.cameras.main.flash(500, 255, 215, 0, true);
 
     // Stage 1 duration: 6 seconds
@@ -4554,16 +4463,16 @@ export class GameScene extends Phaser.Scene {
     // Keep invincibility active
     this.shieldActive = true;
 
-    // Stage 2: Speed ×4.5, Coins ×4
-    this.coinSpeed = this.originalCoinSpeed * 4.5;
-    this.enemySpeed = this.originalEnemySpeed * 4.5;
+    // v3.8: Stage 2: Speed ×2.5, Coins ×2 (reduced for performance)
+    this.coinSpeed = this.originalCoinSpeed * 2.5;  // Was 4.5x
+    this.enemySpeed = this.originalEnemySpeed * 2.5;  // Was 4.5x
 
-    // Coin spawn rate ×4
+    // Coin spawn rate ×2 (was 4x - reduced for performance)
     if (this.coinSpawnTimer) {
       this.coinSpawnTimer.remove();
     }
     this.coinSpawnTimer = this.time.addEvent({
-      delay: 375, // 4x faster
+      delay: 750, // 2x faster (was 375ms = 4x)
       callback: this.spawnCoin,
       callbackScope: this,
       loop: true
@@ -4576,7 +4485,7 @@ export class GameScene extends Phaser.Scene {
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
 
-    const overlay = this.add.text(width / 2, height / 2 + 80, '⚡🦅 VALOR MODE STAGE 2 🦅⚡\nSPEED ×4.5 | COINS ×4\nSCORE ×3', {
+    const overlay = this.add.text(width / 2, height / 2 + 80, '⚡🦅 VALOR MODE STAGE 2 🦅⚡\nSPEED ×2.5 | COINS ×2\nSCORE ×3', {
       fontSize: '52px',
       color: '#FFD700',
       fontFamily: 'Arial',
@@ -4595,8 +4504,7 @@ export class GameScene extends Phaser.Scene {
       onComplete: () => overlay.destroy()
     });
 
-    // Stronger effects
-    this.cameras.main.shake(1000, 0.010);
+    // v3.8 PERFORMANCE: Removed shake, kept flash for visual feedback
     this.cameras.main.flash(800, 255, 215, 0, true);
 
     // Stage 2 duration: 6 seconds
@@ -4646,9 +4554,15 @@ export class GameScene extends Phaser.Scene {
     this.valorModeStage = 0;
     this.valorScoreMultiplier = 1;
 
-    // Restore normal speeds
+    // Restore normal speeds (with safety check!)
+    if (this.originalCoinSpeed === 0 || this.originalEnemySpeed === 0) {
+      console.error('⚠️ BUG: originalSpeeds are 0! Resetting to defaults.');
+      this.originalCoinSpeed = 300;
+      this.originalEnemySpeed = 250;
+    }
     this.coinSpeed = this.originalCoinSpeed;
     this.enemySpeed = this.originalEnemySpeed;
+    console.log(`✅ Speeds restored to: coinSpeed=${this.coinSpeed}, enemySpeed=${this.enemySpeed}`);
 
     // Restore normal coin spawn
     if (this.coinSpawnTimer) {
@@ -5022,7 +4936,7 @@ export class GameScene extends Phaser.Scene {
     breakingLabel.setDepth(2002);
 
     const tickerMessage = ' Gary sues another meme coin!  •  $BONK hits new ATH  •  Whales accumulating  •  Bear market cancelled  •  Diamond hands prevail  •  ';
-    const repeatedMessage = tickerMessage.repeat(20);
+    const repeatedMessage = tickerMessage.repeat(3); // v3.8: Reduced from 20 to 3 - fixes WebGL texture size error!
 
     const tickerStyle = {
       fontSize: '15px',
@@ -5083,7 +4997,7 @@ export class GameScene extends Phaser.Scene {
 
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
-    const singleMessageLength = this.newsTickerText.width / 20;
+    const singleMessageLength = this.newsTickerText.width / 3; // v3.8: Changed from /20 to /3 (matches repeat(3))
     const scrollDuration = 30000;
 
     // TOP ticker: Scroll from right to left
