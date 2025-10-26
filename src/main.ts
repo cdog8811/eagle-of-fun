@@ -13,7 +13,7 @@ import UpgradeScene from './scenes/UpgradeScene';
 import { GameConfig } from './config/GameConfig';
 
 const config: Phaser.Types.Core.GameConfig = {
-  type: Phaser.AUTO,
+  type: Phaser.AUTO, // AUTO: WebGL in Safari (60fps), WebGL/Canvas in Chrome (30fps limit)
   width: GameConfig.width,
   height: GameConfig.height,
   parent: 'game-container',
