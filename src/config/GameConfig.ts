@@ -22,7 +22,7 @@ export const GameConfig = {
       id: 1,
       name: 'Soft Launch 🚀',
       duration: 60, // seconds
-      enemies: ['jeeter'],
+      enemies: ['jeeter', 'droneling'], // v3.8: Added droneling (swarm intro)
       difficulty: 'easy',
       speedMultiplier: 1.3,
       spawnRate: 5000, // ms between enemy spawns (increased from 3500 - less enemies)
@@ -33,7 +33,7 @@ export const GameConfig = {
       id: 2,
       name: 'Paper Panic 👋',
       duration: 60,
-      enemies: ['jeeter', 'paperHands'],
+      enemies: ['jeeter', 'paperHands', 'droneling', 'firecracker'], // v3.8: Added firecracker
       difficulty: 'medium',
       speedMultiplier: 1.5,
       spawnRate: 4500, // increased from 3000
@@ -44,7 +44,7 @@ export const GameConfig = {
       id: 3,
       name: 'Candle Crash 📉',
       duration: 60,
-      enemies: ['jeeter', 'paperHands', 'redCandles', 'fourMeme'],
+      enemies: ['jeeter', 'paperHands', 'redCandles', 'fourMeme', 'hawkeye', 'droneling', 'firecracker', 'sbf'], // v3.8: Added hawkeye, sbf
       difficulty: 'hard',
       speedMultiplier: 1.7,
       spawnRate: 4000, // increased from 2500
@@ -55,7 +55,7 @@ export const GameConfig = {
       id: 4,
       name: 'Regulation Run 🧑‍💼',
       duration: 60,
-      enemies: ['jeeter', 'paperHands', 'redCandles', 'gary', 'fourMeme', 'pumpFun'],
+      enemies: ['jeeter', 'paperHands', 'redCandles', 'gary', 'fourMeme', 'pumpFun', 'hawkeye', 'custodian', 'firecracker', 'sbf', 'dokwon'], // v3.8: Added custodian, dokwon
       difficulty: 'very_hard',
       speedMultiplier: 1.9,
       spawnRate: 3500, // increased from 2200
@@ -66,7 +66,7 @@ export const GameConfig = {
       id: 5,
       name: 'Bear Market Finale 🐻',
       duration: 60,
-      enemies: ['jeeter', 'paperHands', 'redCandles', 'gary', 'fourMeme', 'pumpFun', 'bearBoss'],
+      enemies: ['paperHands', 'redCandles', 'gary', 'fourMeme', 'pumpFun', 'bearBoss', 'hawkeye', 'custodian', 'firecracker', 'sbf', 'dokwon', 'czBoss'], // v3.8: Added czBoss, removed jeeter
       difficulty: 'extreme',
       speedMultiplier: 2.1,
       spawnRate: 1800,
@@ -77,7 +77,7 @@ export const GameConfig = {
       id: 6,
       name: 'WAGMI Mode 🦅',
       duration: -1, // Endless
-      enemies: ['jeeter', 'paperHands', 'redCandles', 'gary', 'fourMeme', 'pumpFun', 'bearBoss'],
+      enemies: ['paperHands', 'redCandles', 'gary', 'fourMeme', 'pumpFun', 'bearBoss', 'hawkeye', 'custodian', 'firecracker', 'sbf', 'dokwon', 'czBoss'], // v3.8: All enemies including new ones
       difficulty: 'variable',
       speedMultiplier: 2.3,
       spawnRate: 1500,
@@ -215,6 +215,98 @@ export const GameConfig = {
       sprite: 'pumpfun',
       scale: 0.22,
       meme: 'Pump it or dump it! 💎'
+    },
+    // === NEW ENEMIES v3.8 (Enemies.ts Phase 0) ===
+    hawkeye: {
+      name: 'HawkEye',
+      description: 'Sniper - fires aimed laser shots',
+      behavior: 'sniper',
+      speed: 180,
+      hp: 35,
+      size: { width: 95, height: 95 },
+      sprite: 'emoji-hawkeye', // 🎯 emoji
+      scale: 1.2,
+      meme: '🎯 Targeted strike!',
+      aiType: 'sniper',
+      projectileType: 'laser',
+      fireRate: 3000 // ms between shots
+    },
+    droneling: {
+      name: 'Droneling',
+      description: 'Swarm enemy - spawns in groups of 5',
+      behavior: 'swarm',
+      speed: 220,
+      hp: 20,
+      size: { width: 70, height: 70 },
+      sprite: 'emoji-droneling', // 🚁 emoji
+      scale: 1.0,
+      meme: '🚁 Swarm incoming!',
+      aiType: 'swarm',
+      groupSize: 5
+    },
+    custodian: {
+      name: 'Custodian',
+      description: 'Shielded - only vulnerable from top/bottom',
+      behavior: 'shielded',
+      speed: 160,
+      hp: 50,
+      size: { width: 100, height: 100 },
+      sprite: 'emoji-custodian', // 🛡️ emoji
+      scale: 1.3,
+      meme: '🛡️ Protected!',
+      aiType: 'shielded',
+      shieldDirection: 'front' // front-facing shield
+    },
+    firecracker: {
+      name: 'FireCracker',
+      description: 'Exploder - creates splinters on death',
+      behavior: 'exploder',
+      speed: 200,
+      hp: 25,
+      size: { width: 80, height: 80 },
+      sprite: 'emoji-firecracker', // 💥 emoji
+      scale: 1.1,
+      meme: '💥 Boom!',
+      aiType: 'exploder',
+      explosionRadius: 100,
+      splinterCount: 6
+    },
+    sbf: {
+      name: 'SBF',
+      description: 'Tank - high HP, slow movement',
+      behavior: 'tank',
+      speed: 120,
+      hp: 150,
+      size: { width: 120, height: 120 },
+      sprite: 'emoji-sbf', // 🏦 emoji
+      scale: 1.4,
+      meme: '🏦 Too big to fail!',
+      aiType: 'basic'
+    },
+    dokwon: {
+      name: 'Do Kwon',
+      description: 'Elite - fast and dangerous',
+      behavior: 'elite',
+      speed: 280,
+      hp: 80,
+      size: { width: 100, height: 100 },
+      sprite: 'emoji-dokwon', // ⚡ emoji
+      scale: 1.3,
+      meme: '⚡ UST goes brr!',
+      aiType: 'basic'
+    },
+    czBoss: {
+      name: 'CZ',
+      description: 'Boss-tier elite enemy',
+      behavior: 'boss_tier',
+      speed: 200,
+      hp: 300,
+      size: { width: 140, height: 140 },
+      sprite: 'emoji-cz', // 🐻 emoji
+      scale: 1.5,
+      meme: '🐻 Bear Market King!',
+      aiType: 'basic',
+      isBoss: false // Not a real boss, just boss-tier stats
     }
   },
 

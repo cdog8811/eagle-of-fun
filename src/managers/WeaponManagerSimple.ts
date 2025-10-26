@@ -107,6 +107,11 @@ export class WeaponManagerSimple {
 
   public fire(x: number, y: number, angle: number = 0): boolean {
     if (!this.canFire()) {
+      // v3.8: Eagle Peck - Emergency weapon when energy is 0
+      if (this.weaponEnergy <= 0) {
+        return this.fireEmergencyWeapon(x, y, angle);
+      }
+
       // Low energy feedback
       if (this.weaponEnergy < 10) {
         console.log('⚡ Low energy! Collect more coins!');
@@ -137,6 +142,39 @@ export class WeaponManagerSimple {
 
     // Play blaster shot sound
     this.scene.sound.play('blastershot', { volume: 0.5 });
+
+    return true;
+  }
+
+  /**
+   * v3.8: Emergency weapon (Eagle Peck) - fires even with 0 energy
+   * Weak but allows continued combat
+   */
+  private fireEmergencyWeapon(x: number, y: number, angle: number): boolean {
+    const now = Date.now();
+    const emergencyCooldown = 600; // 600ms cooldown (slow)
+
+    // Check cooldown
+    if (now - this.lastFireTime < emergencyCooldown) return false;
+
+    // Eagle Peck stats (weak emergency weapon)
+    const peckStats = {
+      fireRate: 600,
+      damage: 8,
+      energyCost: 0,
+      color: 0xAAAAAA, // Gray color
+      speed: 700,
+      name: 'Eagle Peck'
+    };
+
+    // Fire weak projectile
+    this.createProjectile(x, y, angle, peckStats);
+
+    // Update fire time
+    this.lastFireTime = now;
+
+    // Play weaker sound (or reuse blaster)
+    this.scene.sound.play('blastershot', { volume: 0.3, rate: 0.8 }); // Lower pitch
 
     return true;
   }

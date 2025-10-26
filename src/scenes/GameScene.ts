@@ -10,6 +10,7 @@ import { BossManagerV37 } from '../managers/BossManagerV37';
 import { BandanaPowerUp } from '../managers/BandanaPowerUp';
 import { getXPSystem, getXPForCoin } from '../systems/xpSystem';
 import { getUpgradeSystem } from '../systems/upgradeSystem';
+import { calculateHPMultiplier, calculateSpawnRateMultiplier, calculateEliteChance } from '../config/Difficulty';
 
 export class GameScene extends Phaser.Scene {
   // XP & Upgrade Systems
@@ -965,6 +966,31 @@ export class GameScene extends Phaser.Scene {
     // Spawn first enemy after 5 seconds - give player time
     this.time.delayedCall(5000, () => this.spawnEnemy());
 
+    // v3.8: Difficulty Scaling - Spawn rate increases every 60 seconds
+    this.time.addEvent({
+      delay: 60000, // Every 60 seconds
+      callback: () => {
+        if (this.enemySpawnTimer && !this.isGameOver) {
+          const spawnRateMultiplier = calculateSpawnRateMultiplier(this.gameTime);
+          const currentPhase = GameConfig.phases[this.currentPhase - 1];
+          const newDelay = currentPhase.spawnRate * spawnRateMultiplier;
+
+          console.log(`⚡ Difficulty scaling: Spawn rate ${(spawnRateMultiplier * 100).toFixed(0)}% (${newDelay.toFixed(0)}ms delay)`);
+
+          // Restart timer with new delay
+          this.enemySpawnTimer.remove();
+          this.enemySpawnTimer = this.time.addEvent({
+            delay: newDelay,
+            callback: this.spawnEnemy,
+            callbackScope: this,
+            loop: true
+          });
+        }
+      },
+      callbackScope: this,
+      loop: true
+    });
+
     // Spawn power-ups occasionally
     this.powerupSpawnTimer = this.time.addEvent({
       delay: 15000, // Every 15 seconds
@@ -1328,6 +1354,10 @@ export class GameScene extends Phaser.Scene {
     // Get current phase
     const phase = GameConfig.phases[this.currentPhase - 1];
 
+    // v3.8: Difficulty Scaling - Elite enemy chance increases over time
+    const eliteChance = calculateEliteChance(this.gameTime, 0.05); // Start at 5%, increases +4% per minute
+    const isEliteSpawn = Math.random() < eliteChance;
+
     // === v3.5: DYNAMIC SPAWN PATTERNS ===
     // Reduced spawn chances - quality over quantity
     const spawnPattern = Phaser.Math.Between(1, 100);
@@ -1345,7 +1375,17 @@ export class GameScene extends Phaser.Scene {
 
     // Choose random enemy from current phase's enemy list
     const enemyTypes = phase.enemies;
-    const randomEnemyType = enemyTypes[Phaser.Math.Between(0, enemyTypes.length - 1)];
+
+    // v3.8: If elite spawn, prefer stronger enemies (last 30% of enemy list)
+    let randomEnemyType: string;
+    if (isEliteSpawn && enemyTypes.length > 3) {
+      const eliteStartIndex = Math.floor(enemyTypes.length * 0.7); // Last 30% are elite
+      const eliteTypes = enemyTypes.slice(eliteStartIndex);
+      randomEnemyType = eliteTypes[Phaser.Math.Between(0, eliteTypes.length - 1)];
+      console.log(`💀 Elite spawn! (${(eliteChance * 100).toFixed(1)}% chance) - Spawning: ${randomEnemyType}`);
+    } else {
+      randomEnemyType = enemyTypes[Phaser.Math.Between(0, enemyTypes.length - 1)];
+    }
 
     // Get enemy config
     const enemyConfig = (GameConfig.enemies as any)[randomEnemyType];
@@ -1546,6 +1586,130 @@ export class GameScene extends Phaser.Scene {
     });
 
     this.lawsuitPapers.push(paper);
+  }
+
+  /**
+   * v3.8: Spawn enemy projectile (for sniper AI)
+   * Fires from enemy position towards target
+   */
+  private spawnEnemyProjectile(fromX: number, fromY: number, targetX: number, targetY: number, type: string): void {
+    const projectile = this.add.container(fromX, fromY);
+
+    // Create projectile visual based on type
+    if (type === 'laser') {
+      // Red laser beam
+      const laserGraphics = this.add.graphics();
+      laserGraphics.fillStyle(0xFF0000, 1);
+      laserGraphics.fillRect(-15, -3, 30, 6);
+      laserGraphics.lineStyle(2, 0xFF6666, 1);
+      laserGraphics.strokeRect(-15, -3, 30, 6);
+      projectile.add(laserGraphics);
+      projectile.setSize(30, 6);
+    } else {
+      // Default projectile
+      const graphics = this.add.graphics();
+      graphics.fillStyle(0xFF4444, 1);
+      graphics.fillCircle(0, 0, 8);
+      projectile.add(graphics);
+      projectile.setSize(16, 16);
+    }
+
+    projectile.setData('type', 'enemyProjectile');
+    projectile.setData('damage', 1);
+
+    // Calculate angle towards target
+    const angle = Phaser.Math.Angle.Between(fromX, fromY, targetX, targetY);
+    projectile.setRotation(angle);
+
+    // Move towards target
+    const speed = 400; // pixels per second
+    const velocityX = Math.cos(angle) * speed;
+    const velocityY = Math.sin(angle) * speed;
+
+    this.tweens.add({
+      targets: projectile,
+      x: projectile.x + velocityX * 3, // Travel for 3 seconds max
+      y: projectile.y + velocityY * 3,
+      duration: 3000,
+      onComplete: () => {
+        projectile.destroy();
+        const index = this.lawsuitPapers.indexOf(projectile);
+        if (index > -1) this.lawsuitPapers.splice(index, 1);
+      }
+    });
+
+    // Add to lawsuit papers array for collision detection (reuse existing system)
+    this.lawsuitPapers.push(projectile);
+  }
+
+  /**
+   * v3.8: Spawn explosion splinters (for exploder AI)
+   * Creates 6 projectiles in all directions
+   */
+  private spawnExplosionSplinters(x: number, y: number, count: number = 6): void {
+    const angleStep = (Math.PI * 2) / count;
+
+    for (let i = 0; i < count; i++) {
+      const angle = angleStep * i;
+      const splinter = this.add.container(x, y);
+
+      // Orange/red splinter visual
+      const graphics = this.add.graphics();
+      graphics.fillStyle(0xFF8800, 1);
+      graphics.fillCircle(0, 0, 6);
+      graphics.lineStyle(2, 0xFFAA00, 1);
+      graphics.strokeCircle(0, 0, 6);
+      splinter.add(graphics);
+      splinter.setSize(12, 12);
+
+      splinter.setData('type', 'enemyProjectile');
+      splinter.setData('damage', 1);
+      splinter.setRotation(angle);
+
+      // Fly outward in all directions
+      const speed = 300;
+      const distance = 400;
+      const targetX = x + Math.cos(angle) * distance;
+      const targetY = y + Math.sin(angle) * distance;
+
+      this.tweens.add({
+        targets: splinter,
+        x: targetX,
+        y: targetY,
+        duration: 1500,
+        ease: 'Cubic.easeOut',
+        onComplete: () => {
+          splinter.destroy();
+          const index = this.lawsuitPapers.indexOf(splinter);
+          if (index > -1) this.lawsuitPapers.splice(index, 1);
+        }
+      });
+
+      // Add to lawsuit papers array for collision detection
+      this.lawsuitPapers.push(splinter);
+    }
+
+    // Visual explosion effect
+    const explosionCircle = this.add.graphics();
+    explosionCircle.lineStyle(4, 0xFF6600, 1);
+    explosionCircle.strokeCircle(x, y, 20);
+    explosionCircle.setDepth(999);
+
+    this.tweens.add({
+      targets: explosionCircle,
+      alpha: 0,
+      duration: 400,
+      onUpdate: (tween) => {
+        const progress = tween.progress;
+        explosionCircle.clear();
+        explosionCircle.lineStyle(4, 0xFF6600, 1 - progress);
+        explosionCircle.strokeCircle(x, y, 20 + progress * 80);
+      },
+      onComplete: () => explosionCircle.destroy()
+    });
+
+    // Play explosion sound
+    this.sound.play('explosion', { volume: 0.6 });
   }
 
   private spawnPowerup(): void {
@@ -2495,6 +2659,9 @@ export class GameScene extends Phaser.Scene {
     // v3.7: Check projectile collisions with enemies
     const hits = this.weaponManager.checkCollisions(this.enemies);
     for (const hit of hits) {
+      // v3.8: Skip if enemy is invalid
+      if (!hit.enemy || !hit.enemy.active) continue;
+
       // === ENHANCED HIT EFFECTS ===
       const hitX = hit.enemy.x;
       const hitY = hit.enemy.y;
@@ -2506,6 +2673,14 @@ export class GameScene extends Phaser.Scene {
       // v3.8: REVERTED - Back to one-shot kills for performance
       // HP system caused 15-27 FPS, too slow
       // v3.8 PERFORMANCE: Removed screen shake for 60 FPS
+
+      // v3.8: Check if exploder enemy - spawn splinters before death
+      const shouldExplode = hit.enemy.getData('shouldExplode');
+      const enemyConfig = hit.enemy.getData('config');
+      if (shouldExplode && enemyConfig) {
+        const splinterCount = enemyConfig.splinterCount || 6;
+        this.spawnExplosionSplinters(hitX, hitY, splinterCount);
+      }
 
       // Destroy enemy (one-shot kill)
       hit.enemy.destroy();
@@ -2527,7 +2702,22 @@ export class GameScene extends Phaser.Scene {
         meta: { enemyType }
       });
 
-      // v3.8 PERFORMANCE: Removed floating score text for 60 FPS
+      // v3.8: Simple floating score text (lightweight)
+      const scoreText = this.add.text(hitX, hitY, `+${pointsAwarded}`, {
+        fontSize: '24px',
+        color: '#FFD700',
+        fontFamily: 'Arial',
+        fontStyle: 'bold'
+      }).setOrigin(0.5).setDepth(2000);
+
+      this.tweens.add({
+        targets: scoreText,
+        y: hitY - 40,
+        alpha: 0,
+        duration: 800,
+        ease: 'Power2',
+        onComplete: () => scoreText.destroy()
+      });
 
       // Play explosion sound
       if (this.sound.get('explosion')) {
@@ -3138,9 +3328,17 @@ export class GameScene extends Phaser.Scene {
       );
 
       if (distance < 80) {
-        // Block controls temporarily
-        const duration = GameConfig.enemies.gary.controlBlockDuration;
-        this.blockControls(duration);
+        // v3.8: Check if this is an enemy projectile (laser/splinter) or lawsuit paper
+        const isEnemyProjectile = paper.getData('type') === 'enemyProjectile';
+
+        if (isEnemyProjectile) {
+          // Enemy projectile - causes damage
+          this.takeDamage();
+        } else {
+          // Lawsuit paper - blocks controls temporarily
+          const duration = GameConfig.enemies.gary.controlBlockDuration;
+          this.blockControls(duration);
+        }
 
         // Visual effect
         this.cameras.main.shake(300, 0.008);
@@ -3160,6 +3358,9 @@ export class GameScene extends Phaser.Scene {
       const enemyConfig = enemy.getData('config');
       const enemyType = enemy.getData('type');
       const movementPattern = enemy.getData('movementPattern') || 'straight';
+
+      // v3.8: Width needed for sniper AI
+      const enemyLoopWidth = this.cameras.main.width;
 
       // Different speeds for different enemies
       const baseSpeed = enemyConfig.speed * (this.game.loop.delta / 1000);
@@ -3245,6 +3446,28 @@ export class GameScene extends Phaser.Scene {
           enemy.x -= baseSpeed;
       }
 
+      // v3.8: Special AI behaviors for new enemies
+      const aiType = enemyConfig.aiType;
+
+      if (aiType === 'sniper') {
+        // HawkEye sniper - fires aimed laser shots
+        let fireTimer = enemy.getData('fireTimer') || 0;
+        fireTimer -= this.game.loop.delta;
+
+        if (fireTimer <= 0 && enemy.x < enemyLoopWidth - 100) {
+          // Fire laser at player
+          this.spawnEnemyProjectile(enemy.x, enemy.y, this.eagle.x, this.eagle.y, 'laser');
+          fireTimer = enemyConfig.fireRate || 3000;
+        }
+        enemy.setData('fireTimer', fireTimer);
+      }
+
+      if (aiType === 'exploder') {
+        // FireCracker - check if should explode (will be handled in collision/destroy)
+        // Mark for explosion on death
+        enemy.setData('shouldExplode', true);
+      }
+
       // Remove off-screen enemies
       if (enemy.x < -200) {
         enemy.destroy();
@@ -3261,12 +3484,28 @@ export class GameScene extends Phaser.Scene {
       );
 
       // Collision radius based on enemy size
+      // v3.8: Safety check for missing config
+      if (!enemyConfig) {
+        console.warn('Enemy missing config:', enemyType);
+        enemy.destroy();
+        this.enemies.splice(i, 1);
+        continue;
+      }
+
       const collisionRadius = Math.max(enemyConfig.size.width, enemyConfig.size.height) / 2;
 
       if (distance < collisionRadius + 40) {
         if (this.shieldActive || this.belleModActive) {
           // Shield or Belle MOD protects - destroy enemy
           const enemyType = enemy.getData('type') || 'enemy';
+
+          // v3.8: Check if exploder enemy - spawn splinters before death
+          const shouldExplode = enemy.getData('shouldExplode');
+          if (shouldExplode) {
+            const splinterCount = enemyConfig.splinterCount || 6;
+            this.spawnExplosionSplinters(enemy.x, enemy.y, splinterCount);
+          }
+
           enemy.destroy();
           this.enemies.splice(i, 1);
 
@@ -3312,11 +3551,18 @@ export class GameScene extends Phaser.Scene {
           this.sound.play('crash', { volume: 0.6 });
 
           // Show enemy meme text
-          const meme = enemyConfig.meme;
+          const meme = enemyConfig.meme || 'Hit!';
           this.showMemePopup(meme, '#FF0000');
 
           // Take damage (removes 1 life, adds invincibility frames)
           this.takeDamage();
+
+          // v3.8: Check if exploder enemy - spawn splinters before death
+          const shouldExplode = enemy.getData('shouldExplode');
+          if (shouldExplode) {
+            const splinterCount = enemyConfig.splinterCount || 6;
+            this.spawnExplosionSplinters(enemy.x, enemy.y, splinterCount);
+          }
 
           // Destroy enemy after hit
           enemy.destroy();
@@ -4409,12 +4655,16 @@ export class GameScene extends Phaser.Scene {
 
   // v3.2: Take damage and lose a life
   private takeDamage(): void {
-    if (this.invincible || this.shieldActive || this.belleModActive) return;
+    if (this.invincible || this.shieldActive || this.belleModActive) {
+      console.log('takeDamage blocked - invincible:', this.invincible, 'shield:', this.shieldActive, 'belle:', this.belleModActive);
+      return;
+    }
 
     // Set invincibility IMMEDIATELY to prevent multiple hits in same frame
     this.invincible = true;
 
     this.lives--;
+    console.log('💔 Took damage! Lives remaining:', this.lives);
     this.updateHeartDisplay();
 
     // Play hit animation on eagle

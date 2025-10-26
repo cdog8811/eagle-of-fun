@@ -128,8 +128,47 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   create(): void {
+    // v3.8: Create emoji textures for new enemies using canvas rendering
+    this.createEmojiTexture('emoji-hawkeye', '🎯', 80);
+    this.createEmojiTexture('emoji-droneling', '🚁', 70);
+    this.createEmojiTexture('emoji-custodian', '🛡️', 80);
+    this.createEmojiTexture('emoji-firecracker', '💥', 70);
+    this.createEmojiTexture('emoji-sbf', '🏦', 90);
+    this.createEmojiTexture('emoji-dokwon', '⚡', 80);
+    this.createEmojiTexture('emoji-cz', '🐻', 100);
+
     // Move to start scene
     this.scene.start('StartScene');
+  }
+
+  /**
+   * v3.8: Create emoji texture from text using canvas
+   * Creates a dynamic texture from emoji that can be used as a sprite
+   */
+  private createEmojiTexture(key: string, emoji: string, size: number): void {
+    try {
+      // Create canvas for rendering emoji
+      const canvas = document.createElement('canvas');
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+
+      if (!ctx) {
+        console.warn(`Failed to create canvas context for ${key}`);
+        return;
+      }
+
+      // Draw emoji on canvas
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = `${size * 0.8}px Arial`; // Slightly smaller to fit
+      ctx.fillText(emoji, size / 2, size / 2);
+
+      // Create texture from canvas
+      this.textures.addCanvas(key, canvas);
+    } catch (error) {
+      console.error(`Failed to create emoji texture for ${key}:`, error);
+    }
   }
 
   private createLoadingScreen(): void {
