@@ -6,7 +6,7 @@ import { Eagle } from '../sprites/Eagle';
 import { MissionManager } from '../managers/MissionManager';
 import { MARKET_PHASES, MICRO_EVENTS, determinePhase, MarketPhase, MicroEvent } from '../config/MarketPhasesConfig';
 import { WeaponManagerSimple } from '../managers/WeaponManagerSimple';
-import { BossManagerV37 } from '../managers/BossManagerV37';
+import { BossManagerV38 } from '../managers/BossManagerV38';
 import { BandanaPowerUp } from '../managers/BandanaPowerUp';
 import { getXPSystem, getXPForCoin } from '../systems/xpSystem';
 import { getUpgradeSystem } from '../systems/upgradeSystem';
@@ -164,7 +164,7 @@ export class GameScene extends Phaser.Scene {
 
   // v3.7: Weapon & Boss System
   private weaponManager!: WeaponManagerSimple;
-  private bossManager!: BossManagerV37;
+  private bossManager!: BossManagerV38;
   private weaponUI?: Phaser.GameObjects.Container;
   private weaponEnergyBar?: Phaser.GameObjects.Graphics;
   private weaponEnergyBarBg?: Phaser.GameObjects.Graphics;
@@ -324,7 +324,7 @@ export class GameScene extends Phaser.Scene {
 
     // v3.7: Initialize Weapon & Boss Systems
     this.weaponManager = new WeaponManagerSimple(this);
-    this.bossManager = new BossManagerV37(this);
+    this.bossManager = new BossManagerV38(this);
     this.bandanaPowerUp = new BandanaPowerUp(this);
 
     // Auto-upgrade weapon based on player level
@@ -768,6 +768,35 @@ export class GameScene extends Phaser.Scene {
         duration: 800,
         onComplete: () => taglineText.destroy()
       });
+    });
+
+    // v3.8: Listen for boss defeated event
+    this.events.on('bossDefeated', (bossDef: any) => {
+      console.log(`🎉 Boss defeated event received: ${bossDef.name}`);
+
+      // Award XP
+      this.xpSystem.addXP({
+        delta: bossDef.rewards.xp,
+        source: 'bossKill',
+        meta: { bossId: bossDef.id }
+      });
+
+      // Award bonus score
+      const bonusScore = 1000;
+      this.score += bonusScore;
+      this.scoreText.setText(`SCORE: ${this.score}`);
+
+      // Add extra life if player has less than max
+      if (this.lives < this.maxLives) {
+        this.lives++;
+        this.updateHeartDisplay();
+        console.log('❤️ Boss reward: +1 Life!');
+      }
+
+      // Play victory music
+      if (this.sound.get('bosswin')) {
+        this.sound.play('bosswin', { volume: 0.8 });
+      }
     });
   }
 
@@ -1586,6 +1615,63 @@ export class GameScene extends Phaser.Scene {
     });
 
     this.lawsuitPapers.push(paper);
+  }
+
+  /**
+   * v3.8: Spawn specific enemy type (used by Boss add waves)
+   */
+  public spawnSpecificEnemy(enemyType: string): void {
+    const width = this.cameras.main.width;
+    const height = this.cameras.main.height;
+
+    // Get enemy config
+    const enemyConfig = (GameConfig.enemies as any)[enemyType];
+    if (!enemyConfig) {
+      console.warn(`Unknown enemy type: ${enemyType}`);
+      return;
+    }
+
+    // Random Y position (avoid edges)
+    const y = Phaser.Math.Between(180, height - 180);
+
+    // Create enemy container
+    const enemy = this.add.container(width + 100, y);
+
+    // Create enemy sprite
+    const enemyImage = this.add.image(0, 0, enemyConfig.sprite);
+    enemyImage.setScale(enemyConfig.scale);
+    enemyImage.setFlipX(true); // Face left
+
+    enemy.add(enemyImage);
+    enemy.setSize(enemyConfig.size.width, enemyConfig.size.height);
+    enemy.setData('type', enemyType);
+    enemy.setData('config', enemyConfig);
+    enemy.setData('movementPattern', 'straight'); // Boss adds move straight
+    enemy.setData('startY', y);
+
+    // Special behavior for Gary - throws lawsuit papers
+    if (enemyType === 'gary') {
+      const throwPaper = () => {
+        if (enemy.active) {
+          this.spawnLawsuitPaper(enemy.x, enemy.y);
+          this.time.delayedCall(GameConfig.enemies.gary.throwInterval, throwPaper);
+        }
+      };
+      this.time.delayedCall(GameConfig.enemies.gary.throwInterval, throwPaper);
+    }
+
+    // Special behavior for exploder
+    if (enemyConfig.aiType === 'exploder') {
+      enemy.setData('shouldExplode', true);
+    }
+
+    // Special behavior for sniper
+    if (enemyConfig.aiType === 'sniper') {
+      enemy.setData('fireTimer', enemyConfig.fireRate || 3000);
+    }
+
+    this.enemies.push(enemy);
+    console.log(`🐻 Boss spawned add: ${enemyType}`);
   }
 
   /**
@@ -2653,6 +2739,11 @@ export class GameScene extends Phaser.Scene {
     this.bossManager.update(delta);
     this.bandanaPowerUp.update(); // Bandana effects, magnet, trail
 
+    // v3.8: Check if boss should spawn (at score milestones like 5000)
+    if (!this.bossManager.isBossActive() && !this.bossManager.isBossDefeated()) {
+      this.bossManager.checkAndSpawn(this.score, this.currentPhase, this.gameTime);
+    }
+
     // v3.7: Update ticker positions for continuous flow around perimeter
     this.updateTickerPositions(delta);
 
@@ -2731,6 +2822,56 @@ export class GameScene extends Phaser.Scene {
 
       // Destroy projectile
       this.weaponManager.destroyProjectile(hit.projectile);
+    }
+
+    // v3.8: Check projectile collisions with boss
+    if (this.bossManager.isBossActive()) {
+      const boss = this.bossManager.getBoss();
+      if (boss && boss.active) {
+        const projectiles = this.weaponManager.getProjectiles();
+        for (const proj of projectiles) {
+          if (!proj.active) continue;
+
+          const distance = Phaser.Math.Distance.Between(
+            proj.x,
+            proj.y,
+            boss.x,
+            boss.y
+          );
+
+          if (distance < 100) { // Boss hitbox radius
+            // Hit boss
+            const damage = proj.damage || 15;
+            this.bossManager.takeDamage(damage, { x: proj.x, y: proj.y });
+
+            // Destroy projectile
+            this.weaponManager.destroyProjectile(proj);
+          }
+        }
+      }
+    }
+
+    // v3.8: Check boss projectile collisions with player
+    if (this.bossManager.isBossActive()) {
+      const bossProjectiles = this.bossManager.getBossProjectiles();
+      for (let i = bossProjectiles.length - 1; i >= 0; i--) {
+        const proj = bossProjectiles[i];
+        if (!proj || !proj.active) continue;
+
+        const distance = Phaser.Math.Distance.Between(
+          proj.x,
+          proj.y,
+          this.eagle.x,
+          this.eagle.y
+        );
+
+        if (distance < 60) {
+          // Hit player
+          this.takeDamage();
+          proj.destroy();
+          bossProjectiles.splice(i, 1);
+        }
+      }
     }
 
     // v3.7: Check projectile collisions with fake coins
