@@ -2290,8 +2290,10 @@ export class GameScene extends Phaser.Scene {
       onComplete: () => text.destroy()
     });
 
-    // Deactivate after duration
-    const duration = GameConfig.coins.BURGER.multiplierDuration;
+    // v3.8: Deactivate after duration (with upgrade bonus)
+    const playerStats = this.upgradeSystem.getPlayerStats();
+    const duration = GameConfig.coins.BURGER.multiplierDuration + (playerStats.burgerDurationBonus * 1000);
+    console.log(`🍔 Burger multiplier active for ${(duration/1000).toFixed(1)}s (bonus: +${playerStats.burgerDurationBonus.toFixed(1)}s)`);
     this.burgerMultiplierTimer = this.time.delayedCall(duration, () => {
       this.burgerMultiplierActive = false;
     });
@@ -2406,8 +2408,11 @@ export class GameScene extends Phaser.Scene {
 
     // EFFECT 2: Score multiplier is handled in collectCoin (check eatTheDipActive)
 
-    // Deactivate after 10 seconds
-    this.eatTheDipTimer = this.time.delayedCall(10000, () => {
+    // v3.8: Deactivate after duration (with upgrade bonus)
+    const playerStats = this.upgradeSystem.getPlayerStats();
+    const eatDipDuration = (10 + playerStats.burgerDurationBonus) * 1000;
+    console.log(`🍔 Eat the Dip active for ${(eatDipDuration/1000).toFixed(1)}s (bonus: +${playerStats.burgerDurationBonus.toFixed(1)}s)`);
+    this.eatTheDipTimer = this.time.delayedCall(eatDipDuration, () => {
       console.log('🍔 EAT THE DIP ended');
       this.eatTheDipActive = false;
 
@@ -2913,7 +2918,8 @@ export class GameScene extends Phaser.Scene {
         const distance = Math.sqrt(dx * dx + dy * dy);
 
         const playerStats = this.upgradeSystem.getPlayerStats();
-        const magnetRange = 400 + playerStats.magnetRadius;
+        // v3.8: Stack both magnet upgrades (magnet_range + buyback_radius)
+        const magnetRange = 400 + playerStats.magnetRadius + playerStats.buybackRadiusBonus;
 
         if (distance < magnetRange && distance > 0) {
           const speed = 200 * (this.game.loop.delta / 1000);
