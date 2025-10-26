@@ -2816,7 +2816,11 @@ export class GameScene extends Phaser.Scene {
         // Activate glide immediately when threshold reached
         const eagleBody = this.eagle.body as Phaser.Physics.Arcade.Body;
         if (eagleBody) {
-          eagleBody.setGravityY(GameConfig.gravity * 0.2); // Strong reduction
+          // v3.8: Apply glideGravityMul upgrade (default 1.0, reduced by upgrades)
+          const playerStats = this.upgradeSystem.getPlayerStats();
+          const glideGravityReduction = 0.2 * playerStats.glideGravityMul;
+          eagleBody.setGravityY(GameConfig.gravity * glideGravityReduction);
+          console.log(`🪶 Glide gravity: ${glideGravityReduction.toFixed(2)}x (upgrade: ${playerStats.glideGravityMul.toFixed(2)})`);
         }
 
         // Pause animation during glide (frozen pose)
@@ -2839,8 +2843,10 @@ export class GameScene extends Phaser.Scene {
     if (this.isGliding && this.spacePressed && this.eagle) {
       const eagleBody = this.eagle.body as Phaser.Physics.Arcade.Body;
       if (eagleBody) {
-        // Keep reduced gravity
-        eagleBody.setGravityY(GameConfig.gravity * 0.2);
+        // v3.8: Keep reduced gravity (with upgrade applied)
+        const playerStats = this.upgradeSystem.getPlayerStats();
+        const glideGravityReduction = 0.2 * playerStats.glideGravityMul;
+        eagleBody.setGravityY(GameConfig.gravity * glideGravityReduction);
       }
       // Visual feedback - slight transparency
       this.eagle.setAlpha(0.85);
