@@ -4564,9 +4564,12 @@ export class GameScene extends Phaser.Scene {
     if (this.valorModeIcon) this.valorModeIcon.setVisible(false);
     if (this.valorModeTimerText) this.valorModeTimerText.setVisible(false);
 
-    // Start 60s cooldown
+    // v3.8: Start cooldown (with upgrade reduction)
+    const playerStats = this.upgradeSystem.getPlayerStats();
+    const cooldownDuration = (60 - playerStats.valorCDMinus) * 1000; // 60s base, reduced by upgrade
+    console.log(`⚡ VALOR MODE cooldown: ${(cooldownDuration/1000).toFixed(0)}s (reduced by ${playerStats.valorCDMinus}s)`);
     this.valorModeCooldown = true;
-    this.valorCooldownTimer = this.time.delayedCall(60000, () => {
+    this.valorCooldownTimer = this.time.delayedCall(cooldownDuration, () => {
       this.valorModeCooldown = false;
       console.log('VALOR MODE - Cooldown complete. Ready again!');
     });

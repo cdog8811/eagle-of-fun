@@ -4,6 +4,7 @@
 // ============================
 
 import Phaser from 'phaser';
+import { getUpgradeSystem } from '../systems/upgradeSystem';
 
 export interface Projectile {
   sprite: Phaser.GameObjects.Graphics;
@@ -29,6 +30,7 @@ export class WeaponManagerSimple {
   private energyPerCoin: number = 3; // Each coin adds 3% energy
   private lastFireTime: number = 0;
   private projectiles: Projectile[] = [];
+  private upgradeSystem = getUpgradeSystem(); // v3.8: Access to upgrade system
 
   // Weapon stats per level (v3.8: Balanced damage for HP system)
   private weaponStats = {
@@ -96,8 +98,12 @@ export class WeaponManagerSimple {
     const stats = this.weaponStats[this.weaponLevel as keyof typeof this.weaponStats];
     const now = Date.now();
 
+    // v3.8: Apply blasterCDMul upgrade to fire rate
+    const playerStats = this.upgradeSystem.getPlayerStats();
+    const adjustedFireRate = stats.fireRate * playerStats.blasterCDMul;
+
     // Check cooldown
-    if (now - this.lastFireTime < stats.fireRate) return false;
+    if (now - this.lastFireTime < adjustedFireRate) return false;
 
     // Check energy
     if (this.weaponEnergy < stats.energyCost) return false;
