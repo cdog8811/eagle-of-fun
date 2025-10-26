@@ -1362,6 +1362,12 @@ export class GameScene extends Phaser.Scene {
     enemy.setData('zigzagDirection', 1); // 1 = down, -1 = up
     enemy.setData('dashCooldown', 0);
 
+    // v3.8: Add HP system with difficulty scaling
+    const baseHP = enemyConfig.hp || 50; // Default 50 HP if not specified
+    const scaledHP = this.calculateEnemyHP(baseHP);
+    enemy.setData('hp', scaledHP);
+    enemy.setData('maxHp', scaledHP);
+
     // Special behavior for Paper Hands Pete - drops ONE fake coin less frequently
     if (randomEnemyType === 'paperHands') {
       const dropInterval = Phaser.Math.Between(4000, 6000); // Doubled delay
@@ -2507,48 +2513,80 @@ export class GameScene extends Phaser.Scene {
         onComplete: () => flash.destroy()
       });
 
-      // Destroy enemy
-      hit.enemy.destroy();
-      const index = this.enemies.indexOf(hit.enemy);
-      if (index > -1) {
-        this.enemies.splice(index, 1);
-      }
+      // v3.8: Damage enemy instead of instant kill
+      const currentHP = hit.enemy.getData('hp') || 50;
+      const damage = hit.projectile.damage || 25;
+      const newHP = currentHP - damage;
+      hit.enemy.setData('hp', newHP);
 
-      // Award points with visual feedback
-      const pointsAwarded = 50;
-      this.score += pointsAwarded;
-      this.scoreText.setText(`SCORE: ${this.score}`);
-
-      // v3.7: Award XP for enemy kill
-      const enemyType = hit.enemy.getData('type') || 'unknown';
-      this.xpSystem.addXP({
-        delta: 4,
-        source: 'enemyKill',
-        meta: { enemyType }
-      });
-
-      // Show floating points text
-      const pointsText = this.add.text(hitX, hitY, `+${pointsAwarded}`, {
-        fontSize: '32px',
-        color: '#FFD700',
-        fontFamily: 'Arial',
-        fontStyle: 'bold',
+      // Show damage number
+      const damageText = this.add.text(hitX, hitY - 30, `-${damage}`, {
+        fontSize: '24px',
+        color: '#FF0000',
+        fontFamily: 'Arial Black',
         stroke: '#000000',
         strokeThickness: 4
-      }).setOrigin(0.5).setDepth(2000);
+      });
+      damageText.setOrigin(0.5);
+      damageText.setDepth(1700);
 
       this.tweens.add({
-        targets: pointsText,
+        targets: damageText,
         y: hitY - 80,
         alpha: 0,
-        duration: 1000,
+        duration: 800,
         ease: 'Power2',
-        onComplete: () => pointsText.destroy()
+        onComplete: () => damageText.destroy()
       });
 
-      // Play explosion sound
-      if (this.sound.get('explosion')) {
-        this.sound.play('explosion', { volume: 0.5 });
+      // Check if enemy is dead
+      if (newHP <= 0) {
+        // Destroy enemy
+        hit.enemy.destroy();
+        const index = this.enemies.indexOf(hit.enemy);
+        if (index > -1) {
+          this.enemies.splice(index, 1);
+        }
+
+        // Award points with visual feedback
+        const pointsAwarded = 50;
+        this.score += pointsAwarded;
+        this.scoreText.setText(`SCORE: ${this.score}`);
+
+        // v3.7: Award XP for enemy kill
+        const enemyType = hit.enemy.getData('type') || 'unknown';
+        this.xpSystem.addXP({
+          delta: 4,
+          source: 'enemyKill',
+          meta: { enemyType }
+        });
+
+        // Show floating points text
+        const pointsText = this.add.text(hitX, hitY, `+${pointsAwarded}`, {
+          fontSize: '32px',
+          color: '#FFD700',
+          fontFamily: 'Arial',
+          fontStyle: 'bold',
+          stroke: '#000000',
+          strokeThickness: 4
+        }).setOrigin(0.5).setDepth(2000);
+
+        this.tweens.add({
+          targets: pointsText,
+          y: hitY - 80,
+          alpha: 0,
+          duration: 1000,
+          ease: 'Power2',
+          onComplete: () => pointsText.destroy()
+        });
+
+        // Play explosion sound
+        if (this.sound.get('explosion')) {
+          this.sound.play('explosion', { volume: 0.5 });
+        }
+      } else {
+        // Enemy survived - show HP bar
+        this.showEnemyHPBar(hit.enemy);
       }
 
       // Destroy projectile
@@ -3645,6 +3683,55 @@ export class GameScene extends Phaser.Scene {
       repeat: -1,
       ease: 'Sine.easeInOut'
     });
+  }
+
+  private showEnemyHPBar(enemy: Phaser.GameObjects.Container): void {
+    const currentHP = enemy.getData('hp') || 0;
+    const maxHP = enemy.getData('maxHp') || 100;
+    const hpPercent = currentHP / maxHP;
+
+    // Remove old HP bar if exists
+    const oldBar = enemy.getData('hpBar');
+    if (oldBar) {
+      oldBar.destroy();
+    }
+
+    // Create HP bar
+    const barWidth = 60;
+    const barHeight = 6;
+    const bar = this.add.graphics();
+
+    // Background (red)
+    bar.fillStyle(0xFF0000, 0.8);
+    bar.fillRect(-barWidth / 2, -40, barWidth, barHeight);
+
+    // Foreground (green to red gradient based on HP)
+    const color = hpPercent > 0.5 ? 0x00FF00 : hpPercent > 0.25 ? 0xFFFF00 : 0xFF0000;
+    bar.fillStyle(color, 1);
+    bar.fillRect(-barWidth / 2, -40, barWidth * hpPercent, barHeight);
+
+    // Border
+    bar.lineStyle(1, 0x000000, 1);
+    bar.strokeRect(-barWidth / 2, -40, barWidth, barHeight);
+
+    enemy.add(bar);
+    enemy.setData('hpBar', bar);
+  }
+
+  private calculateEnemyHP(baseHP: number): number {
+    // Calculate HP with time-based scaling
+    const secondsElapsed = this.gameTime;
+
+    // Import difficulty scaling (inline for now)
+    const HP_SCALING_INTERVAL = 30;           // Every 30 seconds
+    const HP_SCALING_INCREASE = 1.06;         // +6% per interval
+    const HP_SCALING_MAX_MULTIPLIER = 2.2;    // Cap at 220% of base HP
+
+    const intervals = Math.floor(secondsElapsed / HP_SCALING_INTERVAL);
+    const multiplier = Math.pow(HP_SCALING_INCREASE, intervals);
+    const cappedMultiplier = Math.min(multiplier, HP_SCALING_MAX_MULTIPLIER);
+
+    return Math.floor(baseHP * cappedMultiplier);
   }
 
   private checkWeaponAutoUpgrade(): void {
