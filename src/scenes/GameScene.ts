@@ -2457,16 +2457,16 @@ export class GameScene extends Phaser.Scene {
       // Play enemy hit sound
       this.sound.play('enemyhit', { volume: 0.6 });
 
-      // Screen shake on hit
-      this.cameras.main.shake(100, 0.003);
+      // Screen shake on hit (only on kill, not every hit)
+      // Moved to kill section below
 
-      // Explosion particles
-      for (let i = 0; i < 8; i++) {
-        const angle = (i / 8) * Math.PI * 2;
-        const distance = Phaser.Math.Between(20, 50);
+      // Reduced particles (only 4 instead of 8 for performance)
+      for (let i = 0; i < 4; i++) {
+        const angle = (i / 4) * Math.PI * 2;
+        const distance = Phaser.Math.Between(15, 30);
         const particle = this.add.graphics();
         particle.fillStyle(0xFF6600, 1);
-        particle.fillCircle(0, 0, Phaser.Math.Between(3, 6));
+        particle.fillCircle(0, 0, 4);
         particle.x = hitX;
         particle.y = hitY;
         particle.setDepth(1600);
@@ -2476,42 +2476,14 @@ export class GameScene extends Phaser.Scene {
           x: hitX + Math.cos(angle) * distance,
           y: hitY + Math.sin(angle) * distance,
           alpha: 0,
-          duration: 400,
+          duration: 300,
           ease: 'Power2',
           onComplete: () => particle.destroy()
         });
       }
 
-      // Explosion ring
-      const ring = this.add.graphics();
-      ring.lineStyle(4, 0xFF6600, 1);
-      ring.strokeCircle(hitX, hitY, 10);
-      ring.setDepth(1601);
-
-      this.tweens.add({
-        targets: ring,
-        alpha: 0,
-        scaleX: 3,
-        scaleY: 3,
-        duration: 400,
-        ease: 'Power2',
-        onComplete: () => ring.destroy()
-      });
-
-      // Impact flash
-      const flash = this.add.graphics();
-      flash.fillStyle(0xFFFFFF, 0.8);
-      flash.fillCircle(hitX, hitY, 25);
-      flash.setDepth(1602);
-
-      this.tweens.add({
-        targets: flash,
-        alpha: 0,
-        scaleX: 1.5,
-        scaleY: 1.5,
-        duration: 150,
-        onComplete: () => flash.destroy()
-      });
+      // Removed explosion ring and flash for performance
+      // Only show on kill (below)
 
       // v3.8: Damage enemy instead of instant kill
       const currentHP = hit.enemy.getData('hp') || 50;
@@ -2541,6 +2513,9 @@ export class GameScene extends Phaser.Scene {
 
       // Check if enemy is dead
       if (newHP <= 0) {
+        // Screen shake on kill
+        this.cameras.main.shake(100, 0.003);
+
         // Destroy enemy
         hit.enemy.destroy();
         const index = this.enemies.indexOf(hit.enemy);
@@ -3690,16 +3665,24 @@ export class GameScene extends Phaser.Scene {
     const maxHP = enemy.getData('maxHp') || 100;
     const hpPercent = currentHP / maxHP;
 
-    // Remove old HP bar if exists
-    const oldBar = enemy.getData('hpBar');
-    if (oldBar) {
-      oldBar.destroy();
+    // Only show HP bar if damaged (< 100% HP)
+    if (hpPercent >= 1.0) return;
+
+    // Check if HP bar already exists
+    let bar = enemy.getData('hpBar');
+
+    if (bar) {
+      // Update existing bar (more efficient than recreate)
+      bar.clear();
+    } else {
+      // Create new HP bar
+      bar = this.add.graphics();
+      enemy.add(bar);
+      enemy.setData('hpBar', bar);
     }
 
-    // Create HP bar
     const barWidth = 60;
     const barHeight = 6;
-    const bar = this.add.graphics();
 
     // Background (red)
     bar.fillStyle(0xFF0000, 0.8);
@@ -3713,9 +3696,6 @@ export class GameScene extends Phaser.Scene {
     // Border
     bar.lineStyle(1, 0x000000, 1);
     bar.strokeRect(-barWidth / 2, -40, barWidth, barHeight);
-
-    enemy.add(bar);
-    enemy.setData('hpBar', bar);
   }
 
   private calculateEnemyHP(baseHP: number): number {
