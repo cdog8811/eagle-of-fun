@@ -221,6 +221,9 @@ export class GameScene extends Phaser.Scene {
     super({ key: 'GameScene' });
   }
 
+  // v3.8: Add FPS counter for performance monitoring
+  private fpsText?: Phaser.GameObjects.Text;
+
   init(): void {
     // Reset all game state variables when scene starts
     this.score = 0;
@@ -381,6 +384,17 @@ export class GameScene extends Phaser.Scene {
     this.scoreText = this.add.text(width * 0.45, hudY, 'SCORE: 0', hudStyle);
     this.scoreText.setOrigin(0.5, 0.5);
     this.scoreText.setDepth(1000);
+
+    // v3.8: FPS Counter (top-right corner)
+    this.fpsText = this.add.text(width - 10, 10, 'FPS: 60', {
+      fontSize: '16px',
+      color: '#00FF00',
+      fontFamily: 'Courier New',
+      stroke: '#000000',
+      strokeThickness: 2
+    });
+    this.fpsText.setOrigin(1, 0);
+    this.fpsText.setDepth(2000);
 
     // v3.2: Hearts inline in top bar
     this.createHeartDisplay();
@@ -2339,6 +2353,14 @@ export class GameScene extends Phaser.Scene {
   }
 
   update(): void {
+    // v3.8: Update FPS counter
+    if (this.fpsText) {
+      const fps = Math.round(this.game.loop.actualFps);
+      const color = fps >= 55 ? '#00FF00' : fps >= 40 ? '#FFFF00' : '#FF0000';
+      this.fpsText.setText(`FPS: ${fps}`);
+      this.fpsText.setColor(color);
+    }
+
     // Update shield graphics ALWAYS (even when paused) to keep it visible
     if (this.shieldActive && this.shieldGraphics && this.eagle) {
       this.shieldGraphics.clear();
