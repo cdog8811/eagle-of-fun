@@ -1,64 +1,82 @@
-# GameScene v3.8 Migration TODOs
+# GameScene v3.8 Phase 0 - Status
 
-## Bekannte Probleme
+## ✅ Completed (Phase 0)
 
-### 1. Fehlende Asset-Keys
-Die neue GameScene verwendet diese Asset-Keys, die möglicherweise nicht existieren:
-- `particle-white` (für Explosionen)
-- `coin-bonk`, `coin-aol`, `coin-burger` (Münz-Sprites)
-- `powerup-shield`, `powerup-damage`, `powerup-speed`, `powerup-magnet`, `powerup-invincibility`, `powerup-valor`
-- `music-game` (Hintergrundmusik)
-- SFX: `sfx-weapon-*`, `sfx-enemy-hit`, `sfx-enemy-death`, `sfx-coin-*`, `sfx-powerup-collect`, `sfx-damage`, `sfx-levelup`, `sfx-ui-click`, `sfx-ui-hover`, `sfx-boss-warning`
+### Enemies
+- [x] 7 neue Gegner mit Emoji-Sprites
+  - 🎯 HawkEye (Sniper AI - fires laser projectiles)
+  - 🚁 Droneling (Swarm - ready for V-formation)
+  - 🛡️ Custodian (Shielded - defined, behavior pending)
+  - 💥 FireCracker (Exploder - creates splinters on death)
+  - 🏦 SBF (Tank)
+  - ⚡ Do Kwon (Elite)
+  - 🐻 CZ (Boss-tier)
+- [x] Enemy AI behaviors (sniper, exploder)
+- [x] Enemy projectiles (laser, splinters)
+- [x] Phase-based spawning
+- [x] Emoji sprite generation via canvas
 
-### 2. Eagle Sprite Methoden
-- `playHitAnimation()` - Muss in Eagle.ts existieren oder implementiert werden
+### Weapons
+- [x] Level 4: Eagle Spread (3 projectiles, 18° spread)
+- [x] Level 5: Rail AOL (pierce 3 enemies)
+- [x] Level 6: Burger Mortar (gravity + splash damage)
+- [x] Emergency: Eagle Peck (0 energy fallback)
+- [x] All special behaviors (spread, pierce, splash, gravity)
 
-### 3. Fehlende Funktionalität aus alter GameScene
-Muss noch portiert werden:
-- Countdown-System beim Start
-- Pause-Funktionalität
-- Weapon-Tutorial
-- Fake Coins (FTC)
-- Lawsuit Papers
-- Umfassenderes Collision-System
-- Market Phases
-- Micro-Events
-- Boss-Integration
-- USD1 Coins
-- Valor Coins
+### Difficulty Scaling
+- [x] Elite spawn chance scaling (+4% per minute, max 50%)
+- [x] Spawn rate scaling (-2% delay per minute, faster spawns)
+- [x] Elite enemy preference (last 30% of phase list)
+- [x] Console logging for difficulty progression
 
-### 4. Config-Anpassungen
-- Weapon sprite keys müssen in Weapons.ts config passen
-- Enemy sprite keys müssen in Enemies.ts config passen
+### Core Gameplay
+- [x] Lives system (3 lives, invincibility frames)
+- [x] Score text feedback (+50 on kill)
+- [x] Enemy projectile damage system
+- [x] Lawsuit papers (control block, no damage)
+- [x] Mission system (Meta-Level based)
+- [x] 60 FPS performance optimization
 
-## Schrittweise Migration
+## 📋 Remaining Tasks
 
-### Phase 1: Minimal lauffähig (JETZT)
-- [ ] Assets-Keys prüfen und Fallbacks einbauen
-- [ ] Eagle.playHitAnimation() implementieren oder Fallback
-- [ ] Testen ob Spiel startet ohne Crash
-- [ ] Basic Gameplay testen (Bewegung, Münzen sammeln)
+### Enemy AI (Advanced)
+- [ ] Swarm spawning for Droneling (5 in V-formation)
+- [ ] Shielded behavior for Custodian (directional vulnerability)
+- [ ] Boss special movement patterns
 
-### Phase 2: Core Features portieren
-- [ ] Weapon-System vollständig integrieren
-- [ ] Enemy AI aus alter GameScene übernehmen
-- [ ] Power-up Effekte vervollständigen
-- [ ] Scoring exakt wie alte Version
+### Boss System (Bosses.ts)
+- [ ] CZ-9000 Bear Overlord implementation
+  - [ ] Phase 1: Shield Wall + Gary Adds
+  - [ ] Phase 2: Sniper Barrage + Droneling Swarms
+  - [ ] Phase 3: Laser Sweep Rage Mode
+- [ ] Weakpoint system (2x damage from behind)
+- [ ] Boss music track
+- [ ] Boss rewards (XP, cosmetics)
+- [ ] Boss trigger at 5000 score
 
-### Phase 3: Advanced Features
-- [ ] Market Phases
-- [ ] Micro-Events
-- [ ] Boss-System
-- [ ] Fake Coins & Lawsuit Papers
-- [ ] Countdown & Tutorial
+### Market Phase Modifiers (Difficulty.ts)
+- [ ] BULL_RUN (coin spawn +60%, enemy spawn -20%)
+- [ ] BEAR_TRAP (coin spawn -30%, enemy spawn +30%, shielded boost)
+- [ ] VALOR_COMEBACK (coin spawn +100%, enemy spawn -40%)
+- [ ] ENDLESS_WAGMI (coin spawn +20%, enemy spawn +50%, speed +30%)
+- [ ] Dynamic modifier application based on game state
 
-### Phase 4: Polish
-- [ ] Alle SFX
-- [ ] Alle UI-Updates
-- [ ] Performance-Tests
-- [ ] Bug-Fixes
+### Polish & Balance
+- [ ] Replace emoji sprites with pixel art images
+- [ ] Balance new enemy HP values
+- [ ] Fine-tune difficulty scaling rates
+- [ ] Add visual effects for elite spawns
+- [ ] Boss announcement screen
 
-## Strategie
+## 🎯 Next Priority
 
-**Für jetzt**: Fallbacks einbauen, damit das Spiel startet ohne Crash.
-**Dann**: Feature für Feature aus alter GameScene portieren.
+**Option A: Boss System** - Big feature, high impact
+**Option B: Swarm/Shielded AI** - Complete enemy behaviors
+**Option C: Market Modifiers** - Dynamic difficulty variety
+
+## Notes
+
+- All Phase 0 core features are implemented and functional
+- Game runs at 60 FPS with new enemies and weapons
+- Emoji sprites work as placeholders, can be replaced later
+- One-shot kill system preserved for performance
