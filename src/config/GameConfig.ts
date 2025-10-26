@@ -141,6 +141,7 @@ export const GameConfig = {
       description: 'Paper-Hand-Symbol',
       behavior: 'horizontal',
       speed: 250,
+      hp: 20, // v3.8: Very low HP (1 shot at start)
       size: { width: 100, height: 100 }, // Slightly smaller hitbox
       sprite: 'jeet',
       scale: 0.22, // Slightly smaller
@@ -151,6 +152,7 @@ export const GameConfig = {
       description: 'Droppt Fake-Coins',
       behavior: 'drops_fake_coins',
       speed: 200,
+      hp: 30, // v3.8: Medium-low HP
       size: { width: 85, height: 85 }, // Slightly smaller hitbox
       sprite: 'paper-hands',
       scale: 0.18, // Slightly smaller
@@ -162,6 +164,7 @@ export const GameConfig = {
       description: 'Vertikale Barrieren',
       behavior: 'vertical_barrier',
       speed: 180,
+      hp: 35, // v3.8: Medium HP
       size: { width: 50, height: 150 }, // Smaller hitbox - was too dangerous
       sprite: 'red-candles',
       scale: 0.25, // Slightly smaller visual scale
@@ -172,6 +175,7 @@ export const GameConfig = {
       description: 'Wirft Lawsuit Papers',
       behavior: 'throws_papers',
       speed: 220,
+      hp: 25, // v3.8: Low HP for basic enemy
       size: { width: 90, height: 100 }, // Smaller hitbox
       sprite: 'gary',
       scale: 0.22, // Slightly smaller
@@ -183,6 +187,7 @@ export const GameConfig = {
       description: 'Riesiger Endgegner',
       behavior: 'chaos',
       speed: 150,
+      hp: 200, // v3.8: Boss has high HP
       size: { width: 180, height: 180 }, // Slightly smaller hitbox (still big boss)
       sprite: 'bear-boss',
       scale: 0.35, // Slightly smaller but still intimidating
