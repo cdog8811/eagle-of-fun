@@ -3654,17 +3654,18 @@ export class GameScene extends Phaser.Scene {
     const playerLevel = this.xpSystem.getState().level;
     const currentWeaponLevel = this.weaponManager.getWeaponLevel();
 
-    // Level 1-2: Basic weapons (already unlocked)
-    // Level 3: Upgrade to Level 3
-    // Level 5: Upgrade to Level 4 (Eagle Spread)
-    // Level 7: Upgrade to Level 5 (Rail AOL)
-    // Level 10: Upgrade to Level 6 (Burger Mortar)
+    // Weapon progression by player level:
+    // Level 1-2: Weapon Level 1-2 (Basic/Rapid)
+    // Level 3-4: Weapon Level 3 (Power Laser)
+    // Level 5: Weapon Level 4 (Eagle Spread) - First new weapon!
+    // Level 7: Weapon Level 5 (Rail AOL)
+    // Level 10: Weapon Level 6 (Burger Mortar)
 
     const upgradeLevels = [
-      { playerLevel: 3, weaponLevel: 3 },
-      { playerLevel: 5, weaponLevel: 4 },
-      { playerLevel: 7, weaponLevel: 5 },
-      { playerLevel: 10, weaponLevel: 6 }
+      { playerLevel: 3, weaponLevel: 3 },  // Power Laser
+      { playerLevel: 5, weaponLevel: 4 },  // Eagle Spread (3 projectiles)
+      { playerLevel: 7, weaponLevel: 5 },  // Rail AOL (pierce)
+      { playerLevel: 10, weaponLevel: 6 }  // Burger Mortar (splash)
     ];
 
     for (const upgrade of upgradeLevels) {
