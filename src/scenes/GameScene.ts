@@ -1,5 +1,7 @@
 import Phaser from 'phaser';
 import { GameConfig } from '../config/GameConfig';
+import { logGPUStatus } from '../utils/gpuCheck';
+import { FPSOverlay } from '../ui/FPSOverlay';
 import { Eagle } from '../sprites/Eagle';
 import { MissionManager } from '../managers/MissionManager';
 import { MARKET_PHASES, MICRO_EVENTS, determinePhase, MarketPhase, MicroEvent } from '../config/MarketPhasesConfig';
@@ -222,7 +224,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   // v3.8: Add FPS counter for performance monitoring
-  private fpsText?: Phaser.GameObjects.Text;
+  private fpsOverlay?: FPSOverlay;
 
   init(): void {
     // Reset all game state variables when scene starts
@@ -385,16 +387,10 @@ export class GameScene extends Phaser.Scene {
     this.scoreText.setOrigin(0.5, 0.5);
     this.scoreText.setDepth(1000);
 
-    // v3.8: FPS Counter (top-right corner)
-    this.fpsText = this.add.text(width - 10, 10, 'FPS: 60', {
-      fontSize: '16px',
-      color: '#00FF00',
-      fontFamily: 'Courier New',
-      stroke: '#000000',
-      strokeThickness: 2
-    });
-    this.fpsText.setOrigin(1, 0);
-    this.fpsText.setDepth(2000);
+    // v3.8: FPS Overlay (enhanced debug UI)
+    this.fpsOverlay = new FPSOverlay(this);
+    this.fpsOverlay.setPosition(width - 110, 10);
+    this.fpsOverlay.setOrigin(0, 0);
 
     // v3.2: Hearts inline in top bar
     this.createHeartDisplay();
@@ -986,6 +982,21 @@ export class GameScene extends Phaser.Scene {
 
     // Show first tagline after 15 seconds
     this.time.delayedCall(15000, () => this.showTaglineInGame());
+
+    // Chrome FPS fix: Visibility API to prevent throttling when tab is inactive
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') {
+        this.game.loop.sleep = false;
+        this.game.loop.wake();
+        console.log('🎮 Tab visible - Game loop resumed');
+      } else {
+        this.game.loop.sleep = true;
+        console.log('💤 Tab hidden - Game loop sleeping');
+      }
+    });
+
+    // Log GPU status for debugging
+    this.time.delayedCall(1000, () => logGPUStatus());
   }
 
   private togglePause(): void {
@@ -2397,12 +2408,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   update(): void {
-    // v3.8: Update FPS counter
-    if (this.fpsText) {
-      const fps = Math.round(this.game.loop.actualFps);
-      const color = fps >= 55 ? '#00FF00' : fps >= 40 ? '#FFFF00' : '#FF0000';
-      this.fpsText.setText(`FPS: ${fps}`);
-      this.fpsText.setColor(color);
+    // v3.8: Update FPS overlay
+    if (this.fpsOverlay) {
+      this.fpsOverlay.update();
     }
 
     // v3.8 PERFORMANCE: Only update shield position, don't redraw every frame
