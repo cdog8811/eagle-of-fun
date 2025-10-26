@@ -2546,10 +2546,9 @@ export class GameScene extends Phaser.Scene {
           onComplete: () => pointsText.destroy()
         });
 
-        // Play explosion sound
-        if (this.sound.get('explosion')) {
-          this.sound.play('explosion', { volume: 0.5 });
-        }
+      // Play explosion sound
+      if (this.sound.get('explosion')) {
+        this.sound.play('explosion', { volume: 0.5 });
       }
 
       // Destroy projectile
