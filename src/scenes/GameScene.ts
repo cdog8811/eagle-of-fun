@@ -2919,7 +2919,11 @@ export class GameScene extends Phaser.Scene {
     const height = this.cameras.main.height;
 
     // v3.8 PERFORMANCE: Cache delta and common values
-    const delta = this.game.loop.delta;
+    // v3.9.2 STABILITY FIX: Clamp delta to prevent stuttering from frame spikes
+    // At 60 FPS, delta should be ~16.67ms. Clamp to 10-40ms range.
+    let delta = this.game.loop.delta;
+    if (delta < 10) delta = 10;   // Minimum: ~100 FPS
+    if (delta > 40) delta = 40;   // Maximum: ~25 FPS (prevent huge jumps)
     const deltaSeconds = delta / 1000;
 
     // v3.8 PERFORMANCE: Cache player stats (called 11 times in original code!)
