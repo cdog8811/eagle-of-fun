@@ -214,6 +214,9 @@ export interface UpgradeAPI {
 
 class UpgradeSystemImpl implements UpgradeAPI {
   private state: UpgradesState;
+  // v3.9.2 CRITICAL PERFORMANCE: Cache calculated stats to avoid recalculating every frame!
+  private cachedStats: PlayerStats | null = null;
+  private cacheInvalidated: boolean = true;
 
   constructor() {
     this.state = Storage.load<UpgradesState>(LS_KEYS.UPGRADES, getDefaultUpgradesState());
@@ -225,6 +228,12 @@ class UpgradeSystemImpl implements UpgradeAPI {
   }
 
   getPlayerStats(): PlayerStats {
+    // v3.9.2 CRITICAL PERFORMANCE FIX: Return cached stats if available
+    if (!this.cacheInvalidated && this.cachedStats) {
+      return this.cachedStats;
+    }
+
+    // Recalculate stats
     let stats = { ...defaultStats };
 
     // Apply each upgrade
@@ -240,6 +249,10 @@ class UpgradeSystemImpl implements UpgradeAPI {
     stats.coinGainMul = Math.min(stats.coinGainMul, 1.25);
     stats.glideGravityMul = Math.max(stats.glideGravityMul, 0.6);
     stats.blasterCDMul = Math.max(stats.blasterCDMul, 0.4);
+
+    // Cache the result
+    this.cachedStats = stats;
+    this.cacheInvalidated = false;
 
     return stats;
   }
@@ -294,6 +307,9 @@ class UpgradeSystemImpl implements UpgradeAPI {
     // Upgrade successful
     this.state.levels[id] = currentLevel + 1;
     this.saveState();
+
+    // v3.9.2 CRITICAL: Invalidate cache when upgrade purchased!
+    this.cacheInvalidated = true;
 
     console.log(`Upgraded ${id} to level ${this.state.levels[id]} (cost: ${cost} XP)`);
     return true;
