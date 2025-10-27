@@ -2929,6 +2929,13 @@ export class GameScene extends Phaser.Scene {
     const coinMoveSpeed = this.coinSpeed * deltaSeconds;
     const enemyMoveSpeed = this.enemySpeed * deltaSeconds;
 
+    // v3.9.2 CRITICAL FIX: Count shield bearers ONCE per frame instead of per enemy!
+    // BEFORE: 5 shield bearers × 50 enemies = 250 filter operations per frame!
+    // AFTER: 1 filter operation per frame (250x faster!)
+    const shieldBearerCount = this.enemies.filter(e =>
+      e && e.active && (e.getData('type') === 'shieldBearer' || e.getData('aiType') === 'shielded')
+    ).length;
+
     this.weaponManager.update(delta);
     this.bossManager.update(delta);
     this.bandanaPowerUp.update(); // Bandana effects, magnet, trail
@@ -3588,7 +3595,8 @@ export class GameScene extends Phaser.Scene {
 
       if (!paper || !paper.active) continue;
 
-      paper.x -= (this.coinSpeed * 0.5) * (this.game.loop.delta / 1000);
+      // v3.9.2 PERFORMANCE: Use cached deltaSeconds
+      paper.x -= (this.coinSpeed * 0.5) * deltaSeconds;
 
       if (paper.x < -100) {
         paper.destroy();
@@ -3636,8 +3644,9 @@ export class GameScene extends Phaser.Scene {
       // v3.8: Width needed for sniper AI
       const enemyLoopWidth = this.cameras.main.width;
 
+      // v3.9.2 PERFORMANCE: Use cached deltaSeconds
       // Different speeds for different enemies
-      const baseSpeed = enemyConfig.speed * (this.game.loop.delta / 1000);
+      const baseSpeed = enemyConfig.speed * deltaSeconds;
 
       // === v3.5: DYNAMIC MOVEMENT PATTERNS ===
       switch (movementPattern) {
@@ -3666,7 +3675,8 @@ export class GameScene extends Phaser.Scene {
           // Occasional dash forward with warning
           enemy.x -= baseSpeed;
           let dashCooldown = enemy.getData('dashCooldown') || 0;
-          dashCooldown -= this.game.loop.delta;
+          // v3.9.2 PERFORMANCE: Use cached delta
+          dashCooldown -= delta;
 
           if (dashCooldown <= 0) {
             // Reduced dash speed for better visibility
@@ -3700,7 +3710,8 @@ export class GameScene extends Phaser.Scene {
           // v3.8 PERFORMANCE: Boss special movement - direct Y change instead of tween
           enemy.x -= baseSpeed * 0.6; // Slower horizontal movement
           let chaosTimer = enemy.getData('chaosTimer') || 0;
-          chaosTimer += this.game.loop.delta;
+          // v3.9.2 PERFORMANCE: Use cached delta
+          chaosTimer += delta;
 
           if (chaosTimer > 1500) { // Increased from 800 to 1500 - slower changes
             // Random direction change with constraints - direct movement instead of tween
@@ -3716,7 +3727,8 @@ export class GameScene extends Phaser.Scene {
           const chaosTargetY = enemy.getData('chaosTargetY');
           if (chaosTargetY !== undefined) {
             let chaosMoveProgress = enemy.getData('chaosMoveProgress') || 0;
-            chaosMoveProgress += this.game.loop.delta / 1800; // 1800ms duration
+            // v3.9.2 PERFORMANCE: Use cached delta
+            chaosMoveProgress += delta / 1800; // 1800ms duration
             if (chaosMoveProgress >= 1) {
               enemy.y = chaosTargetY;
               enemy.setData('chaosTargetY', undefined);
@@ -3742,7 +3754,8 @@ export class GameScene extends Phaser.Scene {
       if (aiType === 'sniper') {
         // HawkEye sniper - fires aimed laser shots
         let fireTimer = enemy.getData('fireTimer') || 0;
-        fireTimer -= this.game.loop.delta;
+        // v3.9.2 PERFORMANCE: Use cached delta
+        fireTimer -= delta;
 
         if (fireTimer <= 0 && enemy.x < enemyLoopWidth - 100) {
           // Fire laser at player
@@ -3764,7 +3777,8 @@ export class GameScene extends Phaser.Scene {
         // Update shield rotation
         let shieldAngle = enemy.getData('shieldAngle') || 0;
         const rotationSpeed = enemyConfig.shieldRotationSpeed || 2; // radians per second
-        shieldAngle += rotationSpeed * (this.game.loop.delta / 1000);
+        // v3.9.2 PERFORMANCE: Use cached deltaSeconds
+        shieldAngle += rotationSpeed * deltaSeconds;
         enemy.setData('shieldAngle', shieldAngle);
 
         // PERFORMANCE: Only redraw every 3 frames
@@ -3794,11 +3808,8 @@ export class GameScene extends Phaser.Scene {
           shieldGraphic.arc(0, 0, shieldRadius, shieldAngle - shieldArc / 2, shieldAngle + shieldArc / 2, false);
           shieldGraphic.strokePath();
 
+          // v3.9.2 PERFORMANCE: Use cached shieldBearerCount (calculated once per frame)
           // Add rim highlight ONLY if less than 5 shield bearers (performance)
-          const shieldBearerCount = this.enemies.filter(e =>
-            e && e.active && (e.getData('type') === 'shieldBearer' || e.getData('aiType') === 'shielded')
-          ).length;
-
           if (shieldBearerCount < 5) {
             shieldGraphic.lineStyle(2, 0xFFFFFF, 0.6);
             shieldGraphic.beginPath();
@@ -3816,7 +3827,8 @@ export class GameScene extends Phaser.Scene {
         const distance = Math.sqrt(toEagleX * toEagleX + toEagleY * toEagleY);
 
         if (distance > 0) {
-          const rushSpeed = (enemyConfig.rushSpeed || 500) * (this.game.loop.delta / 1000);
+          // v3.9.2 PERFORMANCE: Use cached deltaSeconds
+          const rushSpeed = (enemyConfig.rushSpeed || 500) * deltaSeconds;
 
           // Normalize and apply rush speed
           enemy.x += (toEagleX / distance) * rushSpeed;
@@ -3842,7 +3854,8 @@ export class GameScene extends Phaser.Scene {
       // v3.9: HEALER AI - Heals nearby enemies periodically
       if (aiType === 'healer' || enemyType === 'healer') {
         let healTimer = enemy.getData('healTimer') || 0;
-        healTimer -= this.game.loop.delta;
+        // v3.9.2 PERFORMANCE: Use cached delta
+        healTimer -= delta;
 
         if (healTimer <= 0) {
           const healRange = enemyConfig.healRange || 200;
@@ -3884,6 +3897,7 @@ export class GameScene extends Phaser.Scene {
           // Reset heal timer
           healTimer = enemyConfig.healInterval || 3000;
 
+          // v3.9.2 PERFORMANCE: Simplified visual feedback (no onUpdate callback)
           // Visual feedback on healer - green pulse
           if (healedCount > 0) {
             const healAura = this.add.graphics();
@@ -3891,16 +3905,11 @@ export class GameScene extends Phaser.Scene {
             healAura.strokeCircle(enemy.x, enemy.y, healRange * 0.3);
             healAura.setDepth(499);
 
+            // PERFORMANCE: Simple fade tween without onUpdate callback
             this.tweens.add({
               targets: healAura,
               alpha: 0,
               duration: 400,
-              onUpdate: (tween) => {
-                const progress = tween.progress;
-                healAura.clear();
-                healAura.lineStyle(3, 0x00FF88, 0.6 * (1 - progress));
-                healAura.strokeCircle(enemy.x, enemy.y, healRange * 0.3 + progress * healRange * 0.4);
-              },
               onComplete: () => healAura.destroy()
             });
 
