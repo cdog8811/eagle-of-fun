@@ -3339,7 +3339,7 @@ export class GameScene extends Phaser.Scene {
 
           // v3.7: Award XP for coin collection
           const coinXP = getXPForCoin(type);
-          const playerStats = this.upgradeSystem.getPlayerStats();
+          // v3.9.2 CRITICAL: Use cached playerStats instead of calling getPlayerStats() for EVERY coin!
           const xpWithBonus = Math.floor(coinXP * playerStats.coinGainMul);
           this.xpSystem.addXP({
             delta: xpWithBonus,
