@@ -123,7 +123,10 @@ const UPGRADE_DEFS: UpgradeDef[] = [
     costGrowth: 1.4,
     apply: (level, stats) => ({
       ...stats,
-      blasterCDMul: stats.blasterCDMul * Math.pow(0.9, level) // -10% per level
+      // v3.9.2 CRITICAL FIX: Use defaultStats.blasterCDMul (1.0) not stats.blasterCDMul!
+      // BEFORE: stats.blasterCDMul * 0.9^level → ACCUMULATES wrongly!
+      // AFTER: 1.0 * 0.9^level → Correct calculation
+      blasterCDMul: defaultStats.blasterCDMul * Math.pow(0.9, level) // -10% per level
     })
   },
   {
@@ -173,7 +176,10 @@ const UPGRADE_DEFS: UpgradeDef[] = [
     costGrowth: 1.35,
     apply: (level, stats) => ({
       ...stats,
-      glideGravityMul: stats.glideGravityMul * Math.pow(0.95, level) // -5% gravity per level
+      // v3.9.2 CRITICAL FIX: Use defaultStats.glideGravityMul (1.0) not stats.glideGravityMul!
+      // BEFORE: stats.glideGravityMul * 0.95^level → ACCUMULATES wrongly!
+      // AFTER: 1.0 * 0.95^level → Correct calculation
+      glideGravityMul: defaultStats.glideGravityMul * Math.pow(0.95, level) // -5% gravity per level
     })
   },
   {
@@ -233,6 +239,9 @@ class UpgradeSystemImpl implements UpgradeAPI {
       return this.cachedStats;
     }
 
+    // v3.9.2 DEBUG: Log when stats are recalculated
+    console.log('⚡ Recalculating player stats (cache miss)');
+
     // Recalculate stats
     let stats = { ...defaultStats };
 
@@ -240,6 +249,7 @@ class UpgradeSystemImpl implements UpgradeAPI {
     UPGRADE_DEFS.forEach(def => {
       const level = this.state.levels[def.id] || 0;
       if (level > 0) {
+        console.log(`  - ${def.id} level ${level}`);
         stats = def.apply(level, stats);
       }
     });
@@ -253,6 +263,8 @@ class UpgradeSystemImpl implements UpgradeAPI {
     // Cache the result
     this.cachedStats = stats;
     this.cacheInvalidated = false;
+
+    console.log('  - Final stats:', stats);
 
     return stats;
   }
