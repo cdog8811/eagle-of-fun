@@ -2749,17 +2749,24 @@ export class GameScene extends Phaser.Scene {
       this.fpsOverlay.update();
     }
 
+    // v3.8 PERFORMANCE: Cache eagle position (accessed many times)
+    const eagleX = this.eagle?.x || 0;
+    const eagleY = this.eagle?.y || 0;
+
+    // v3.8 PERFORMANCE: Cache blink state (calculated 3 times before!)
+    const blinkState = Math.floor(this.time.now / 250) % 2 === 0;
+
     // v3.8 PERFORMANCE: Only update shield position, don't redraw every frame
     if (this.shieldActive && this.shieldGraphics && this.eagle) {
       // Only move shield to eagle position
-      this.shieldGraphics.setPosition(this.eagle.x, this.eagle.y);
+      this.shieldGraphics.setPosition(eagleX, eagleY);
 
       // v3.8 PERFORMANCE: Use game time instead of Date.now() for blinking
       if (this.shieldTimer) {
         const remaining = Math.ceil((this.shieldTimer.delay - this.shieldTimer.elapsed) / 1000);
         if (remaining <= 3) {
-          // Blink effect when < 3 seconds remaining (use game time)
-          this.shieldGraphics.setAlpha(Math.floor(this.time.now / 250) % 2 === 0 ? 0.3 : 1);
+          // Blink effect when < 3 seconds remaining (use cached state)
+          this.shieldGraphics.setAlpha(blinkState ? 0.3 : 1);
         } else {
           this.shieldGraphics.setAlpha(1);
         }
@@ -2770,14 +2777,14 @@ export class GameScene extends Phaser.Scene {
     if (this.belleModActive && this.eagle) {
       // Position Belle sprite next to eagle (offset left-up)
       if (this.belleSprite) {
-        this.belleSprite.setPosition(this.eagle.x - 80, this.eagle.y - 60);
+        this.belleSprite.setPosition(eagleX - 80, eagleY - 60);
 
-        // v3.8 PERFORMANCE: Use game time instead of Date.now() for blinking
+        // v3.8 PERFORMANCE: Use cached blink state
         if (this.belleModTimer) {
           const remaining = Math.ceil((this.belleModTimer.delay - this.belleModTimer.elapsed) / 1000);
           if (remaining <= 3) {
-            // Flash Belle sprite on/off (use game time)
-            this.belleSprite.setAlpha(Math.floor(this.time.now / 250) % 2 === 0 ? 0.3 : 1);
+            // Flash Belle sprite on/off (use cached state)
+            this.belleSprite.setAlpha(blinkState ? 0.3 : 1);
           } else {
             this.belleSprite.setAlpha(1);
           }
@@ -2786,14 +2793,14 @@ export class GameScene extends Phaser.Scene {
 
       // v3.8 PERFORMANCE: Only update aura position and alpha
       if (this.belleAura) {
-        this.belleAura.setPosition(this.eagle.x, this.eagle.y);
+        this.belleAura.setPosition(eagleX, eagleY);
 
-        // v3.8 PERFORMANCE: Use game time instead of Date.now() for blinking
+        // v3.8 PERFORMANCE: Use cached blink state
         if (this.belleModTimer) {
           const remaining = Math.ceil((this.belleModTimer.delay - this.belleModTimer.elapsed) / 1000);
           if (remaining <= 3) {
-            // Pulsing aura when time running out (use game time)
-            this.belleAura.setAlpha(Math.floor(this.time.now / 250) % 2 === 0 ? 0.3 : 1);
+            // Pulsing aura when time running out (use cached state)
+            this.belleAura.setAlpha(blinkState ? 0.3 : 1);
           } else {
             this.belleAura.setAlpha(1);
           }
@@ -2810,11 +2817,21 @@ export class GameScene extends Phaser.Scene {
       this.scoreText.setText(`SCORE: ${this.score}`);
     }
 
+    // v3.8 PERFORMANCE: Cache screen dimensions (accessed 89 times!)
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
 
-    // v3.7: Update Weapon & Boss & Bandana Systems
+    // v3.8 PERFORMANCE: Cache delta and common values
     const delta = this.game.loop.delta;
+    const deltaSeconds = delta / 1000;
+
+    // v3.8 PERFORMANCE: Cache player stats (called 11 times in original code!)
+    const playerStats = this.upgradeSystem.getPlayerStats();
+
+    // v3.8 PERFORMANCE: Cache common speeds (used in every loop)
+    const coinMoveSpeed = this.coinSpeed * deltaSeconds;
+    const enemyMoveSpeed = this.enemySpeed * deltaSeconds;
+
     this.weaponManager.update(delta);
     this.bossManager.update(delta);
     this.bandanaPowerUp.update(); // Bandana effects, magnet, trail
@@ -3081,6 +3098,12 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
+    // v3.8 PERFORMANCE: Pre-calculate magnet values ONCE (not per coin!)
+    const magnetRange = this.magnetActive ? 400 + playerStats.magnetRadius + playerStats.buybackRadiusBonus : 0;
+    const magnetSpeed = this.magnetActive ? 200 * deltaSeconds : 0;
+    const collisionRadius = 80; // Coin collection radius
+    const collisionRadiusSq = collisionRadius * collisionRadius; // Squared for faster checks
+
     // Update coins - move towards player (FIXED: Use reverse loop to avoid splice issues)
     for (let i = this.coins.length - 1; i >= 0; i--) {
       const coin = this.coins[i];
@@ -3088,8 +3111,8 @@ export class GameScene extends Phaser.Scene {
       // Skip if already collected or destroyed
       if (!coin || !coin.active || coin.getData('collected')) continue;
 
-      // Move coin left
-      coin.x -= this.coinSpeed * (this.game.loop.delta / 1000);
+      // v3.8 PERFORMANCE: Move coin left (use cached speed)
+      coin.x -= coinMoveSpeed;
 
       // Remove off-screen coins
       if (coin.x < -100) {
@@ -3098,32 +3121,24 @@ export class GameScene extends Phaser.Scene {
         continue;
       }
 
+      // v3.8 PERFORMANCE: Calculate distance ONCE and reuse
+      const dx = eagleX - coin.x;
+      const dy = eagleY - coin.y;
+      const distanceSq = dx * dx + dy * dy; // Squared distance (avoids sqrt!)
+
       // Magnet effect - pull coins towards eagle
       if (this.magnetActive) {
-        const dx = this.eagle.x - coin.x;
-        const dy = this.eagle.y - coin.y;
-        const distance = Math.sqrt(dx * dx + dy * dy);
-
-        const playerStats = this.upgradeSystem.getPlayerStats();
-        // v3.8: Stack both magnet upgrades (magnet_range + buyback_radius)
-        const magnetRange = 400 + playerStats.magnetRadius + playerStats.buybackRadiusBonus;
-
-        if (distance < magnetRange && distance > 0) {
-          const speed = 200 * (this.game.loop.delta / 1000);
-          coin.x += (dx / distance) * speed;
-          coin.y += (dy / distance) * speed;
+        const magnetRangeSq = magnetRange * magnetRange;
+        if (distanceSq < magnetRangeSq && distanceSq > 0) {
+          // v3.8 PERFORMANCE: Only sqrt when actually needed!
+          const distance = Math.sqrt(distanceSq);
+          coin.x += (dx / distance) * magnetSpeed;
+          coin.y += (dy / distance) * magnetSpeed;
         }
       }
 
-      // Check collision with eagle
-      const distance = Phaser.Math.Distance.Between(
-        coin.x,
-        coin.y,
-        this.eagle.x,
-        this.eagle.y
-      );
-
-      if (distance < 80) {
+      // v3.8 PERFORMANCE: Check collision with squared distance (no sqrt!)
+      if (distanceSq < collisionRadiusSq) {
         // Mark as collected to prevent double collection
         coin.setData('collected', true);
 
@@ -3338,7 +3353,8 @@ export class GameScene extends Phaser.Scene {
       // Skip if destroyed
       if (!powerup || !powerup.active) continue;
 
-      powerup.x -= this.coinSpeed * (this.game.loop.delta / 1000);
+      // v3.8 PERFORMANCE: Use cached speed
+      powerup.x -= coinMoveSpeed;
 
       if (powerup.x < -100) {
         powerup.destroy();
@@ -3346,14 +3362,12 @@ export class GameScene extends Phaser.Scene {
         continue;
       }
 
-      const distance = Phaser.Math.Distance.Between(
-        powerup.x,
-        powerup.y,
-        this.eagle.x,
-        this.eagle.y
-      );
+      // v3.8 PERFORMANCE: Use squared distance (no sqrt!)
+      const dx = eagleX - powerup.x;
+      const dy = eagleY - powerup.y;
+      const distanceSq = dx * dx + dy * dy;
 
-      if (distance < 80) {
+      if (distanceSq < collisionRadiusSq) {
         const type = powerup.getData('type');
 
         switch (type) {
@@ -3391,20 +3405,19 @@ export class GameScene extends Phaser.Scene {
 
     // v3.7: Check weapon pickup collision
     if (this.weaponPickup && this.weaponPickup.active) {
-      this.weaponPickup.x -= this.coinSpeed * (this.game.loop.delta / 1000);
+      // v3.8 PERFORMANCE: Use cached speed
+      this.weaponPickup.x -= coinMoveSpeed;
 
       if (this.weaponPickup.x < -100) {
         this.weaponPickup.destroy();
         this.weaponPickup = undefined;
       } else {
-        const distance = Phaser.Math.Distance.Between(
-          this.weaponPickup.x,
-          this.weaponPickup.y,
-          this.eagle.x,
-          this.eagle.y
-        );
+        // v3.8 PERFORMANCE: Use squared distance (no sqrt!)
+        const dx = this.weaponPickup.x - eagleX;
+        const dy = this.weaponPickup.y - eagleY;
+        const distanceSq = dx * dx + dy * dy;
 
-        if (distance < 80) {
+        if (distanceSq < collisionRadiusSq) {
           this.collectWeaponPickup();
         }
       }
@@ -3416,7 +3429,8 @@ export class GameScene extends Phaser.Scene {
 
       if (!fakeCoin || !fakeCoin.active || fakeCoin.getData('collected')) continue;
 
-      fakeCoin.x -= this.coinSpeed * (this.game.loop.delta / 1000);
+      // v3.8 PERFORMANCE: Use cached speed
+      fakeCoin.x -= coinMoveSpeed;
 
       if (fakeCoin.x < -100) {
         fakeCoin.destroy();
@@ -3424,15 +3438,12 @@ export class GameScene extends Phaser.Scene {
         continue;
       }
 
-      // Check collision with eagle
-      const distance = Phaser.Math.Distance.Between(
-        fakeCoin.x,
-        fakeCoin.y,
-        this.eagle.x,
-        this.eagle.y
-      );
+      // v3.8 PERFORMANCE: Use squared distance (no sqrt!)
+      const dx = eagleX - fakeCoin.x;
+      const dy = eagleY - fakeCoin.y;
+      const distanceSq = dx * dx + dy * dy;
 
-      if (distance < 80) {
+      if (distanceSq < collisionRadiusSq) {
         fakeCoin.setData('collected', true);
 
         // v3.8 PERFORMANCE: Removed all fake coin feedback animations (text + tweens)
