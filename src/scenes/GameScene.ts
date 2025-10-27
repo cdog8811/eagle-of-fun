@@ -2981,8 +2981,8 @@ export class GameScene extends Phaser.Scene {
       }
 
       // v3.9: Check if splitter enemy - spawn mini enemies before death
-      const enemyType = hit.enemy.getData('type') || '';
-      if (enemyType === 'splitter' && enemyConfig) {
+      const hitEnemyType = hit.enemy.getData('type') || '';
+      if (hitEnemyType === 'splitter' && enemyConfig) {
         const splitCount = enemyConfig.splitCount || 2;
         const splitHP = enemyConfig.splitHP || 15;
         this.spawnSplitterEnemies(hitX, hitY, splitCount, splitHP, enemyConfig);
@@ -3756,6 +3756,143 @@ export class GameScene extends Phaser.Scene {
         // FireCracker - check if should explode (will be handled in collision/destroy)
         // Mark for explosion on death
         enemy.setData('shouldExplode', true);
+      }
+
+      // v3.9: SHIELD BEARER AI - Rotating shield protection
+      if (aiType === 'shielded' && (enemyType === 'shieldBearer' || enemyConfig.shieldRotationSpeed)) {
+        // Update shield rotation
+        let shieldAngle = enemy.getData('shieldAngle') || 0;
+        const rotationSpeed = enemyConfig.shieldRotationSpeed || 2; // radians per second
+        shieldAngle += rotationSpeed * (this.game.loop.delta / 1000);
+        enemy.setData('shieldAngle', shieldAngle);
+
+        // Draw rotating shield (visual feedback)
+        let shieldGraphic = enemy.getData('shieldGraphic');
+        if (!shieldGraphic || !shieldGraphic.active) {
+          shieldGraphic = this.add.graphics();
+          enemy.add(shieldGraphic);
+          enemy.setData('shieldGraphic', shieldGraphic);
+        }
+
+        // Clear and redraw shield
+        shieldGraphic.clear();
+        const shieldArc = enemyConfig.shieldArc || Math.PI * 0.6; // 108 degrees
+        const shieldRadius = Math.max(enemyConfig.size.width, enemyConfig.size.height) / 2 + 10;
+
+        // Draw shield arc
+        shieldGraphic.lineStyle(4, 0x00AAFF, 0.8);
+        shieldGraphic.beginPath();
+        shieldGraphic.arc(0, 0, shieldRadius, shieldAngle - shieldArc / 2, shieldAngle + shieldArc / 2, false);
+        shieldGraphic.strokePath();
+
+        // Shield rim highlights
+        shieldGraphic.lineStyle(2, 0xFFFFFF, 0.6);
+        shieldGraphic.beginPath();
+        shieldGraphic.arc(0, 0, shieldRadius - 2, shieldAngle - shieldArc / 2, shieldAngle + shieldArc / 2, false);
+        shieldGraphic.strokePath();
+      }
+
+      // v3.9: KAMIKAZE AI - Rushes directly at the eagle!
+      if (aiType === 'kamikaze' || enemyType === 'kamikaze') {
+        // Calculate direction to eagle
+        const toEagleX = eagleX - enemy.x;
+        const toEagleY = eagleY - enemy.y;
+        const distance = Math.sqrt(toEagleX * toEagleX + toEagleY * toEagleY);
+
+        if (distance > 0) {
+          const rushSpeed = (enemyConfig.rushSpeed || 500) * (this.game.loop.delta / 1000);
+
+          // Normalize and apply rush speed
+          enemy.x += (toEagleX / distance) * rushSpeed;
+          enemy.y += (toEagleY / distance) * rushSpeed;
+
+          // Rotate kamikaze to face eagle (adds visual feedback)
+          const angle = Math.atan2(toEagleY, toEagleX);
+          enemy.setRotation(angle);
+
+          // Visual trail effect - red danger particles
+          if (Math.random() < 0.3) { // 30% chance per frame
+            this.graphicsPool.createExplosion(this, enemy.x, enemy.y, {
+              count: 1,
+              color: 0xFF3333,
+              speed: { min: 20, max: 40 },
+              lifespan: 200,
+              scale: 0.2
+            });
+          }
+        }
+      }
+
+      // v3.9: HEALER AI - Heals nearby enemies periodically
+      if (aiType === 'healer' || enemyType === 'healer') {
+        let healTimer = enemy.getData('healTimer') || 0;
+        healTimer -= this.game.loop.delta;
+
+        if (healTimer <= 0) {
+          const healRange = enemyConfig.healRange || 200;
+          const healAmount = enemyConfig.healAmount || 10;
+          const healRangeSq = healRange * healRange;
+
+          // Find nearby enemies to heal
+          let healedCount = 0;
+          for (const otherEnemy of this.enemies) {
+            if (otherEnemy === enemy || !otherEnemy.active) continue;
+
+            // v3.9 PERFORMANCE: Squared distance check
+            const dx = otherEnemy.x - enemy.x;
+            const dy = otherEnemy.y - enemy.y;
+            const distanceSq = dx * dx + dy * dy;
+
+            if (distanceSq < healRangeSq) {
+              const currentHP = otherEnemy.getData('hp') || 0;
+              const maxHP = otherEnemy.getData('maxHp') || currentHP;
+
+              if (currentHP < maxHP && currentHP > 0) {
+                // Heal the enemy
+                const newHP = Math.min(maxHP, currentHP + healAmount);
+                otherEnemy.setData('hp', newHP);
+                healedCount++;
+
+                // Heal visual effect - green particles
+                this.graphicsPool.createExplosion(this, otherEnemy.x, otherEnemy.y, {
+                  count: 3,
+                  color: 0x00FF88,
+                  speed: { min: 30, max: 60 },
+                  lifespan: 300,
+                  scale: 0.3
+                });
+              }
+            }
+          }
+
+          // Reset heal timer
+          healTimer = enemyConfig.healInterval || 3000;
+
+          // Visual feedback on healer - green pulse
+          if (healedCount > 0) {
+            const healAura = this.add.graphics();
+            healAura.lineStyle(3, 0x00FF88, 0.6);
+            healAura.strokeCircle(enemy.x, enemy.y, healRange * 0.3);
+            healAura.setDepth(499);
+
+            this.tweens.add({
+              targets: healAura,
+              alpha: 0,
+              duration: 400,
+              onUpdate: (tween) => {
+                const progress = tween.progress;
+                healAura.clear();
+                healAura.lineStyle(3, 0x00FF88, 0.6 * (1 - progress));
+                healAura.strokeCircle(enemy.x, enemy.y, healRange * 0.3 + progress * healRange * 0.4);
+              },
+              onComplete: () => healAura.destroy()
+            });
+
+            // Sound effect
+            this.sound.play('power-up', { volume: 0.2, rate: 1.5 });
+          }
+        }
+        enemy.setData('healTimer', healTimer);
       }
 
       // Remove off-screen enemies

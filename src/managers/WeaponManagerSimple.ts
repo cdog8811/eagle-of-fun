@@ -492,6 +492,47 @@ export class WeaponManagerSimple {
         const hitRadiusSq = (hitRadius + 10) * (hitRadius + 10);
 
         if (distanceSq < hitRadiusSq) {
+          // v3.9: Check if enemy has rotating shield (Shield Bearer)
+          const enemyType = enemy.getData('type');
+          const shieldAngle = enemy.getData('shieldAngle');
+
+          if ((enemyType === 'shieldBearer' || enemyConfig?.shieldRotationSpeed) && shieldAngle !== undefined) {
+            // Calculate angle from enemy to projectile
+            const angleToProjectile = Math.atan2(dy, dx);
+
+            // Normalize angles to 0-2π range
+            const normalizedShieldAngle = ((shieldAngle % (Math.PI * 2)) + (Math.PI * 2)) % (Math.PI * 2);
+            const normalizedProjectileAngle = ((angleToProjectile % (Math.PI * 2)) + (Math.PI * 2)) % (Math.PI * 2);
+
+            // Calculate angular difference
+            let angleDiff = Math.abs(normalizedProjectileAngle - normalizedShieldAngle);
+            if (angleDiff > Math.PI) angleDiff = Math.PI * 2 - angleDiff;
+
+            // Check if projectile hits shield (within shield arc)
+            const shieldArc = enemyConfig.shieldArc || Math.PI * 0.6;
+            if (angleDiff < shieldArc / 2) {
+              // Projectile blocked by shield! Deflect it
+              projectile.active = false;
+
+              // Shield impact effect - blue spark
+              const scene = this.scene as any;
+              if (scene.graphicsPool) {
+                scene.graphicsPool.createExplosion(scene, projectile.x, projectile.y, {
+                  count: 4,
+                  color: 0x00AAFF,
+                  speed: { min: 60, max: 100 },
+                  lifespan: 200,
+                  scale: 0.3
+                });
+              }
+
+              // Shield hit sound
+              this.scene.sound.play('enemyhit', { volume: 0.3, rate: 0.7 });
+              continue; // Skip adding to hits - blocked!
+            }
+          }
+
+          // Not blocked - register hit
           hits.push({ enemy, projectile });
 
           // Handle splash damage (Mortar)
