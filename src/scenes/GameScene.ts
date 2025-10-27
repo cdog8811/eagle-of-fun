@@ -1424,6 +1424,13 @@ export class GameScene extends Phaser.Scene {
   }
 
   private spawnEnemy(): void {
+    // v3.9.2 PERFORMANCE: Limit max enemies to prevent slowdown
+    const MAX_ENEMIES = 50; // Maximum enemies on screen at once
+    if (this.enemies.length >= MAX_ENEMIES) {
+      console.warn(`⚠️ Max enemies reached (${MAX_ENEMIES}), skipping spawn`);
+      return;
+    }
+
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
 
