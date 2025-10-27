@@ -261,4 +261,13 @@ Ready to fly?`;
       });
     });
   }
+
+  /**
+   * v3.8: Cleanup to prevent memory leaks
+   */
+  shutdown(): void {
+    this.input.keyboard?.off('keydown-SPACE');
+    this.tweens.killAll();
+    this.sound.stopAll();
+  }
 }

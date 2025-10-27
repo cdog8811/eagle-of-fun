@@ -410,5 +410,10 @@ export class GameOverScene extends Phaser.Scene {
 
   shutdown(): void {
     this.cleanupInput();
+
+    // v3.8: Additional cleanup
+    this.tweens.killAll();
+    this.sound.stopAll();
+    this.input.keyboard?.off('keydown-ESC');
   }
 }

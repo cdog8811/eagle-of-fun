@@ -311,4 +311,19 @@ export class StartScene extends Phaser.Scene {
       popup.destroy();
     });
   }
+
+  /**
+   * v3.8: Cleanup to prevent memory leaks
+   */
+  shutdown(): void {
+    // Remove all event listeners
+    this.input.off('pointerdown');
+    this.input.keyboard?.off('keydown');
+
+    // Kill all tweens
+    this.tweens.killAll();
+
+    // Stop all sounds
+    this.sound.stopAll();
+  }
 }

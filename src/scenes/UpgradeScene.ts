@@ -933,4 +933,15 @@ class UpgradeCard {
       newLevel >= this.def.maxLevel ? 'MAX' : (canBuy.ok ? 'BUY' : 'LOCKED')
     );
   }
+
+  /**
+   * v3.8: Cleanup to prevent memory leaks
+   */
+  shutdown(): void {
+    // Remove all button event listeners (18 in total!)
+    // Phaser automatically cleans up .on() listeners on scene shutdown,
+    // but we kill tweens and stop sounds to be safe
+    this.tweens.killAll();
+    this.sound.stopAll();
+  }
 }

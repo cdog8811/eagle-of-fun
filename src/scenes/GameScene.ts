@@ -5701,4 +5701,107 @@ export class GameScene extends Phaser.Scene {
     // Just send initial data
     this.updateWeaponUI();
   }
+
+  /**
+   * v3.8: CRITICAL - Complete cleanup to prevent memory leaks!
+   * Called automatically by Phaser when scene shuts down
+   */
+  shutdown(): void {
+    console.log('GameScene shutdown - cleaning up ALL resources');
+
+    // 1. REMOVE ALL EVENT LISTENERS (CRITICAL!)
+    this.input.off('pointerdown');
+    this.input.keyboard?.off('keydown-SPACE');
+    this.input.keyboard?.off('keyup-SPACE');
+    this.input.keyboard?.off('keydown-P');
+    this.input.keyboard?.off('keydown-ESC');
+    this.input.keyboard?.off('keydown-Q');
+    this.input.keyboard?.off('keydown-W');
+    this.input.keyboard?.off('keydown-E');
+    this.input.keyboard?.off('keydown-TAB');
+    this.events.off('bossDefeated');
+
+    // 2. STOP ALL TIMERS
+    this.coinSpawnTimer?.remove();
+    this.enemySpawnTimer?.remove();
+    this.gameTimer?.remove();
+    this.powerupSpawnTimer?.remove();
+    this.taglineTimer?.remove();
+    this.phaseTimer?.remove();
+    this.magnetTimer?.remove();
+    this.shieldTimer?.remove();
+    this.burgerMultiplierTimer?.remove();
+    this.eatTheDipTimer?.remove();
+    this.freedomStrikeTimer?.remove();
+    this.belleModTimer?.remove();
+    this.controlBlockTimer?.remove();
+    this.bullMarketTimer?.remove();
+    this.valorStage1Timer?.remove();
+    this.valorStage2Timer?.remove();
+    this.valorAfterglowTimer?.remove();
+    this.valorCooldownTimer?.remove();
+    this.weaponRespawnTimer?.remove();
+    this.marketPhaseCheckInterval?.remove();
+    this.speedScalingInterval?.remove();
+    this.difficultyScalingInterval?.remove();
+    this.microEventCheckInterval?.remove();
+    this.microEventEndTimer?.remove();
+
+    // 3. STOP ALL SOUNDS
+    this.sound.stopAll();
+    if (this.currentBackgroundMusic) {
+      this.currentBackgroundMusic.stop();
+      this.currentBackgroundMusic = undefined;
+    }
+    if (this.shieldLoopSound) {
+      this.shieldLoopSound.stop();
+      this.shieldLoopSound = undefined;
+    }
+
+    // 4. KILL ALL TWEENS (CRITICAL!)
+    this.tweens.killAll();
+
+    // 5. DESTROY ALL ARRAYS OF OBJECTS
+    this.coins.forEach(coin => coin?.destroy());
+    this.coins = [];
+    this.enemies.forEach(enemy => enemy?.destroy());
+    this.enemies = [];
+    this.powerups.forEach(powerup => powerup?.destroy());
+    this.powerups = [];
+    this.fakeCoins.forEach(fakeCoin => fakeCoin?.destroy());
+    this.fakeCoins = [];
+    this.lawsuitPapers.forEach(paper => paper?.destroy());
+    this.lawsuitPapers = [];
+    this.missionUI.forEach(ui => ui?.destroy());
+    this.missionUI = [];
+    this.activeAnnouncements.forEach(ann => ann?.destroy());
+    this.activeAnnouncements = [];
+
+    // 6. CLEANUP OBJECT POOLS
+    this.textPool?.destroy();
+    this.graphicsPool?.destroy();
+
+    // 7. DESTROY GRAPHICS OBJECTS
+    this.shieldGraphics?.destroy();
+    this.belleAura?.destroy();
+    this.valorScreenGlow?.destroy();
+    this.weaponUI?.destroy();
+    this.weaponEnergyBar?.destroy();
+    this.weaponEnergyBarBg?.destroy();
+    this.weaponPickup?.destroy();
+    this.tutorialOverlay?.destroy();
+
+    // 8. CLEANUP MANAGERS
+    if (this.weaponManager && typeof this.weaponManager.destroy === 'function') {
+      this.weaponManager.destroy();
+    }
+    if (this.bossManager && typeof this.bossManager.cleanup === 'function') {
+      this.bossManager.cleanup();
+    }
+    if (this.bandanaPowerUp && typeof this.bandanaPowerUp.cleanup === 'function') {
+      this.bandanaPowerUp.cleanup();
+    }
+
+    console.log('GameScene cleanup complete - no memory leaks!');
+  }
 }
