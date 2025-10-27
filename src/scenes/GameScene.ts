@@ -1851,6 +1851,76 @@ export class GameScene extends Phaser.Scene {
     this.sound.play('explosion', { volume: 0.6 });
   }
 
+  /**
+   * v3.9: Spawn mini enemies when Splitter dies
+   * Creates smaller, faster enemies that scatter outward
+   */
+  private spawnSplitterEnemies(x: number, y: number, count: number, hp: number, parentConfig: any): void {
+    // Spawn mini enemies in random directions
+    for (let i = 0; i < count; i++) {
+      const angle = (Math.PI * 2 / count) * i + Math.random() * 0.5; // Slight randomness
+      const distance = 80 + Math.random() * 40; // Spawn offset
+
+      const miniX = x + Math.cos(angle) * distance;
+      const miniY = y + Math.sin(angle) * distance;
+
+      // Create mini enemy (smaller version of parent)
+      const miniEnemy = this.add.container(miniX, miniY);
+
+      // Mini enemy visual (smaller emoji, 0.7x scale)
+      const miniSprite = this.add.text(0, 0, '🔄', {
+        fontSize: Math.floor(parentConfig.scale * 40 * 0.7) + 'px'
+      });
+      miniSprite.setOrigin(0.5);
+      miniEnemy.add(miniSprite);
+
+      // Set smaller size
+      const miniSize = {
+        width: parentConfig.size.width * 0.6,
+        height: parentConfig.size.height * 0.6
+      };
+      miniEnemy.setSize(miniSize.width, miniSize.height);
+
+      // Store data
+      miniEnemy.setData('type', 'splitter-mini');
+      miniEnemy.setData('hp', hp); // Lower HP
+      miniEnemy.setData('maxHp', hp);
+      miniEnemy.setData('config', {
+        ...parentConfig,
+        size: miniSize,
+        speed: parentConfig.speed * 1.3, // Faster!
+        scale: parentConfig.scale * 0.7,
+        meme: '💨 Mini split!'
+      });
+      miniEnemy.setData('movementPattern', 'straight');
+
+      // Add to enemies array
+      this.enemies.push(miniEnemy);
+
+      // Spawn animation - pop out effect
+      miniEnemy.setScale(0);
+      this.tweens.add({
+        targets: miniEnemy,
+        scaleX: 1,
+        scaleY: 1,
+        duration: 200,
+        ease: 'Back.easeOut'
+      });
+    }
+
+    // Split visual effect
+    this.graphicsPool.createExplosion(this, x, y, {
+      count: count * 2,
+      color: 0x00FFFF,
+      speed: { min: 100, max: 200 },
+      lifespan: 400,
+      scale: 0.5
+    });
+
+    // Sound effect
+    this.sound.play('power-up', { volume: 0.4, rate: 1.3 });
+  }
+
   private spawnPowerup(): void {
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
@@ -2908,6 +2978,14 @@ export class GameScene extends Phaser.Scene {
       if (shouldExplode && enemyConfig) {
         const splinterCount = enemyConfig.splinterCount || 6;
         this.spawnExplosionSplinters(hitX, hitY, splinterCount);
+      }
+
+      // v3.9: Check if splitter enemy - spawn mini enemies before death
+      const enemyType = hit.enemy.getData('type') || '';
+      if (enemyType === 'splitter' && enemyConfig) {
+        const splitCount = enemyConfig.splitCount || 2;
+        const splitHP = enemyConfig.splitHP || 15;
+        this.spawnSplitterEnemies(hitX, hitY, splitCount, splitHP, enemyConfig);
       }
 
       // Destroy enemy (one-shot kill)

@@ -39,7 +39,8 @@ export class WeaponManagerSimple {
     3: { fireRate: 300, damage: 25, energyCost: 5, color: 0xFF0000, speed: 1300, name: 'Power Laser' },
     4: { fireRate: 450, damage: 12, energyCost: 12, color: 0xFFAA00, speed: 850, name: 'Eagle Spread', special: 'spread' }, // 3x12 = 36 total
     5: { fireRate: 550, damage: 40, energyCost: 15, color: 0x00FFFF, speed: 1400, name: 'Rail AOL', special: 'pierce' }, // Pierces 3
-    6: { fireRate: 650, damage: 30, energyCost: 18, color: 0xFF6B35, speed: 600, name: 'Burger Mortar', special: 'mortar' } // + splash
+    6: { fireRate: 650, damage: 30, energyCost: 18, color: 0xFF6B35, speed: 600, name: 'Burger Mortar', special: 'mortar' }, // + splash
+    7: { fireRate: 700, damage: 50, energyCost: 20, color: 0xFF0000, speed: 2000, name: 'LASER EYES 👀⚡', special: 'laserEyes' } // v3.9: Crypto meme weapon!
   };
 
   constructor(scene: Phaser.Scene) {
@@ -58,7 +59,7 @@ export class WeaponManagerSimple {
   }
 
   public upgradeWeapon(): void {
-    if (this.weaponLevel < 6) {
+    if (this.weaponLevel < 7) { // v3.9: Increased to 7 for LASER EYES!
       this.weaponLevel++;
       const stats = this.weaponStats[this.weaponLevel as keyof typeof this.weaponStats];
       console.log(`⬆️ Weapon upgraded to Level ${this.weaponLevel}: ${stats.name}!`);
@@ -139,6 +140,9 @@ export class WeaponManagerSimple {
       this.createProjectile(x, y, angle - 15, stats); // Left
       this.createProjectile(x, y, angle, stats);      // Center
       this.createProjectile(x, y, angle + 15, stats); // Right
+    } else if (special === 'laserEyes') {
+      // v3.9: LASER EYES - Dual lasers from eagle's eyes!
+      this.createLaserEyes(x, y, angle, stats);
     } else {
       // Normal single projectile
       this.createProjectile(x, y, angle, stats);
@@ -187,6 +191,105 @@ export class WeaponManagerSimple {
     this.scene.sound.play('blastershot', { volume: 0.3, rate: 0.8 }); // Lower pitch
 
     return true;
+  }
+
+  /**
+   * v3.9: LASER EYES - Crypto meme weapon! 👀⚡
+   * Fires dual red laser beams from the eagle's "eyes"
+   */
+  private createLaserEyes(x: number, y: number, angle: number, stats: any): void {
+    // Eagle's "eyes" are slightly offset up and to the sides
+    const eyeOffsetY = -15; // Above center
+    const eyeOffsetX = 8;   // Side spacing
+
+    // Calculate angle for projectile direction
+    const angleRad = Phaser.Math.DegToRad(angle);
+
+    // === LASER EYES MUZZLE FLASH ===
+    // Eye glow effect on both eyes
+    for (const side of [-1, 1]) {
+      const eyeX = x + (eyeOffsetX * side);
+      const eyeY = y + eyeOffsetY;
+
+      // Intense red glow from eyes
+      const eyeGlow = this.scene.add.graphics();
+      eyeGlow.fillStyle(0xFF0000, 0.9);
+      eyeGlow.fillCircle(eyeX, eyeY, 15);
+      eyeGlow.fillStyle(0xFFFF00, 1); // Yellow core
+      eyeGlow.fillCircle(eyeX, eyeY, 8);
+      eyeGlow.setDepth(1499);
+
+      this.scene.tweens.add({
+        targets: eyeGlow,
+        alpha: 0,
+        scaleX: 2,
+        scaleY: 2,
+        duration: 150,
+        ease: 'Power2',
+        onComplete: () => eyeGlow.destroy()
+      });
+    }
+
+    // Create 2 laser beams (one from each "eye")
+    for (const side of [-1, 1]) {
+      const laserX = x + (eyeOffsetX * side);
+      const laserY = y + eyeOffsetY;
+
+      // Create laser beam visual - elongated rectangle
+      const laser = this.scene.add.graphics();
+
+      // Outer red glow
+      laser.fillStyle(0xFF0000, 0.6);
+      laser.fillRect(0, -3, 40, 6);
+
+      // Inner bright core
+      laser.fillStyle(0xFFFF00, 1);
+      laser.fillRect(0, -1.5, 40, 3);
+
+      // White hot center line
+      laser.fillStyle(0xFFFFFF, 1);
+      laser.fillRect(0, -0.5, 40, 1);
+
+      laser.setPosition(laserX, laserY);
+      laser.setDepth(1500);
+      laser.setRotation(angleRad);
+
+      // Intense pulse animation
+      this.scene.tweens.add({
+        targets: laser,
+        scaleX: 1.2,
+        scaleY: 1.3,
+        duration: 150,
+        yoyo: true,
+        repeat: -1
+      });
+
+      // Calculate velocity
+      const velocityX = Math.cos(angleRad) * stats.speed;
+      const velocityY = Math.sin(angleRad) * stats.speed;
+
+      // Create projectile with pierce ability
+      const projectile: Projectile = {
+        sprite: laser,
+        x: laserX,
+        y: laserY,
+        velocityX: velocityX,
+        velocityY: velocityY,
+        damage: stats.damage,
+        active: true,
+        pierce: 5 // Pierces through 5 enemies!
+      };
+
+      this.projectiles.push(projectile);
+
+      // Initial trail
+      // v3.8 FIX: Use scene.time.now instead of Date.now() for game time sync!
+      (projectile as any).lastTrailTime = this.scene.time.now;
+      (projectile as any).color = stats.color;
+    }
+
+    // LASER EYES SOUND (louder, more intense)
+    this.scene.sound.play('blastershot', { volume: 0.7, rate: 1.2 }); // Higher pitch
   }
 
   private createProjectile(x: number, y: number, angle: number, stats: any): void {

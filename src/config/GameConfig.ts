@@ -33,7 +33,7 @@ export const GameConfig = {
       id: 2,
       name: 'Paper Panic 👋',
       duration: 60,
-      enemies: ['jeeter', 'paperHands', 'droneling', 'firecracker'], // v3.8: Added firecracker
+      enemies: ['jeeter', 'paperHands', 'droneling', 'firecracker', 'splitter'], // v3.9: Added splitter
       difficulty: 'medium',
       speedMultiplier: 1.5,
       spawnRate: 4500, // increased from 3000
@@ -44,7 +44,7 @@ export const GameConfig = {
       id: 3,
       name: 'Candle Crash 📉',
       duration: 60,
-      enemies: ['jeeter', 'paperHands', 'redCandles', 'fourMeme', 'hawkeye', 'droneling', 'firecracker', 'sbf'], // v3.8: Added hawkeye, sbf
+      enemies: ['jeeter', 'paperHands', 'redCandles', 'fourMeme', 'hawkeye', 'droneling', 'firecracker', 'sbf', 'splitter', 'healer'], // v3.9: Added healer
       difficulty: 'hard',
       speedMultiplier: 1.7,
       spawnRate: 4000, // increased from 2500
@@ -55,7 +55,7 @@ export const GameConfig = {
       id: 4,
       name: 'Regulation Run 🧑‍💼',
       duration: 60,
-      enemies: ['jeeter', 'paperHands', 'redCandles', 'gary', 'fourMeme', 'pumpFun', 'hawkeye', 'custodian', 'firecracker', 'sbf', 'dokwon'], // v3.8: Added custodian, dokwon
+      enemies: ['jeeter', 'paperHands', 'redCandles', 'gary', 'fourMeme', 'pumpFun', 'hawkeye', 'custodian', 'firecracker', 'sbf', 'dokwon', 'kamikaze', 'shieldBearer'], // v3.9: Added kamikaze, shieldBearer
       difficulty: 'very_hard',
       speedMultiplier: 1.9,
       spawnRate: 3500, // increased from 2200
@@ -66,7 +66,7 @@ export const GameConfig = {
       id: 5,
       name: 'Bear Market Finale 🐻',
       duration: 60,
-      enemies: ['paperHands', 'redCandles', 'gary', 'fourMeme', 'pumpFun', 'bearBoss', 'hawkeye', 'custodian', 'firecracker', 'sbf', 'dokwon', 'czBoss'], // v3.8: Added czBoss, removed jeeter
+      enemies: ['paperHands', 'redCandles', 'gary', 'fourMeme', 'pumpFun', 'bearBoss', 'hawkeye', 'custodian', 'firecracker', 'sbf', 'dokwon', 'czBoss', 'splitter', 'healer', 'kamikaze', 'shieldBearer'], // v3.9: All new enemies
       difficulty: 'extreme',
       speedMultiplier: 2.1,
       spawnRate: 1800,
@@ -77,7 +77,7 @@ export const GameConfig = {
       id: 6,
       name: 'WAGMI Mode 🦅',
       duration: -1, // Endless
-      enemies: ['paperHands', 'redCandles', 'gary', 'fourMeme', 'pumpFun', 'bearBoss', 'hawkeye', 'custodian', 'firecracker', 'sbf', 'dokwon', 'czBoss'], // v3.8: All enemies including new ones
+      enemies: ['paperHands', 'redCandles', 'gary', 'fourMeme', 'pumpFun', 'bearBoss', 'hawkeye', 'custodian', 'firecracker', 'sbf', 'dokwon', 'czBoss', 'splitter', 'healer', 'kamikaze', 'shieldBearer'], // v3.9: All enemies
       difficulty: 'variable',
       speedMultiplier: 2.3,
       spawnRate: 1500,
@@ -308,6 +308,64 @@ export const GameConfig = {
       meme: '🐻 Bear Market King!',
       aiType: 'basic',
       isBoss: false // Not a real boss, just boss-tier stats
+    },
+    // === NEW ENEMIES v3.9 ===
+    splitter: {
+      name: 'Splitter',
+      description: 'Divides into 2 smaller enemies on death',
+      behavior: 'splitter',
+      speed: 190,
+      hp: 40,
+      size: { width: 90, height: 90 },
+      sprite: 'emoji-splitter', // 🔄 emoji
+      scale: 1.2,
+      meme: '🔄 Double trouble!',
+      aiType: 'splitter',
+      splitCount: 2, // Spawns 2 mini enemies on death
+      splitHP: 15 // HP of each split enemy
+    },
+    healer: {
+      name: 'Healer',
+      description: 'Heals nearby enemies periodically',
+      behavior: 'healer',
+      speed: 140,
+      hp: 60,
+      size: { width: 95, height: 95 },
+      sprite: 'emoji-healer', // 💚 emoji
+      scale: 1.3,
+      meme: '💚 Healing the pump!',
+      aiType: 'healer',
+      healRange: 200, // Heal radius in pixels
+      healAmount: 10, // HP healed per tick
+      healInterval: 3000 // ms between heals
+    },
+    kamikaze: {
+      name: 'Kamikaze',
+      description: 'Rushes directly at the eagle - high risk!',
+      behavior: 'kamikaze',
+      speed: 350, // Very fast!
+      hp: 20, // Low HP
+      size: { width: 75, height: 75 },
+      sprite: 'emoji-kamikaze', // 💥 emoji
+      scale: 1.1,
+      meme: '💥 All in! YOLO!',
+      aiType: 'kamikaze',
+      rushSpeed: 500, // Speed when charging
+      explosionDamage: 2 // Damage on impact
+    },
+    shieldBearer: {
+      name: 'Shield Bearer',
+      description: 'Has a rotating shield - attack from behind!',
+      behavior: 'shield_rotating',
+      speed: 170,
+      hp: 70,
+      size: { width: 100, height: 100 },
+      sprite: 'emoji-shield', // 🛡️ emoji
+      scale: 1.3,
+      meme: '🛡️ Protected by the shield!',
+      aiType: 'shielded',
+      shieldRotationSpeed: 2, // Radians per second
+      shieldArc: Math.PI * 0.6 // 108 degrees shield coverage
     }
   },
 
