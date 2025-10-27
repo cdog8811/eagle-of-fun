@@ -4068,6 +4068,10 @@ export class GameScene extends Phaser.Scene {
     this.belleModTimer?.remove();
     this.bullMarketTimer?.remove();
 
+    // v3.9.2 CRITICAL: Flush XP system to save pending XP to localStorage
+    // This ensures player doesn't lose XP from coins collected in the last second
+    this.xpSystem.flush();
+
     // Update high score
     const currentHighScore = this.registry.get('highScore') || 0;
     if (this.score > currentHighScore) {
