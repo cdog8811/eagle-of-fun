@@ -3159,7 +3159,7 @@ export class GameScene extends Phaser.Scene {
         const eagleBody = this.eagle.body as Phaser.Physics.Arcade.Body;
         if (eagleBody) {
           // v3.8: Apply glideGravityMul upgrade (default 1.0, reduced by upgrades)
-          const playerStats = this.upgradeSystem.getPlayerStats();
+          // v3.9.2 CRITICAL FIX: Use cached playerStats instead of calling every frame!
           const glideGravityReduction = 0.2 * playerStats.glideGravityMul;
           eagleBody.setGravityY(GameConfig.gravity * glideGravityReduction);
           console.log(`🪶 Glide gravity: ${glideGravityReduction.toFixed(2)}x (upgrade: ${playerStats.glideGravityMul.toFixed(2)})`);
@@ -3186,7 +3186,7 @@ export class GameScene extends Phaser.Scene {
       const eagleBody = this.eagle.body as Phaser.Physics.Arcade.Body;
       if (eagleBody) {
         // v3.8: Keep reduced gravity (with upgrade applied)
-        const playerStats = this.upgradeSystem.getPlayerStats();
+        // v3.9.2 CRITICAL FIX: Use cached playerStats instead of calling 60 times/sec!
         const glideGravityReduction = 0.2 * playerStats.glideGravityMul;
         eagleBody.setGravityY(GameConfig.gravity * glideGravityReduction);
       }
