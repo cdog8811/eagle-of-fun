@@ -61,7 +61,7 @@ export default class UIScene extends Phaser.Scene {
 
     // Subscribe to XP changes
     this.xpSystem.onXPChange((xpState: XPState) => {
-      console.log('📊 XP Changed - Updating UI:', xpState);
+      // v3.9.2: Removed console.log - called hundreds of times per second!
       this.updateXP(xpState.level, xpState.xp, xpState.xpToNext);
     });
 
@@ -295,7 +295,7 @@ export default class UIScene extends Phaser.Scene {
    * Update XP Display
    */
   public updateXP(level: number, xp: number, xpToNext: number): void {
-    console.log(`🔄 updateXP called - Level: ${level}, XP: ${xp}/${xpToNext}, Scene Active: ${this.scene.isActive()}`);
+    // v3.9.2: Removed console.logs - called hundreds of times per second!
 
     // Always update internal state, even if scene not active
     this.currentLevel = level;
@@ -305,9 +305,6 @@ export default class UIScene extends Phaser.Scene {
     // Update text objects (they exist even if scene is not active)
     if (this.levelText) {
       this.levelText.setText(`LEVEL ${level}`);
-      console.log(`✅ Level text updated to: LEVEL ${level}`);
-    } else {
-      console.warn('⚠️ levelText not found');
     }
 
     if (this.xpText) {
@@ -344,8 +341,7 @@ export default class UIScene extends Phaser.Scene {
 
       const texts = container.list.filter(obj => obj.type === 'Text') as Phaser.GameObjects.Text[];
 
-      // Debug: Log mission data
-      console.log('Mission data:', mission);
+      // v3.9.2: Removed console.log - called hundreds of times per second!
 
       // Update title (emoji + title) - texts[0]
       if (texts[0]) {

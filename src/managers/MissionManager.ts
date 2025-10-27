@@ -208,7 +208,7 @@ export class MissionManager {
   }
 
   public getDailyMissions(): Mission[] {
-    console.log('getDailyMissions called - returning', this.dailyMissions.length, 'missions');
+    // v3.9.2: Removed console.log - called hundreds of times per second!
     return this.dailyMissions;
   }
 
