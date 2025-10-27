@@ -25,6 +25,7 @@ export default class UpgradeScene extends Phaser.Scene {
   private upgradeCards: UpgradeCard[] = [];
   private scrollY: number = 0;
   private maxScrollY: number = 0;
+  private buyInProgress: boolean = false; // v3.9.2: Prevent double-click purchases
 
   constructor() {
     super({ key: 'UpgradeScene' });
@@ -324,6 +325,12 @@ export default class UpgradeScene extends Phaser.Scene {
   }
 
   private onUpgradeBuy(def: UpgradeDef): void {
+    // v3.9.2 CRITICAL FIX: Prevent double-click purchases
+    if (this.buyInProgress) {
+      console.warn(`⚠️ Purchase already in progress, ignoring duplicate click`);
+      return;
+    }
+
     console.log(`💰 Attempting to buy upgrade: ${def.id}`);
 
     // Get current state and cost
@@ -345,6 +352,9 @@ export default class UpgradeScene extends Phaser.Scene {
       }
       return;
     }
+
+    // v3.9.2: Set flag to prevent double-clicks
+    this.buyInProgress = true;
 
     // Show confirmation dialog
     this.showBuyConfirmation(def, cost, () => {
@@ -375,6 +385,9 @@ export default class UpgradeScene extends Phaser.Scene {
         console.warn('❌ Upgrade purchase failed');
         this.showNotification('Purchase failed!', 0xFF0000);
       }
+
+      // v3.9.2: Reset flag after purchase completes
+      this.buyInProgress = false;
     });
   }
 
@@ -498,6 +511,8 @@ export default class UpgradeScene extends Phaser.Scene {
       details.destroy();
       confirmBtnContainer.destroy();
       cancelBtnContainer.destroy();
+      // v3.9.2: Reset buy flag on cancel
+      this.buyInProgress = false;
     };
 
     // Confirm action
@@ -918,8 +933,12 @@ class UpgradeCard {
     const canBuy = (this.container.scene as any).upgradeSystem.canBuy(this.def.id, xpState);
     const buttonColor = canBuy.ok ? 0x000000 : 0x999999;
 
-    // Update rectangle fill
+    // v3.9.2 CRITICAL FIX: Remove ALL event listeners before updating
+    // BEFORE: Event listeners accumulated on every update → double/triple clicks!
+    // AFTER: Clean slate before re-registering → single click only
     if (this.buyButtonRect) {
+      this.buyButtonRect.removeAllListeners();
+      this.buyButtonRect.disableInteractive();
       this.buyButtonRect.setFillStyle(buttonColor, 1);
       this.buyButtonRect.setInteractive({ useHandCursor: canBuy.ok });
     }
