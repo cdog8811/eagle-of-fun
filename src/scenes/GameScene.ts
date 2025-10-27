@@ -3381,6 +3381,8 @@ export class GameScene extends Phaser.Scene {
             this.scoreBlinkTween.restart();
           } else {
             // Tween was destroyed, recreate it
+            // IMPORTANT: Reset scale to 1.0 first in case it was left at 1.1
+            this.scoreText.setScale(1.0);
             this.scoreBlinkTween = this.tweens.add({
               targets: this.scoreText,
               scale: 1.1,
