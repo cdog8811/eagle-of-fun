@@ -217,7 +217,7 @@ class UpgradeSystemImpl implements UpgradeAPI {
 
   constructor() {
     this.state = Storage.load<UpgradesState>(LS_KEYS.UPGRADES, getDefaultUpgradesState());
-    console.log('🔧 Upgrade System initialized:', this.state);
+    console.log('Upgrade System initialized:', this.state);
   }
 
   getState(): UpgradesState {
@@ -295,14 +295,14 @@ class UpgradeSystemImpl implements UpgradeAPI {
     this.state.levels[id] = currentLevel + 1;
     this.saveState();
 
-    console.log(`✅ Upgraded ${id} to level ${this.state.levels[id]} (cost: ${cost} XP)`);
+    console.log(`Upgraded ${id} to level ${this.state.levels[id]} (cost: ${cost} XP)`);
     return true;
   }
 
   resetAll(): void {
     this.state = getDefaultUpgradesState();
     this.saveState();
-    console.log('🔄 All upgrades reset');
+    console.log('All upgrades reset');
   }
 
   private saveState(): void {

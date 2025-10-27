@@ -60,7 +60,7 @@ export class BossManagerV38 {
    * Spawn boss with warning screen
    */
   private spawnBoss(bossDef: BossDef): void {
-    console.log(`🐻 Boss spawning: ${bossDef.name} - ${bossDef.title}`);
+    console.log(`Boss spawning: ${bossDef.name} - ${bossDef.title}`);
 
     this.bossDef = bossDef;
     this.bossHP = bossDef.hp;
@@ -257,7 +257,7 @@ export class BossManagerV38 {
     this.bossNameText = this.scene.add.text(
       width / 2,
       15,
-      `🐻 ${this.bossDef.name} - ${this.bossDef.title}`,
+      `BOSS: ${this.bossDef.name} - ${this.bossDef.title}`,
       {
         fontSize: '32px',
         color: '#FFFF00',  // Yellow for visibility
@@ -330,7 +330,7 @@ export class BossManagerV38 {
     this.currentPhaseIndex = phaseIndex;
     this.currentPhase = this.bossDef.phases[phaseIndex];
 
-    console.log(`🐻 Boss Phase ${phaseIndex + 1}: ${this.currentPhase.name}`);
+    console.log(`Boss Phase ${phaseIndex + 1}: ${this.currentPhase.name}`);
 
     // Update phase text
     if (this.phaseText) {
@@ -354,17 +354,17 @@ export class BossManagerV38 {
       this.currentPhase.color & 0xFF
     );
 
-    // Reset attack timing
+    // Reset attack timing (v3.8 FIX: Use scene.time.now!)
     const attackPattern = getAttackPattern(this.currentPhase.attackPattern);
     if (attackPattern) {
       this.attackCooldown = attackPattern.cooldown * 1000;
     }
-    this.lastAttackTime = Date.now();
+    this.lastAttackTime = this.scene.time.now;
 
-    // Setup add wave spawning
+    // Setup add wave spawning (v3.8 FIX: Use scene.time.now!)
     if (this.currentPhase.addWaves) {
       this.addSpawnInterval = this.currentPhase.addWaves.interval * 1000;
-      this.lastAddSpawnTime = Date.now();
+      this.lastAddSpawnTime = this.scene.time.now;
     }
 
     // Visual changes for phase 3
@@ -418,7 +418,7 @@ export class BossManagerV38 {
     }
 
     this.bossHP -= finalDamage;
-    console.log(`🐻 Boss took ${finalDamage.toFixed(1)} damage! HP: ${Math.ceil(this.bossHP)}/${this.maxBossHP}`);
+    console.log(`Boss took ${finalDamage.toFixed(1)} damage! HP: ${Math.ceil(this.bossHP)}/${this.maxBossHP}`);
 
     // Flash effect
     if (this.bossSprite) {
@@ -465,7 +465,8 @@ export class BossManagerV38 {
   public update(delta: number): void {
     if (!this.bossActive || !this.boss || !this.currentPhase || !this.bossDef) return;
 
-    const now = Date.now();
+    // v3.8 CRITICAL FIX: Use scene.time.now instead of Date.now() for game time sync!
+    const now = this.scene.time.now;
 
     // Boss movement
     this.updateBossMovement(delta);
@@ -496,10 +497,17 @@ export class BossManagerV38 {
     const width = this.scene.cameras.main.width;
     const speed = this.bossDef.speed * (delta / 1000);
 
+    // v3.8 PERFORMANCE: Track accumulated time for smooth sine wave
+    if (!this.boss.getData('moveTime')) {
+      this.boss.setData('moveTime', 0);
+    }
+    const moveTime = this.boss.getData('moveTime') + (delta / 1000);
+    this.boss.setData('moveTime', moveTime);
+
     switch (this.currentPhase.movePattern) {
       case 'slow_horizontal':
-        // Slow sine wave movement
-        this.boss.y += Math.sin(Date.now() / 1000) * 3;
+        // v3.8 FIX: Use accumulated time instead of Date.now()!
+        this.boss.y += Math.sin(moveTime) * 3;
         break;
 
       case 'aggressive_weave':
@@ -513,8 +521,8 @@ export class BossManagerV38 {
             this.boss.y -= speed * 0.8;
           }
         }
-        // Slight horizontal movement
-        this.boss.x += Math.sin(Date.now() / 500) * 2;
+        // v3.8 FIX: Use accumulated time instead of Date.now()!
+        this.boss.x += Math.sin(moveTime * 2) * 2;
         break;
 
       case 'fast_charge':
@@ -544,7 +552,7 @@ export class BossManagerV38 {
   private performAttack(): void {
     if (!this.currentPhase || !this.boss) return;
 
-    console.log(`🐻 Boss attack: ${this.currentPhase.attackPattern}`);
+    console.log(`Boss attack: ${this.currentPhase.attackPattern}`);
 
     switch (this.currentPhase.attackPattern) {
       case 'shield_rotation':
@@ -709,7 +717,7 @@ export class BossManagerV38 {
   private spawnAddWave(): void {
     if (!this.currentPhase || !this.currentPhase.addWaves) return;
 
-    console.log(`🐻 Boss spawning adds: ${this.currentPhase.addWaves.count}x ${this.currentPhase.addWaves.enemyType}`);
+    console.log(`Boss spawning adds: ${this.currentPhase.addWaves.count}x ${this.currentPhase.addWaves.enemyType}`);
 
     const gameScene = this.scene as any;
     if (gameScene.spawnSpecificEnemy) {

@@ -34,7 +34,7 @@ export class AudioSystem {
     if (savedMusicVolume) this.musicVolume = parseFloat(savedMusicVolume);
     if (savedMuted) this.muted = savedMuted === 'true';
 
-    console.log('🔊 AudioSystem initialized');
+    console.log('AudioSystem initialized');
   }
 
   // ========== SFX ==========
@@ -58,7 +58,7 @@ export class AudioSystem {
         sound.destroy();
       });
     } catch (error) {
-      console.warn(`⚠️ Failed to play SFX: ${key}`, error);
+      console.warn(`Failed to play SFX: ${key}`, error);
     }
   }
 
@@ -175,7 +175,7 @@ export class AudioSystem {
         });
       }
     } catch (error) {
-      console.warn(`⚠️ Failed to play music: ${key}`, error);
+      console.warn(`Failed to play music: ${key}`, error);
     }
   }
 
@@ -218,9 +218,9 @@ export class AudioSystem {
     this.musicVolume = Phaser.Math.Clamp(volume, 0, 1);
     localStorage.setItem('musicVolume', this.musicVolume.toString());
 
-    // Update current music
-    if (this.currentMusic) {
-      this.currentMusic.setVolume(this.musicVolume);
+    // Update current music (v3.8: volume is a property, not a method)
+    if (this.currentMusic && 'volume' in this.currentMusic) {
+      (this.currentMusic as any).volume = this.musicVolume;
     }
   }
 

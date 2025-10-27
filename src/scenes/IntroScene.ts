@@ -45,9 +45,11 @@ Ready to fly?`;
     this.cameras.main.setBackgroundColor('#FFFFFF');
 
     // Resume audio context (in case it was suspended)
-    if (this.sound.context) {
-      this.sound.context.resume();
-      console.log('IntroScene: AudioContext state:', this.sound.context.state);
+    // v3.8 FIX: Type guard for WebAudioSoundManager
+    const soundManager = this.sound as any;
+    if (soundManager.context && typeof soundManager.context.resume === 'function') {
+      soundManager.context.resume();
+      console.log('IntroScene: AudioContext state:', soundManager.context.state);
     }
 
     // Display Ogle-Pixel image on the LEFT, vertically centered
@@ -217,8 +219,11 @@ Ready to fly?`;
 
   private showRPCMessages(): void {
     // Stop blinking
-    this.tweens.killTweensOf(this.promptText);
-    this.promptText?.setVisible(false);
+    // v3.8 FIX: Check if promptText exists before using
+    if (this.promptText) {
+      this.tweens.killTweensOf(this.promptText);
+      this.promptText.setVisible(false);
+    }
 
     // Remove keyboard listeners to prevent conflicts
     this.input.keyboard?.removeAllListeners();

@@ -41,7 +41,7 @@ export class PowerUpSystem {
     this.activeEffects = [];
     this.spawnTimer = this.spawnInterval;
 
-    console.log('⚡ PowerUpSystem initialized');
+    console.log('PowerUpSystem initialized');
   }
 
   /**
@@ -146,7 +146,7 @@ export class PowerUpSystem {
       this.onPowerUpCollectedCallback(powerUp.type, powerUp.duration);
     }
 
-    console.log(`⚡ Power-up collected: ${powerUp.type} (${powerUp.duration}s)`);
+    console.log(`Power-up collected: ${powerUp.type} (${powerUp.duration}s)`);
 
     // Remove power-up
     this.removePowerUp(powerUp);
@@ -159,6 +159,8 @@ export class PowerUpSystem {
     if (!powerUp.active) return;
 
     powerUp.active = false;
+    // v3.8: Kill tweens BEFORE destroying sprite to prevent memory leak!
+    this.scene.tweens.killTweensOf(powerUp.sprite);
     powerUp.sprite.destroy();
 
     const index = this.powerUps.indexOf(powerUp);
@@ -171,7 +173,7 @@ export class PowerUpSystem {
    * Expire an effect
    */
   private expireEffect(effect: ActiveEffect): void {
-    console.log(`⏱️ Power-up expired: ${effect.type}`);
+    console.log(`Power-up expired: ${effect.type}`);
 
     if (this.onEffectExpiredCallback) {
       this.onEffectExpiredCallback(effect.type);
@@ -223,7 +225,7 @@ export class PowerUpSystem {
       this.onPowerUpCollectedCallback(type, duration);
     }
 
-    console.log(`⚡ Effect activated: ${type} (${duration}s)`);
+    console.log(`Effect activated: ${type} (${duration}s)`);
   }
 
   /**
@@ -254,7 +256,11 @@ export class PowerUpSystem {
    * Cleanup
    */
   public destroy(): void {
-    this.powerUps.forEach(p => p.sprite.destroy());
+    // v3.8: Kill tweens BEFORE destroying sprites to prevent memory leaks!
+    this.powerUps.forEach(p => {
+      this.scene.tweens.killTweensOf(p.sprite);
+      p.sprite.destroy();
+    });
     this.powerUps = [];
     this.activeEffects = [];
   }

@@ -184,4 +184,11 @@ export class HowToPlayScene extends Phaser.Scene {
       });
     });
   }
+
+  shutdown(): void {
+    // v3.8 CRITICAL FIX: Remove keyboard event listeners to prevent memory leaks!
+    this.input.keyboard?.removeAllListeners();
+    this.tweens.killAll();
+    this.sound.stopAll();
+  }
 }

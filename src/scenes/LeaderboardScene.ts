@@ -242,4 +242,10 @@ export class LeaderboardScene extends Phaser.Scene {
     if (score >= 100) return 'Eagle Scout';
     return 'Rookie Degen';
   }
+
+  shutdown(): void {
+    this.input.keyboard?.off('keydown-ESC');
+    this.tweens.killAll();
+    this.sound.stopAll();
+  }
 }

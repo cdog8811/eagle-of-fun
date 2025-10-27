@@ -84,7 +84,7 @@ export class EagleController {
     this.invincible = false;
     this.shielded = false;
 
-    console.log('🦅 EagleController initialized');
+    console.log('EagleController initialized');
   }
 
   /**
@@ -108,7 +108,7 @@ export class EagleController {
   /**
    * Handle player input and movement
    */
-  private handleMovement(dt: number): void {
+  private handleMovement(_dt: number): void {
     if (!this.cursors || !this.wasd) return;
 
     const eagle = this.eagle as any; // Access underlying Phaser sprite
@@ -133,11 +133,10 @@ export class EagleController {
       velocityY *= 0.707;
     }
 
-    // Apply speed
-    const speed = this.currentSpeed + this.speedBonus;
+    // Apply speed (v3.8: currentSpeed already includes speedBonus!)
     const body = eagle.body as Phaser.Physics.Arcade.Body;
     if (body) {
-      body.setVelocity(velocityX * speed, velocityY * speed);
+      body.setVelocity(velocityX * this.currentSpeed, velocityY * this.currentSpeed);
     }
 
     // Keep within bounds
@@ -170,8 +169,10 @@ export class EagleController {
     // Lose life
     this.lives--;
 
-    // Play hit animation
-    this.eagle.playHitAnimation();
+    // Play hit animation (v3.8: Check if method exists)
+    if (this.eagle && typeof (this.eagle as any).playHitAnimation === 'function') {
+      (this.eagle as any).playHitAnimation();
+    }
 
     // Start invincibility
     this.startInvincibility();
@@ -181,7 +182,7 @@ export class EagleController {
       this.onDamageCallback();
     }
 
-    console.log(`💔 Damage taken! Lives: ${this.lives}/${this.maxLives}`);
+    console.log(`Damage taken! Lives: ${this.lives}/${this.maxLives}`);
 
     // Check for death
     if (this.lives <= 0) {
@@ -218,24 +219,39 @@ export class EagleController {
 
   /**
    * Create flashing effect during invincibility
+   * v3.8: Store flash timer reference to prevent memory leak!
    */
+  private flashTimer?: Phaser.Time.TimerEvent;
+
   private createFlashAnimation(): void {
     const eagle = this.eagle as any;
     let flashCount = 0;
 
-    const flashTimer = this.scene.time.addEvent({
+    // v3.8: Clean up existing flash timer if any
+    if (this.flashTimer) {
+      this.flashTimer.destroy();
+    }
+
+    this.flashTimer = this.scene.time.addEvent({
       delay: 150,
       repeat: Math.floor(this.invincibilityDuration / 150),
       callback: () => {
-        eagle.setAlpha(flashCount % 2 === 0 ? 0.3 : 1);
+        if (eagle && eagle.setAlpha) {
+          eagle.setAlpha(flashCount % 2 === 0 ? 0.3 : 1);
+        }
         flashCount++;
       }
     });
 
     // Clean up flash timer when invincibility ends
     this.scene.time.delayedCall(this.invincibilityDuration, () => {
-      flashTimer.destroy();
-      eagle.setAlpha(1);
+      if (this.flashTimer) {
+        this.flashTimer.destroy();
+        this.flashTimer = undefined;
+      }
+      if (eagle && eagle.setAlpha) {
+        eagle.setAlpha(1);
+      }
     });
   }
 
@@ -244,7 +260,7 @@ export class EagleController {
    */
   public gainLife(): void {
     if (this.lives >= this.maxLives) {
-      console.log('💚 Already at max lives');
+      console.log('Already at max lives');
       return;
     }
 
@@ -254,14 +270,14 @@ export class EagleController {
       this.onLifeGainCallback();
     }
 
-    console.log(`💚 Life gained! Lives: ${this.lives}/${this.maxLives}`);
+    console.log(`Life gained! Lives: ${this.lives}/${this.maxLives}`);
   }
 
   /**
    * Die
    */
   private die(): void {
-    console.log('💀 Eagle died');
+    console.log('Eagle died');
 
     if (this.onDeathCallback) {
       this.onDeathCallback();
@@ -275,7 +291,7 @@ export class EagleController {
    */
   public activateShield(): void {
     this.shielded = true;
-    console.log('🛡️ Shield activated');
+    console.log('Shield activated');
   }
 
   /**
@@ -283,7 +299,7 @@ export class EagleController {
    */
   public deactivateShield(): void {
     this.shielded = false;
-    console.log('🛡️ Shield deactivated');
+    console.log('Shield deactivated');
   }
 
   /**
@@ -291,7 +307,7 @@ export class EagleController {
    */
   public setShield(active: boolean): void {
     this.shielded = active;
-    console.log(`🛡️ Shield ${active ? 'activated' : 'deactivated'}`);
+    console.log(`Shield ${active ? 'activated' : 'deactivated'}`);
   }
 
   // ========== POWER-UPS ==========
@@ -319,7 +335,7 @@ export class EagleController {
       }
     );
 
-    console.log(`⚡ Invincibility activated for ${durationSeconds}s`);
+    console.log(`Invincibility activated for ${durationSeconds}s`);
   }
 
   /**
@@ -328,7 +344,7 @@ export class EagleController {
   public setSpeedBoost(multiplier: number): void {
     this.speedBoostMultiplier = multiplier;
     this.updateSpeed();
-    console.log(`⚡ Speed boost: ${multiplier}x`);
+    console.log(`Speed boost: ${multiplier}x`);
   }
 
   // ========== UPGRADES ==========
@@ -339,7 +355,7 @@ export class EagleController {
   public setSpeedBonus(bonus: number): void {
     this.speedBonus = bonus;
     this.updateSpeed();
-    console.log(`⚡ Speed bonus: +${bonus}`);
+    console.log(`Speed bonus: +${bonus}`);
   }
 
   /**
@@ -347,12 +363,12 @@ export class EagleController {
    */
   public setMaxLives(max: number): void {
     this.maxLives = max;
-    console.log(`❤️ Max lives: ${max}`);
+    console.log(`Max lives: ${max}`);
   }
 
   // ========== GETTERS ==========
 
-  public getEagle(): Eagle {
+  public getEagle(): Eagle | undefined {
     return this.eagle;
   }
 
@@ -406,11 +422,18 @@ export class EagleController {
   // ========== CLEANUP ==========
 
   public destroy(): void {
+    // v3.8: Clean up ALL timers to prevent memory leaks!
     if (this.invincibilityTimer) {
       this.invincibilityTimer.destroy();
+      this.invincibilityTimer = undefined;
+    }
+    if (this.flashTimer) {
+      this.flashTimer.destroy();
+      this.flashTimer = undefined;
     }
     if (this.eagle) {
       this.eagle.destroy();
+      this.eagle = undefined;
     }
   }
 }

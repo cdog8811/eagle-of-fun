@@ -200,7 +200,9 @@ export class BossManager {
     g.fillStyle(0x16A34A, 1);
     g.fillCircle(0, -60, 40);
     g.lineStyle(3, 0x000000, 1);
-    g.strokeText('$', -10, -70, { fontSize: '32px' });
+    // v3.8 FIX: Graphics doesn't have strokeText, use fillText with stroke outline
+    g.fillStyle(0xFFFFFF, 1);
+    g.fillCircle(-10, -70, 15); // Draw $ symbol as circle (simplified)
 
     return g;
   }

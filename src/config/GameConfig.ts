@@ -180,7 +180,8 @@ export const GameConfig = {
       sprite: 'gary',
       scale: 0.22, // Slightly smaller
       meme: 'Unregistered Security!',
-      controlBlockDuration: 2000 // ms
+      controlBlockDuration: 2000, // ms
+      throwInterval: 2500 // v3.8 FIX: Added missing throwInterval property (ms between throws)
     },
     bearBoss: {
       name: 'Bear Market Boss',

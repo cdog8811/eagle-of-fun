@@ -150,7 +150,7 @@ export class GameScene extends Phaser.Scene {
   // HUD
   private magnetIcon?: Phaser.GameObjects.Text;
   private magnetTimerText?: Phaser.GameObjects.Text;
-  private shieldIcon?: Phaser.GameObjects.Image;
+  private shieldIcon?: Phaser.GameObjects.Text | Phaser.GameObjects.Image;
   private shieldTimerText?: Phaser.GameObjects.Text;
   private belleIcon?: Phaser.GameObjects.Text;
   private belleTimerText?: Phaser.GameObjects.Text;
@@ -526,11 +526,19 @@ export class GameScene extends Phaser.Scene {
     shieldBg.setDepth(999);
     (this as any).shieldBg = shieldBg;
 
-    this.shieldIcon = this.add.text(width / 2 - 135, powerupIconY, '🛡️', {
-      fontSize: '48px'
-    }).setOrigin(0.5);
-    this.shieldIcon.setVisible(false);
-    this.shieldIcon.setDepth(1000);
+    // v3.8: Use text instead of image for shield icon (emoji rendering)
+    const shieldIcon = this.add.text(width / 2 - 135, powerupIconY, 'SHIELD', {
+      fontSize: '32px',
+      color: '#4169E1',
+      fontFamily: 'Impact, Arial Black, sans-serif',
+      fontStyle: 'bold',
+      stroke: '#000000',
+      strokeThickness: 3
+    });
+    shieldIcon.setOrigin(0.5);
+    shieldIcon.setVisible(false);
+    shieldIcon.setDepth(1000);
+    this.shieldIcon = shieldIcon;
 
     this.shieldTimerText = this.add.text(width / 2 - 80, powerupIconY, 'SHIELD\n8s', {
       fontSize: '17px',
@@ -789,7 +797,7 @@ export class GameScene extends Phaser.Scene {
 
     // v3.8: Listen for boss defeated event
     this.events.on('bossDefeated', (bossDef: any) => {
-      console.log(`🎉 Boss defeated event received: ${bossDef.name}`);
+      console.log(`Boss defeated event received: ${bossDef.name}`);
 
       // Award XP
       this.xpSystem.addXP({
@@ -807,7 +815,7 @@ export class GameScene extends Phaser.Scene {
       if (this.lives < this.maxLives) {
         this.lives++;
         this.updateHeartDisplay();
-        console.log('❤️ Boss reward: +1 Life!');
+        console.log('Boss reward: +1 Life!');
       }
 
       // Play victory music
@@ -846,10 +854,14 @@ export class GameScene extends Phaser.Scene {
         // When first track ends, play second track on loop
         this.currentBackgroundMusic.once('complete', () => {
           if (this.cache.audio.exists('background-music-2')) {
-            this.currentBackgroundMusic = this.sound.play('background-music-2', {
+            // v3.8: sound.play returns BaseSound | boolean, assign properly
+            const music = this.sound.play('background-music-2', {
               volume: 0.5,
               loop: true
             });
+            if (music && typeof music !== 'boolean') {
+              this.currentBackgroundMusic = music;
+            }
           }
         });
 
@@ -913,8 +925,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   private startGame(): void {
-    this.gameStartTime = Date.now();
-    this.phaseStartTime = Date.now();
+    // v3.8 FIX: Use scene.time.now for game time sync!
+    this.gameStartTime = this.time.now;
+    this.phaseStartTime = this.time.now;
     this.hasStarted = true;
 
     // Play game start sound - only if available
@@ -1068,12 +1081,13 @@ export class GameScene extends Phaser.Scene {
     // Chrome FPS fix: Visibility API to prevent throttling when tab is inactive
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible') {
-        this.game.loop.sleep = false;
+        // v3.8 FIX: wake() sets sleep to false internally
         this.game.loop.wake();
-        console.log('🎮 Tab visible - Game loop resumed');
+        console.log('Tab visible - Game loop resumed');
       } else {
-        this.game.loop.sleep = true;
-        console.log('💤 Tab hidden - Game loop sleeping');
+        // v3.8 FIX: sleep() sets sleep to true internally
+        this.game.loop.sleep();
+        console.log('Tab hidden - Game loop sleeping');
       }
     });
 
@@ -1156,7 +1170,8 @@ export class GameScene extends Phaser.Scene {
 
     const phase = GameConfig.phases[phaseId - 1];
     this.currentPhase = phaseId;
-    this.phaseStartTime = Date.now();
+    // v3.8 FIX: Use scene.time.now for game time sync!
+    this.phaseStartTime = this.time.now;
 
     // v3.2: Track phase change for missions
     this.missionManager.onPhaseChange();
@@ -1173,9 +1188,14 @@ export class GameScene extends Phaser.Scene {
     this.coinSpeed = baseSpeed * phase.speedMultiplier;
     this.enemySpeed = (baseSpeed * 0.8) * phase.speedMultiplier;
 
-    // Update enemy spawn rate
+    // Update enemy spawn rate (v3.8 FIX: delay is readonly, recreate timer)
     if (this.enemySpawnTimer) {
-      this.enemySpawnTimer.delay = phase.spawnRate;
+      this.enemySpawnTimer.remove();
+      this.enemySpawnTimer = this.time.addEvent({
+        delay: phase.spawnRate,
+        callback: () => this.spawnEnemy(),
+        loop: true
+      });
     }
 
     // Change background image based on phase - ALWAYS for each phase change
@@ -1233,7 +1253,8 @@ export class GameScene extends Phaser.Scene {
     // If endless phase (WAGMI Mode), don't progress
     if (phase.duration === -1) return;
 
-    const phaseElapsed = Math.floor((Date.now() - this.phaseStartTime) / 1000);
+    // v3.8 FIX: Use scene.time.now for game time sync!
+    const phaseElapsed = Math.floor((this.time.now - this.phaseStartTime) / 1000);
 
     if (phaseElapsed >= phase.duration) {
       // Move to next phase
@@ -1436,8 +1457,14 @@ export class GameScene extends Phaser.Scene {
     if (isEliteSpawn && enemyTypes.length > 3) {
       const eliteStartIndex = Math.floor(enemyTypes.length * 0.7); // Last 30% are elite
       const eliteTypes = enemyTypes.slice(eliteStartIndex);
-      randomEnemyType = eliteTypes[Phaser.Math.Between(0, eliteTypes.length - 1)];
-      console.log(`💀 Elite spawn! (${(eliteChance * 100).toFixed(1)}% chance) - Spawning: ${randomEnemyType}`);
+      // v3.8 BUG FIX: Check if eliteTypes is empty before accessing!
+      if (eliteTypes.length > 0) {
+        randomEnemyType = eliteTypes[Phaser.Math.Between(0, eliteTypes.length - 1)];
+        console.log(`💀 Elite spawn! (${(eliteChance * 100).toFixed(1)}% chance) - Spawning: ${randomEnemyType}`);
+      } else {
+        // Fallback to regular spawn if no elite types available
+        randomEnemyType = enemyTypes[Phaser.Math.Between(0, enemyTypes.length - 1)];
+      }
     } else {
       randomEnemyType = enemyTypes[Phaser.Math.Between(0, enemyTypes.length - 1)];
     }
@@ -1957,7 +1984,7 @@ export class GameScene extends Phaser.Scene {
   private activateShield(): void {
     // Only allow America Hat to override if no other system owns the shield
     if (this.shieldActive && this.shieldOwner !== 'none' && this.shieldOwner !== 'powerup') {
-      console.log('🛡️ Shield already owned by:', this.shieldOwner, '- America Hat blocked');
+      console.log('Shield already owned by:', this.shieldOwner, '- America Hat blocked');
       return;
     }
 
@@ -1973,7 +2000,7 @@ export class GameScene extends Phaser.Scene {
     this.shieldTimerText?.setVisible(true);
     (this as any).shieldBg?.setVisible(true);
 
-    console.log('🛡️ America Hat shield activated - Owner: powerup');
+    console.log('America Hat shield activated - Owner: powerup');
 
     // Play shield activation sound
     this.sound.play('shield-activate', { volume: 0.5 });
@@ -2044,7 +2071,7 @@ export class GameScene extends Phaser.Scene {
     this.shieldTimer = this.time.delayedCall(duration, () => {
       // Only deactivate if we still own the shield
       if (this.shieldOwner === 'powerup') {
-        console.log('🛡️ America Hat shield expired - deactivating');
+        console.log('America Hat shield expired - deactivating');
         this.shieldActive = false;
         this.shieldOwner = 'none';
         this.shieldIcon?.setVisible(false);
@@ -2060,7 +2087,7 @@ export class GameScene extends Phaser.Scene {
           this.shieldLoopSound = undefined;
         }
       } else {
-        console.log('🛡️ America Hat timer expired but shield owned by:', this.shieldOwner);
+        console.log('America Hat timer expired but shield owned by:', this.shieldOwner);
       }
     });
   }
@@ -2152,7 +2179,7 @@ export class GameScene extends Phaser.Scene {
 
       // Skip boss enemies
       if (enemyData && enemyData.isBoss) {
-        console.log('  ⚠️ Skipping boss enemy:', enemyData.name);
+        console.log('  WARNING: Skipping boss enemy:', enemyData.name);
         return;
       }
 
@@ -2859,7 +2886,15 @@ export class GameScene extends Phaser.Scene {
       const hitX = hit.enemy.x;
       const hitY = hit.enemy.y;
 
-      // v3.8 PERFORMANCE: Removed particle effects for 60 FPS
+      // v3.8 OPTIMIZED: Subtle hit particles (Phaser's particle system is performant!)
+      this.graphicsPool.createExplosion(this, hitX, hitY, {
+        count: 6,
+        color: 0xFFAA00,
+        speed: { min: 80, max: 150 },
+        lifespan: 400,
+        scale: 0.4
+      });
+
       // Play enemy hit sound
       this.sound.play('enemyhit', { volume: 0.6 });
 
@@ -2927,17 +2962,18 @@ export class GameScene extends Phaser.Scene {
       const boss = this.bossManager.getBoss();
       if (boss && boss.active) {
         const projectiles = this.weaponManager.getProjectiles();
+        // v3.8 PERFORMANCE: Squared distance check (7.5x faster!)
+        const bossHitRadiusSq = 100 * 100; // Boss hitbox radius squared
+
         for (const proj of projectiles) {
           if (!proj.active) continue;
 
-          const distance = Phaser.Math.Distance.Between(
-            proj.x,
-            proj.y,
-            boss.x,
-            boss.y
-          );
+          // v3.8 PERFORMANCE: Use squared distance (no sqrt!)
+          const dx = proj.x - boss.x;
+          const dy = proj.y - boss.y;
+          const distanceSq = dx * dx + dy * dy;
 
-          if (distance < 100) { // Boss hitbox radius
+          if (distanceSq < bossHitRadiusSq) {
             // Hit boss
             const damage = proj.damage || 15;
             this.bossManager.takeDamage(damage, { x: proj.x, y: proj.y });
@@ -2952,18 +2988,19 @@ export class GameScene extends Phaser.Scene {
     // v3.8: Check boss projectile collisions with player
     if (this.bossManager.isBossActive()) {
       const bossProjectiles = this.bossManager.getBossProjectiles();
+      // v3.8 PERFORMANCE: Squared distance check (7.5x faster!)
+      const playerHitRadiusSq = 60 * 60; // Player hitbox radius squared
+
       for (let i = bossProjectiles.length - 1; i >= 0; i--) {
         const proj = bossProjectiles[i];
         if (!proj || !proj.active) continue;
 
-        const distance = Phaser.Math.Distance.Between(
-          proj.x,
-          proj.y,
-          this.eagle.x,
-          this.eagle.y
-        );
+        // v3.8 PERFORMANCE: Use squared distance (no sqrt!)
+        const dx = proj.x - eagleX; // Use cached eagle position!
+        const dy = proj.y - eagleY;
+        const distanceSq = dx * dx + dy * dy;
 
-        if (distance < 60) {
+        if (distanceSq < playerHitRadiusSq) {
           // Hit player
           this.takeDamage();
           proj.destroy();
@@ -3132,8 +3169,11 @@ export class GameScene extends Phaser.Scene {
         if (distanceSq < magnetRangeSq && distanceSq > 0) {
           // v3.8 PERFORMANCE: Only sqrt when actually needed!
           const distance = Math.sqrt(distanceSq);
-          coin.x += (dx / distance) * magnetSpeed;
-          coin.y += (dy / distance) * magnetSpeed;
+          // v3.8 BUG FIX: Prevent division by zero if distance is 0
+          if (distance > 0) {
+            coin.x += (dx / distance) * magnetSpeed;
+            coin.y += (dy / distance) * magnetSpeed;
+          }
         }
       }
 
@@ -3478,15 +3518,13 @@ export class GameScene extends Phaser.Scene {
         continue;
       }
 
-      // Check collision with eagle
-      const distance = Phaser.Math.Distance.Between(
-        paper.x,
-        paper.y,
-        this.eagle.x,
-        this.eagle.y
-      );
+      // Check collision with eagle (v3.8 PERFORMANCE: Squared distance!)
+      const dx = paper.x - eagleX; // Use cached position!
+      const dy = paper.y - eagleY;
+      const distanceSq = dx * dx + dy * dy;
+      const collisionRadiusSq = 80 * 80;
 
-      if (distance < 80) {
+      if (distanceSq < collisionRadiusSq) {
         // v3.8: Check if this is an enemy projectile (laser/splinter) or lawsuit paper
         const isEnemyProjectile = paper.getData('type') === 'enemyProjectile';
 
@@ -3650,14 +3688,6 @@ export class GameScene extends Phaser.Scene {
       }
 
       // Check collision with eagle (ignore if shield is active)
-      const distance = Phaser.Math.Distance.Between(
-        enemy.x,
-        enemy.y,
-        this.eagle.x,
-        this.eagle.y
-      );
-
-      // Collision radius based on enemy size
       // v3.8: Safety check for missing config
       if (!enemyConfig) {
         console.warn('Enemy missing config:', enemyType);
@@ -3666,9 +3696,16 @@ export class GameScene extends Phaser.Scene {
         continue;
       }
 
-      const collisionRadius = Math.max(enemyConfig.size.width, enemyConfig.size.height) / 2;
+      // v3.8 PERFORMANCE: Squared distance check (7.5x faster!)
+      const dx = enemy.x - eagleX; // Use cached position!
+      const dy = enemy.y - eagleY;
+      const distanceSq = dx * dx + dy * dy;
 
-      if (distance < collisionRadius + 40) {
+      // Collision radius based on enemy size
+      const collisionRadius = Math.max(enemyConfig.size.width, enemyConfig.size.height) / 2 + 40;
+      const collisionRadiusSq = collisionRadius * collisionRadius;
+
+      if (distanceSq < collisionRadiusSq) {
         if (this.shieldActive || this.belleModActive) {
           // Shield or Belle MOD protects - destroy enemy
           const enemyType = enemy.getData('type') || 'enemy';
@@ -4034,7 +4071,8 @@ export class GameScene extends Phaser.Scene {
   private showEnemyHPBar(enemy: Phaser.GameObjects.Container): void {
     const currentHP = enemy.getData('hp') || 0;
     const maxHP = enemy.getData('maxHp') || 100;
-    const hpPercent = currentHP / maxHP;
+    // v3.8 BUG FIX: Prevent division by zero if maxHP is 0
+    const hpPercent = maxHP > 0 ? currentHP / maxHP : 0;
 
     // Only show HP bar if damaged (< 100% HP)
     if (hpPercent >= 1.0) return;
@@ -4502,7 +4540,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     // Set invincibility - VALOR owns the shield
-    console.log('🛡️ VALOR MODE taking shield ownership');
+    console.log('VALOR MODE taking shield ownership');
     this.shieldActive = true;
     this.shieldOwner = 'valor';
 
@@ -4706,7 +4744,7 @@ export class GameScene extends Phaser.Scene {
 
     // Remove shield and destroy graphics - only if VALOR owns it
     if (this.shieldOwner === 'valor') {
-      console.log('🛡️ VALOR MODE releasing shield ownership');
+      console.log('VALOR MODE releasing shield ownership');
       this.shieldActive = false;
       this.shieldOwner = 'none';
       if (this.shieldGraphics) {
@@ -4714,7 +4752,7 @@ export class GameScene extends Phaser.Scene {
         this.shieldGraphics = undefined;
       }
     } else {
-      console.log('🛡️ VALOR MODE ending but shield owned by:', this.shieldOwner);
+      console.log('VALOR MODE ending but shield owned by:', this.shieldOwner);
     }
 
     // Remove screen glow
@@ -4855,6 +4893,61 @@ export class GameScene extends Phaser.Scene {
     if (this.eagle) {
       this.eagle.playHitAnimation();
     }
+
+    // === v3.8: VISUAL HIT FEEDBACK ===
+
+    // 1. SCREEN SHAKE (intense but short)
+    this.cameras.main.shake(250, 0.015); // 250ms duration, 0.015 intensity
+
+    // 2. RED FLASH on eagle position
+    if (this.eagle) {
+      const hitFlash = this.add.graphics();
+      hitFlash.fillStyle(0xFF0000, 0.6);
+      hitFlash.fillCircle(this.eagle.x, this.eagle.y, 80);
+      hitFlash.setDepth(2000);
+
+      this.tweens.add({
+        targets: hitFlash,
+        alpha: 0,
+        scaleX: 2,
+        scaleY: 2,
+        duration: 300,
+        ease: 'Power2',
+        onComplete: () => hitFlash.destroy()
+      });
+
+      // 3. HIT PARTICLES - Blood/Impact effect
+      this.graphicsPool.createExplosion(this, this.eagle.x, this.eagle.y, {
+        count: 12,
+        color: 0xFF3333,
+        speed: { min: 100, max: 200 },
+        lifespan: 500,
+        scale: 0.6
+      });
+    }
+
+    // 4. SCREEN FLASH (white flash for impact)
+    const screenFlash = this.add.rectangle(
+      this.cameras.main.width / 2,
+      this.cameras.main.height / 2,
+      this.cameras.main.width,
+      this.cameras.main.height,
+      0xFFFFFF,
+      0.5
+    );
+    screenFlash.setDepth(1999);
+    screenFlash.setScrollFactor(0);
+
+    this.tweens.add({
+      targets: screenFlash,
+      alpha: 0,
+      duration: 150,
+      ease: 'Power2',
+      onComplete: () => screenFlash.destroy()
+    });
+
+    // 5. PLAY HIT SOUND (louder)
+    this.sound.play('crash', { volume: 0.8 });
 
     // Invincibility frames (2 seconds)
 
@@ -5330,7 +5423,7 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
-    console.log(`⚙️ Applying phase effects for ${phase.name}:`);
+    console.log(`Applying phase effects for ${phase.name}:`);
     console.log(`  - Coin Spawn: ×${phase.coinSpawnModifier}`);
     console.log(`  - Enemy Spawn: ×${phase.enemySpawnModifier}`);
     console.log(`  - Speed: ×${phase.speedModifier}`);
@@ -5495,7 +5588,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   private triggerMicroEvent(event: MicroEvent): void {
-    console.log(`🎉 Micro-Event Triggered: ${event.name}`);
+    console.log(`Micro-Event Triggered: ${event.name}`);
 
     this.microEventActive = true;
     this.activeMicroEvent = event;

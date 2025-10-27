@@ -251,9 +251,11 @@ export class StartScene extends Phaser.Scene {
       this.musicStarted = true;
       console.log('StartScene: User clicked, resuming AudioContext');
 
-      if (this.sound.context) {
-        this.sound.context.resume().then(() => {
-          console.log('AudioContext resumed, state:', this.sound.context.state);
+      // v3.8 FIX: Type guard for WebAudioSoundManager
+      const soundManager = this.sound as any;
+      if (soundManager.context && typeof soundManager.context.resume === 'function') {
+        soundManager.context.resume().then(() => {
+          console.log('AudioContext resumed, state:', soundManager.context.state);
 
           // Start menu music after AudioContext is resumed
           if (this.cache.audio.exists('menu-music')) {

@@ -41,13 +41,13 @@ export class PhaseController {
     this.bossActive = false;
     this.bossTriggered = false;
 
-    console.log('🎮 PhaseController initialized');
+    console.log('PhaseController initialized');
   }
 
   /**
    * Update phase logic
    */
-  public update(dt: number, currentScore: number, currentTime: number): void {
+  public update(_dt: number, currentScore: number, currentTime: number): void {
     // Check for boss trigger
     if (!this.bossTriggered) {
       this.checkBossTrigger(currentScore, currentTime);
@@ -78,7 +78,7 @@ export class PhaseController {
     this.bossActive = true;
     this.activeBoss = boss;
 
-    console.log(`👹 Boss triggered: ${boss.name}`);
+    console.log(`Boss triggered: ${boss.name}`);
 
     if (this.onBossTriggerCallback) {
       this.onBossTriggerCallback(boss);
@@ -92,7 +92,7 @@ export class PhaseController {
     this.bossActive = false;
     this.activeBoss = undefined;
 
-    console.log('👹 Boss defeated!');
+    console.log('Boss defeated!');
   }
 
   /**
@@ -123,7 +123,7 @@ export class PhaseController {
 
     this.currentPhase = phase;
 
-    console.log(`🎮 Phase changed to: ${phase}`);
+    console.log(`Phase changed to: ${phase}`);
 
     if (this.onPhaseChangeCallback) {
       this.onPhaseChangeCallback(this.getPhaseInfo());
@@ -138,7 +138,7 @@ export class PhaseController {
 
     this.marketPhaseActive = true;
 
-    console.log('🛒 Market phase started');
+    console.log('Market phase started');
 
     if (this.onMarketPhaseStartCallback) {
       this.onMarketPhaseStartCallback();
@@ -153,7 +153,7 @@ export class PhaseController {
 
     this.marketPhaseActive = false;
 
-    console.log('🛒 Market phase ended');
+    console.log('Market phase ended');
 
     if (this.onMarketPhaseEndCallback) {
       this.onMarketPhaseEndCallback();

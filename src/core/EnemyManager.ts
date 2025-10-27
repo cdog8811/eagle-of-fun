@@ -37,16 +37,17 @@ export class EnemyManager {
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
-    this.gameStartTime = Date.now();
+    this.gameStartTime = 0; // v3.8: Initialize in init() with scene.time.now
   }
 
   public init(startPhase: number = 1): void {
     this.currentPhase = startPhase;
     this.spawnTimer = 0;
     this.enemies = [];
-    this.gameStartTime = Date.now();
+    // v3.8: Use scene.time.now instead of Date.now() - synced with game time!
+    this.gameStartTime = this.scene.time.now;
 
-    console.log('👾 EnemyManager initialized');
+    console.log('EnemyManager initialized');
   }
 
   /**
@@ -74,7 +75,8 @@ export class EnemyManager {
    * Spawn a random enemy from current phase pool
    */
   private spawnEnemy(): void {
-    const secondsElapsed = (Date.now() - this.gameStartTime) / 1000;
+    // v3.8: Use scene.time.now for accurate game time
+    const secondsElapsed = (this.scene.time.now - this.gameStartTime) / 1000;
     const hpMultiplier = calculateHPMultiplier(secondsElapsed);
 
     // Get spawn pool for current phase
@@ -159,9 +161,11 @@ export class EnemyManager {
         break;
 
       case 'swarm':
-        // Move in group formation
+        // Move in group formation (v3.8: Use scene time, not Date.now()!)
+        if (!enemy.aiData.swarmTime) enemy.aiData.swarmTime = 0;
+        enemy.aiData.swarmTime += dt;
         body.setVelocityX(-enemy.speed);
-        body.setVelocityY(Math.sin(Date.now() / 500) * 50);
+        body.setVelocityY(Math.sin(enemy.aiData.swarmTime * 2) * 50);
         break;
 
       case 'shielded':
@@ -273,7 +277,7 @@ export class EnemyManager {
    */
   public setPhase(phase: number): void {
     this.currentPhase = phase;
-    console.log(`👾 EnemyManager: Phase ${phase}`);
+    console.log(`EnemyManager: Phase ${phase}`);
   }
 
   /**

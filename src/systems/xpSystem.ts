@@ -63,14 +63,14 @@ class XPSystemImpl implements XPPublicAPI {
     // Load from storage or create new
     const saved = Storage.load<XPState>(LS_KEYS.XP, getDefaultState());
 
-    console.log('💾 Loaded XP state from localStorage:', saved);
+    console.log('Loaded XP state from localStorage:', saved);
 
     // Check if this is truly first time (check localStorage directly to be sure)
     const hasPlayedBefore = localStorage.getItem('eof_has_played_before');
 
     // First-time bonus: 600 XP for testing (ONLY on first ever load)
     if (!hasPlayedBefore && saved.totalXP === 0 && saved.level === 1 && saved.xp === 0) {
-      console.log('🎁 FIRST TIME PLAYER - Bonus: +600 XP for testing');
+      console.log('FIRST TIME PLAYER - Bonus: +600 XP for testing');
       saved.totalXP = 600;
       saved.xp = 600;
       localStorage.setItem('eof_has_played_before', 'true');
@@ -80,10 +80,10 @@ class XPSystemImpl implements XPPublicAPI {
       this.saveState(); // Save immediately
     } else {
       this.state = saved;
-      console.log('👋 Welcome back! Current XP:', this.state.totalXP);
+      console.log('Welcome back! Current XP:', this.state.totalXP);
     }
 
-    console.log('💫 XP System initialized:', this.state);
+    console.log('XP System initialized:', this.state);
   }
 
   getState(): XPState {
@@ -129,7 +129,7 @@ class XPSystemImpl implements XPPublicAPI {
     }
 
     if (leveledUp) {
-      console.log(`🎊 LEVEL UP! Now Level ${this.state.level}`);
+      console.log(`LEVEL UP! Now Level ${this.state.level}`);
     }
   }
 
@@ -154,7 +154,7 @@ class XPSystemImpl implements XPPublicAPI {
     this.saveState();
     this.notifyXPChange();
 
-    console.log(`💸 Spent ${amount} XP. Remaining: ${this.state.totalXP} XP`);
+    console.log(`Spent ${amount} XP. Remaining: ${this.state.totalXP} XP`);
     return true;
   }
 
@@ -162,7 +162,7 @@ class XPSystemImpl implements XPPublicAPI {
     this.state = getDefaultState();
     this.saveState();
     this.notifyXPChange();
-    console.log('🔄 XP System reset to defaults');
+    console.log('XP System reset to defaults');
   }
 
   onLevelUp(cb: LevelUpCallback): void {

@@ -31,7 +31,7 @@ export class MissionManager {
    * Call this when returning from UpgradeScene or when Meta-Level changes
    */
   public refreshMissions(): void {
-    console.log('🔄 Refreshing missions based on current Meta-Level');
+    console.log('Refreshing missions based on current Meta-Level');
     this.initializeMissions();
   }
 
@@ -74,7 +74,7 @@ export class MissionManager {
       }));
     }
 
-    console.log(`🎯 Missions initialized - Meta Level: ${metaLevel}, Tier: ${tier}`);
+    console.log(`Missions initialized - Meta Level: ${metaLevel}, Tier: ${tier}`);
 
     // Generate daily missions
     this.generateDailyMissions();
@@ -85,12 +85,12 @@ export class MissionManager {
     const savedDaily = localStorage.getItem('eagleOfFun_dailyMissions');
     const savedDate = localStorage.getItem('eagleOfFun_dailyDate');
 
-    console.log('🔍 generateDailyMissions - Today:', today, 'SavedDate:', savedDate);
+    console.log('generateDailyMissions - Today:', today, 'SavedDate:', savedDate);
 
     // Check if we need new daily missions
     if (savedDaily && savedDate === today) {
       this.dailyMissions = JSON.parse(savedDaily);
-      console.log('✅ Loaded daily missions from localStorage:', this.dailyMissions.length, 'missions');
+      console.log('Loaded daily missions from localStorage:', this.dailyMissions.length, 'missions');
     } else {
       // Generate 3 random daily missions
       const shuffled = [...MissionPool].sort(() => Math.random() - 0.5);
@@ -100,7 +100,7 @@ export class MissionManager {
         completed: false
       }));
 
-      console.log('🆕 Generated new daily missions:', this.dailyMissions.length, 'missions');
+      console.log('Generated new daily missions:', this.dailyMissions.length, 'missions');
       localStorage.setItem('eagleOfFun_dailyMissions', JSON.stringify(this.dailyMissions));
       localStorage.setItem('eagleOfFun_dailyDate', today);
     }
@@ -152,7 +152,7 @@ export class MissionManager {
       meta: { missionId: mission.id, missionName: mission.title }
     });
 
-    console.log(`✅ Mission completed: ${mission.title} - Rewarded ${mission.reward.xp} Meta-XP`);
+    console.log(`Mission completed: ${mission.title} - Rewarded ${mission.reward.xp} Meta-XP`);
 
     // Unlock rewards
     if (mission.reward.unlocks) {
@@ -180,7 +180,7 @@ export class MissionManager {
           meta: { tierCompleted: this.playerProgress.currentTier }
         });
 
-        console.log(`🎊 Tier ${this.playerProgress.currentTier} completed! Rewarded ${tierData.tierReward.xp} Meta-XP`);
+        console.log(`Tier ${this.playerProgress.currentTier} completed! Rewarded ${tierData.tierReward.xp} Meta-XP`);
 
         tierData.tierReward.unlocks.forEach(unlock => {
           if (!this.playerProgress.unlockedRewards.includes(unlock)) {
@@ -208,7 +208,7 @@ export class MissionManager {
   }
 
   public getDailyMissions(): Mission[] {
-    console.log('📋 getDailyMissions called - returning', this.dailyMissions.length, 'missions');
+    console.log('getDailyMissions called - returning', this.dailyMissions.length, 'missions');
     return this.dailyMissions;
   }
 

@@ -96,7 +96,8 @@ export class WeaponManagerSimple {
     if (!this.weaponUnlocked) return false;
 
     const stats = this.weaponStats[this.weaponLevel as keyof typeof this.weaponStats];
-    const now = Date.now();
+    // v3.8 FIX: Use scene.time.now instead of Date.now() for game time sync!
+    const now = this.scene.time.now;
 
     // v3.8: Apply blasterCDMul upgrade to fire rate
     const playerStats = this.upgradeSystem.getPlayerStats();
@@ -144,7 +145,8 @@ export class WeaponManagerSimple {
     }
 
     // Update fire time
-    this.lastFireTime = Date.now();
+    // v3.8 FIX: Use scene.time.now instead of Date.now() for game time sync!
+    this.lastFireTime = this.scene.time.now;
 
     // Play blaster shot sound
     this.scene.sound.play('blastershot', { volume: 0.5 });
@@ -157,7 +159,8 @@ export class WeaponManagerSimple {
    * Weak but allows continued combat
    */
   private fireEmergencyWeapon(x: number, y: number, angle: number): boolean {
-    const now = Date.now();
+    // v3.8 FIX: Use scene.time.now instead of Date.now() for game time sync!
+    const now = this.scene.time.now;
     const emergencyCooldown = 600; // 600ms cooldown (slow)
 
     // Check cooldown
@@ -177,6 +180,7 @@ export class WeaponManagerSimple {
     this.createProjectile(x, y, angle, peckStats);
 
     // Update fire time
+    // v3.8 FIX: Already using scene.time.now from variable 'now' above
     this.lastFireTime = now;
 
     // Play weaker sound (or reuse blaster)
@@ -291,7 +295,8 @@ export class WeaponManagerSimple {
     this.projectiles.push(projectile);
 
     // Initial trail
-    (projectile as any).lastTrailTime = Date.now();
+    // v3.8 FIX: Use scene.time.now instead of Date.now() for game time sync!
+    (projectile as any).lastTrailTime = this.scene.time.now;
     (projectile as any).color = stats.color;
   }
 
@@ -330,7 +335,8 @@ export class WeaponManagerSimple {
       // Create continuous trail effect
       const color = (projectile as any).color || 0x0088FF;
       const lastTrailTime = (projectile as any).lastTrailTime || 0;
-      if (Date.now() - lastTrailTime > 50) {
+      // v3.8 FIX: Use scene.time.now instead of Date.now() for game time sync!
+      if (this.scene.time.now - lastTrailTime > 50) {
         const trail = this.scene.add.graphics();
         trail.fillStyle(color, 0.5);
         trail.fillCircle(projectile.x, projectile.y, 3);
@@ -345,7 +351,8 @@ export class WeaponManagerSimple {
           onComplete: () => trail.destroy()
         });
 
-        (projectile as any).lastTrailTime = Date.now();
+        // v3.8 FIX: Use scene.time.now instead of Date.now() for game time sync!
+        (projectile as any).lastTrailTime = this.scene.time.now;
       }
 
       // Check bounds
@@ -371,18 +378,17 @@ export class WeaponManagerSimple {
       for (const enemy of enemies) {
         if (!enemy.active) continue;
 
-        const distance = Phaser.Math.Distance.Between(
-          projectile.x,
-          projectile.y,
-          enemy.x,
-          enemy.y
-        );
+        // v3.8 PERFORMANCE: Use squared distance (no sqrt!)
+        const dx = projectile.x - enemy.x;
+        const dy = projectile.y - enemy.y;
+        const distanceSq = dx * dx + dy * dy;
 
         const enemyConfig = enemy.getData('config');
         const hitRadius = enemyConfig ?
           Math.max(enemyConfig.size.width, enemyConfig.size.height) / 2 : 50;
+        const hitRadiusSq = (hitRadius + 10) * (hitRadius + 10);
 
-        if (distance < hitRadius + 10) {
+        if (distanceSq < hitRadiusSq) {
           hits.push({ enemy, projectile });
 
           // Handle splash damage (Mortar)
@@ -390,18 +396,19 @@ export class WeaponManagerSimple {
             // Create explosion visual
             this.createExplosion(projectile.x, projectile.y, projectile.splashRadius);
 
+            // v3.8 PERFORMANCE: Pre-calculate squared splash radius
+            const splashRadiusSq = projectile.splashRadius * projectile.splashRadius;
+
             // Find all enemies in splash radius
             for (const splashEnemy of enemies) {
               if (!splashEnemy.active || splashEnemy === enemy) continue;
 
-              const splashDist = Phaser.Math.Distance.Between(
-                projectile.x,
-                projectile.y,
-                splashEnemy.x,
-                splashEnemy.y
-              );
+              // v3.8 PERFORMANCE: Use squared distance (no sqrt!)
+              const sdx = projectile.x - splashEnemy.x;
+              const sdy = projectile.y - splashEnemy.y;
+              const splashDistSq = sdx * sdx + sdy * sdy;
 
-              if (splashDist < projectile.splashRadius) {
+              if (splashDistSq < splashRadiusSq) {
                 // Add splash hit with reduced damage
                 const splashProjectile = { ...projectile, damage: projectile.splashDamage! };
                 hits.push({ enemy: splashEnemy, projectile: splashProjectile });
@@ -477,15 +484,14 @@ export class WeaponManagerSimple {
       for (const fakeCoin of fakeCoins) {
         if (!fakeCoin.active || fakeCoin.getData('collected')) continue;
 
-        const distance = Phaser.Math.Distance.Between(
-          projectile.x,
-          projectile.y,
-          fakeCoin.x,
-          fakeCoin.y
-        );
+        // v3.8 PERFORMANCE: Use squared distance (no sqrt!)
+        const dx = projectile.x - fakeCoin.x;
+        const dy = projectile.y - fakeCoin.y;
+        const distanceSq = dx * dx + dy * dy;
+        const hitRadiusSq = 60 * 60; // 3600
 
         // Fake coins have similar size to real coins (~50px radius)
-        if (distance < 60) {
+        if (distanceSq < hitRadiusSq) {
           hits.push({ fakeCoin, projectile });
           projectile.active = false;
           break;
@@ -503,5 +509,12 @@ export class WeaponManagerSimple {
       }
     });
     this.projectiles = [];
+  }
+
+  /**
+   * v3.8: Alias for cleanup() to match GameScene's shutdown() call
+   */
+  public destroy(): void {
+    this.cleanup();
   }
 }

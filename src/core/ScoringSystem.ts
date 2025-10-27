@@ -59,7 +59,7 @@ export class ScoringSystem {
 
   constructor(scene: Phaser.Scene) {
     this.scene = scene;
-    this.gameStartTime = Date.now();
+    this.gameStartTime = 0; // v3.8: Initialize in init() with scene.time.now
   }
 
   /**
@@ -71,13 +71,14 @@ export class ScoringSystem {
     this.currentPhase = startPhase;
     this.comboKills = 0;
     this.comboTimer = 0;
-    this.gameStartTime = Date.now();
+    // v3.8: Use scene.time.now instead of Date.now() - synced with game time!
+    this.gameStartTime = this.scene.time.now;
     this.valorMultiplier = 1.0;
     this.recentKills = [];
     this.lastDamageTime = 0;
     this.shieldBreakerCount = 0;
 
-    console.log('📊 ScoringSystem initialized');
+    console.log('ScoringSystem initialized');
   }
 
   /**
@@ -94,7 +95,8 @@ export class ScoringSystem {
     }
 
     // Clean up old kills for style bonus tracking
-    const now = Date.now();
+    // v3.8: Use scene.time.now for consistency
+    const now = this.scene.time.now;
     this.recentKills = this.recentKills.filter(k => now - k.time < 5000);
 
     // Update floating texts
@@ -118,7 +120,8 @@ export class ScoringSystem {
    * Add score from enemy kill
    */
   public addEnemyScore(enemyId: string, x: number, y: number, fromWeakpoint: boolean = false): void {
-    const minutesElapsed = (Date.now() - this.gameStartTime) / 60000;
+    // v3.8: Use scene.time.now for accurate game time
+    const minutesElapsed = (this.scene.time.now - this.gameStartTime) / 60000;
 
     // Calculate base score with all multipliers
     const basePoints = calculateEnemyScore(
@@ -135,8 +138,8 @@ export class ScoringSystem {
     this.addScore(finalPoints);
     this.incrementCombo();
 
-    // Track kill for style bonuses
-    this.recentKills.push({ time: Date.now(), x, y });
+    // Track kill for style bonuses (v3.8: Use scene.time.now)
+    this.recentKills.push({ time: this.scene.time.now, x, y });
 
     // Check for style bonuses
     this.checkStyleBonuses(x, y, fromWeakpoint);
@@ -163,7 +166,7 @@ export class ScoringSystem {
       this.onStyleBonusCallback(bonus, points);
     }
 
-    console.log(`✨ Style Bonus: ${bonus.name} (+${points})`);
+    console.log(`Style Bonus: ${bonus.name} (+${points})`);
   }
 
   /**
@@ -203,7 +206,7 @@ export class ScoringSystem {
    */
   public resetCombo(): void {
     if (this.comboKills > 0) {
-      console.log(`💥 Combo broken at ${this.comboKills} kills`);
+      console.log(`Combo broken at ${this.comboKills} kills`);
     }
 
     this.comboKills = 0;
@@ -236,7 +239,7 @@ export class ScoringSystem {
         break;
     }
 
-    console.log(`🦅 Valor multiplier: ${this.valorMultiplier}x`);
+    console.log(`Valor multiplier: ${this.valorMultiplier}x`);
   }
 
   // ========== STYLE BONUSES ==========
@@ -245,7 +248,8 @@ export class ScoringSystem {
    * Check for style bonuses after kill
    */
   private checkStyleBonuses(x: number, y: number, fromWeakpoint: boolean): void {
-    const now = Date.now();
+    // v3.8: Use scene.time.now for consistency
+    const now = this.scene.time.now;
 
     // Aerial Ace: 5 kills in 2 seconds
     const recentKills = this.recentKills.filter(k => now - k.time < 2000);
@@ -254,7 +258,7 @@ export class ScoringSystem {
       this.recentKills = []; // Clear to prevent spam
     }
 
-    // Flawless 30s: No damage for 30 seconds
+    // Flawless 30s: No damage for 30 seconds (v3.8: scene.time.now)
     if (now - this.lastDamageTime > 30000 && this.lastDamageTime > 0) {
       this.addStyleBonus('flawless30', x, y);
       this.lastDamageTime = now; // Reset to prevent spam
@@ -274,7 +278,8 @@ export class ScoringSystem {
    * Notify damage taken (resets flawless bonus, combo)
    */
   public onDamageTaken(): void {
-    this.lastDamageTime = Date.now();
+    // v3.8: Use scene.time.now for consistency
+    this.lastDamageTime = this.scene.time.now;
     this.resetCombo();
   }
 
@@ -290,16 +295,16 @@ export class ScoringSystem {
     type: 'coin' | 'enemy' | 'bonus' | 'combo',
     multiplier?: number
   ): void {
-    // Determine font size based on points
-    let fontSize = SCORE_DISPLAY.smallFont;
+    // Determine font size based on points (v3.8: Type-safe)
+    let fontSize: string = SCORE_DISPLAY.smallFont;
     if (points >= SCORE_DISPLAY.largeScore) {
       fontSize = SCORE_DISPLAY.largeFont;
     } else if (points >= SCORE_DISPLAY.mediumScore) {
       fontSize = SCORE_DISPLAY.mediumFont;
     }
 
-    // Determine color
-    let color = SCORE_DISPLAY.normalColor;
+    // Determine color (v3.8: Type-safe)
+    let color: number = SCORE_DISPLAY.normalColor;
     if (type === 'bonus') {
       color = SCORE_DISPLAY.bonusColor;
     } else if (this.valorMultiplier > 1) {
@@ -349,7 +354,7 @@ export class ScoringSystem {
   /**
    * Update floating texts
    */
-  private updateFloatingTexts(dt: number): void {
+  private updateFloatingTexts(_dt: number): void {
     // Limit number of floating texts to prevent lag
     if (this.floatingTexts.length > 20) {
       const oldest = this.floatingTexts.shift();
@@ -404,7 +409,11 @@ export class ScoringSystem {
   // ========== CLEANUP ==========
 
   public destroy(): void {
-    this.floatingTexts.forEach(text => text.destroy());
+    // v3.8: CRITICAL - Kill tweens BEFORE destroying texts to prevent memory leaks!
+    this.floatingTexts.forEach(text => {
+      this.scene.tweens.killTweensOf(text);
+      text.destroy();
+    });
     this.floatingTexts = [];
   }
 }

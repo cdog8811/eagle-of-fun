@@ -26,7 +26,7 @@ export class ProjectileManager {
   }
 
   public init(): void {
-    console.log('🔫 ProjectileManager initialized');
+    console.log('ProjectileManager initialized');
   }
 
   /**
@@ -121,7 +121,7 @@ export class ProjectileManager {
     return sprite;
   }
 
-  public update(dt: number): void {
+  public update(_dt: number): void {
     const bounds = this.scene.cameras.main.getBounds();
 
     for (let i = this.projectiles.length - 1; i >= 0; i--) {

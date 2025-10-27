@@ -84,13 +84,14 @@ export class WeaponManager {
     }
 
     // Check cooldown
+    // v3.8 FIX: Use scene.time.now instead of Date.now() for game time sync!
     const lastFired = this.weaponCooldowns.get(weapon.id) || 0;
     const tier = this.weaponTiers.get(weapon.id) || 1;
     const upgrade = WEAPON_UPGRADES[weapon.id]?.[tier - 1];
     const cooldownReduction = upgrade?.cooldownReduction || 0;
     const actualCooldown = weapon.cooldown * (1 - cooldownReduction / 100);
 
-    return Date.now() - lastFired >= actualCooldown;
+    return this.scene.time.now - lastFired >= actualCooldown;
   }
 
   public fire(x: number, y: number, angle: number = 0): void {
@@ -108,7 +109,8 @@ export class WeaponManager {
     this.weaponCharge = Math.max(0, this.weaponCharge - 20);
 
     // Update cooldown
-    this.weaponCooldowns.set(weapon.id, Date.now());
+    // v3.8 FIX: Use scene.time.now instead of Date.now() for game time sync!
+    this.weaponCooldowns.set(weapon.id, this.scene.time.now);
 
     // Fire weapon based on type
     try {

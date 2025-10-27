@@ -269,4 +269,9 @@ export class LootScene extends Phaser.Scene {
       duration: 500
     });
   }
+
+  shutdown(): void {
+    this.tweens.killAll();
+    this.sound.stopAll();
+  }
 }
