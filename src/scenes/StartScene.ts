@@ -16,8 +16,11 @@ export class StartScene extends Phaser.Scene {
     // Clean white background
     this.cameras.main.setBackgroundColor('#FFFFFF');
 
-    // Try to autoplay music (will work if user has interacted with page before)
-    this.tryAutoplayMusic();
+    // v3.9.2: Start music immediately (browser will allow after first user interaction)
+    // Music will auto-start when scene loads
+    this.time.delayedCall(100, () => {
+      this.tryAutoplayMusic();
+    });
 
     // Fallback: Resume audio context on ANY interaction (required by browsers)
     this.input.on('pointerdown', () => {
@@ -68,6 +71,9 @@ export class StartScene extends Phaser.Scene {
     const buttonSpacing = 90;
 
     this.createButton(width / 2, buttonY, '▶️ Start Flight', () => {
+      // v3.9.2: Ensure music starts on first interaction
+      this.startMusicIfNeeded();
+
       // Stop menu music before starting intro
       this.sound.stopByKey('menu-music');
       // Play "ready for takeoff" sound
