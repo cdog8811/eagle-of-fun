@@ -13,7 +13,7 @@ import UpgradeScene from './scenes/UpgradeScene';
 import { GameConfig } from './config/GameConfig';
 
 const config: Phaser.Types.Core.GameConfig = {
-  type: Phaser.AUTO,
+  type: Phaser.AUTO,  // Let Phaser choose best renderer
   width: GameConfig.width,
   height: GameConfig.height,
   parent: 'game-container',
@@ -23,12 +23,14 @@ const config: Phaser.Types.Core.GameConfig = {
     min: 30,
     forceSetTimeOut: true,  // Chrome fix: uses setTimeout instead of RAF
     deltaHistory: 10
+    // smoothStep defaults to true - keeps frame timing smooth
   },
   render: {
     pixelArt: false,
     roundPixels: false,
     antialias: true,
     powerPreference: 'high-performance'  // Force Chrome to use dedicated GPU
+    // Use Phaser defaults for batchSize (2048) and maxTextures (8) for stability
   },
   scale: {
     mode: Phaser.Scale.FIT,

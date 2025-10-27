@@ -11,6 +11,8 @@ import { BandanaPowerUp } from '../managers/BandanaPowerUp';
 import { getXPSystem, getXPForCoin } from '../systems/xpSystem';
 import { getUpgradeSystem } from '../systems/upgradeSystem';
 import { calculateHPMultiplier, calculateSpawnRateMultiplier, calculateEliteChance } from '../config/Difficulty';
+import { TextPool } from '../utils/TextPool';
+import { GraphicsPool } from '../utils/GraphicsPool';
 
 export class GameScene extends Phaser.Scene {
   // XP & Upgrade Systems
@@ -170,6 +172,10 @@ export class GameScene extends Phaser.Scene {
   private weaponEnergyBarBg?: Phaser.GameObjects.Graphics;
   private weaponPickup?: Phaser.GameObjects.Container;
   private tutorialOverlay?: Phaser.GameObjects.Container;
+
+  // v3.8: Object Pools for performance (reuse instead of create/destroy)
+  private textPool!: TextPool;
+  private graphicsPool!: GraphicsPool;
   private weaponRespawnTimer?: Phaser.Time.TimerEvent;
   private bandanaPowerUp!: BandanaPowerUp;
   private bandanaMagnetActive: boolean = false;
@@ -331,6 +337,11 @@ export class GameScene extends Phaser.Scene {
     this.weaponManager = new WeaponManagerSimple(this);
     this.bossManager = new BossManagerV38(this);
     this.bandanaPowerUp = new BandanaPowerUp(this);
+
+    // v3.8: Initialize Object Pools for performance
+    this.textPool = new TextPool(this);
+    this.graphicsPool = new GraphicsPool(this);
+    console.log('✨ Object pools initialized for visual effects');
 
     // Auto-upgrade weapon based on player level
     this.checkWeaponAutoUpgrade();
@@ -661,7 +672,8 @@ export class GameScene extends Phaser.Scene {
           const playerStats = this.upgradeSystem.getPlayerStats();
           this.eagle.flap(playerStats.flapBoost);
           this.spacePressed = true;
-          this.spaceStartTime = Date.now();
+          // v3.8 PERFORMANCE: Use game time instead of Date.now()
+          this.spaceStartTime = this.time.now;
         }
       }
     });
@@ -2532,6 +2544,60 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
+  /**
+   * v3.8: OPTIMIZED - Show floating text using object pool
+   * Text object is automatically returned to pool after animation
+   */
+  private showFloatingText(
+    x: number,
+    y: number,
+    text: string,
+    style: Phaser.Types.GameObjects.Text.TextStyle,
+    animConfig?: {
+      yOffset?: number;
+      duration?: number;
+      fadeOut?: boolean;
+      scale?: boolean;
+    }
+  ): void {
+    // Get text from pool
+    const textObj = this.textPool.acquire(x, y, text, style);
+    textObj.setDepth(2000);
+
+    // Default animation config
+    const config = {
+      yOffset: -50,
+      duration: 800,
+      fadeOut: true,
+      scale: false,
+      ...animConfig
+    };
+
+    // Build tween targets
+    const tweenTargets: any = {
+      y: y + config.yOffset
+    };
+
+    if (config.fadeOut) {
+      tweenTargets.alpha = 0;
+    }
+
+    if (config.scale) {
+      tweenTargets.scale = 1.2;
+    }
+
+    // Animate with auto-release to pool
+    this.tweens.add({
+      targets: textObj,
+      ...tweenTargets,
+      duration: config.duration,
+      ease: 'Power2',
+      onComplete: () => {
+        this.textPool.release(textObj); // Return to pool instead of destroy!
+      }
+    });
+  }
+
   private showComboText(combo: number, bonusPoints: number): void {
     // Show combo centered on screen
     const width = this.cameras.main.width;
@@ -2812,8 +2878,23 @@ export class GameScene extends Phaser.Scene {
         meta: { enemyType }
       });
 
-      // v3.8 PERFORMANCE: Removed floating score text and tween for 60 FPS
-      // Score already updated in HUD, no need for floating text
+      // v3.8 OPTIMIZED: Show floating score using object pool!
+      this.showFloatingText(
+        hitX,
+        hitY,
+        `+${pointsAwarded}`,
+        {
+          fontSize: '24px',
+          color: '#FFD700',
+          fontFamily: 'Arial',
+          fontStyle: 'bold'
+        },
+        {
+          yOffset: -40,
+          duration: 800,
+          fadeOut: true
+        }
+      );
 
       // Play explosion sound
       if (this.sound.get('explosion')) {
@@ -2915,7 +2996,8 @@ export class GameScene extends Phaser.Scene {
 
     // v3.2: GLIDE CONTROLS - Check if space held long enough
     if (this.spacePressed && !this.isGliding && this.eagle) {
-      const holdTime = Date.now() - this.spaceStartTime;
+      // v3.8 PERFORMANCE: Use game time instead of Date.now()
+      const holdTime = this.time.now - this.spaceStartTime;
       if (holdTime >= this.glideThreshold) {
         console.log('GLIDE START - Moving forward to position:', this.glideEagleX);
         this.isGliding = true;
@@ -3057,8 +3139,8 @@ export class GameScene extends Phaser.Scene {
 
         // Safety check before adding points
         if (typeof points === 'number' && !isNaN(points)) {
-          // Combo system: Check if collected within 1 second
-          const currentTime = Date.now();
+          // v3.8 PERFORMANCE: Combo system using game time instead of Date.now()
+          const currentTime = this.time.now;
           const timeSinceLastCoin = currentTime - this.lastCoinTime;
 
           let bonusPoints = 0;
@@ -3220,9 +3302,30 @@ export class GameScene extends Phaser.Scene {
             break;
         }
 
-        // v3.8 PERFORMANCE: Removed floating text and tween animations for 60 FPS
-        // These created 2 tweens + 1 text object per coin = massive performance hit
-        // Visual feedback simplified: just remove coin immediately
+        // v3.8 OPTIMIZED: Show floating coin feedback using object pool!
+        // Pool reuses text objects instead of creating/destroying = 60 FPS maintained
+        let finalPoints = points;
+        if (this.burgerMultiplierActive) finalPoints = points * 2;
+        if (this.eatTheDipActive) finalPoints = points * 3;
+        if (this.bullMarketActive) finalPoints = points * 2;
+
+        this.showFloatingText(
+          coin.x,
+          coin.y,
+          `${coinName} +${finalPoints}`,
+          {
+            fontSize: '20px',
+            color: coinColor,
+            fontFamily: 'Arial',
+            fontStyle: 'bold'
+          },
+          {
+            yOffset: -40,
+            duration: 600,
+            fadeOut: true
+          }
+        );
+
         this.coins.splice(i, 1);
         coin.destroy();
       }

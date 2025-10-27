@@ -86,50 +86,99 @@ export class BossManagerV38 {
     const width = this.scene.cameras.main.width;
     const height = this.scene.cameras.main.height;
 
-    // Dark overlay
+    // v3.8: Minimal red flash (very transparent)
     const overlay = this.scene.add.rectangle(
       width / 2,
       height / 2,
       width,
       height,
-      0x000000,
-      0.8
+      0xFF0000,
+      0.05  // Almost transparent - just a subtle flash!
     );
     overlay.setDepth(9990);
 
-    // Warning text
-    const warningText = this.scene.add.text(
+    // v3.8: Boss icon (large emoji at top)
+    const bossIcon = this.scene.add.text(
       width / 2,
-      height / 2,
-      this.currentPhase.announcement,
+      height / 2 - 80,
+      '🐻',
       {
-        fontSize: '56px',
-        color: `#${this.currentPhase.color.toString(16).padStart(6, '0')}`,
-        fontFamily: 'Arial',
+        fontSize: '120px'
+      }
+    ).setOrigin(0.5);
+    bossIcon.setDepth(9992);
+
+    // Warning text - "BOSS INCOMING"
+    const warningLabel = this.scene.add.text(
+      width / 2,
+      height / 2 + 40,
+      '⚠️ BOSS INCOMING ⚠️',
+      {
+        fontSize: '48px',
+        color: '#FFFF00',
+        fontFamily: 'Impact, Arial Black, sans-serif',
         fontStyle: 'bold',
         align: 'center',
         stroke: '#000000',
-        strokeThickness: 8
+        strokeThickness: 6
       }
     ).setOrigin(0.5);
-    warningText.setDepth(9991);
+    warningLabel.setDepth(9991);
 
-    // Flash effect
+    // Boss name
+    const bossNameText = this.scene.add.text(
+      width / 2,
+      height / 2 + 100,
+      `${this.bossDef.name} - ${this.bossDef.title}`,
+      {
+        fontSize: '36px',
+        color: '#FF0000',
+        fontFamily: 'Impact, Arial Black, sans-serif',
+        fontStyle: 'bold',
+        align: 'center',
+        stroke: '#000000',
+        strokeThickness: 5
+      }
+    ).setOrigin(0.5);
+    bossNameText.setDepth(9991);
+
+    // Pulsing effect for warning
     this.scene.tweens.add({
-      targets: [warningText],
-      alpha: 0.5,
-      duration: 300,
+      targets: [warningLabel],
+      scale: 1.1,
+      duration: 400,
       yoyo: true,
-      repeat: 5
+      repeat: -1
     });
 
-    // Screen shake
-    this.scene.cameras.main.shake(2000, 0.005);
+    // Bounce effect for boss icon
+    this.scene.tweens.add({
+      targets: [bossIcon],
+      y: height / 2 - 90,
+      duration: 500,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut'
+    });
 
-    // Remove after 2 seconds
-    this.scene.time.delayedCall(2000, () => {
+    // Fade in boss name
+    bossNameText.setAlpha(0);
+    this.scene.tweens.add({
+      targets: [bossNameText],
+      alpha: 1,
+      duration: 500,
+      delay: 300
+    });
+
+    // Light screen shake (less intense)
+    this.scene.cameras.main.shake(2000, 0.003);
+
+    // Remove after 2.5 seconds
+    this.scene.time.delayedCall(2500, () => {
       overlay.destroy();
-      warningText.destroy();
+      warningLabel.destroy();
+      bossNameText.destroy();
+      bossIcon.destroy();
     });
 
     // Play warning sound
@@ -192,51 +241,53 @@ export class BossManagerV38 {
 
     const width = this.scene.cameras.main.width;
 
-    // Background bar
+    // v3.8: Styled health bar with gradient effect
     this.healthBarBg = this.scene.add.graphics();
-    this.healthBarBg.fillStyle(0x333333, 1);
-    this.healthBarBg.fillRect(width / 2 - 400, 50, 800, 40);
-    this.healthBarBg.lineStyle(3, 0x000000, 1);
-    this.healthBarBg.strokeRect(width / 2 - 400, 50, 800, 40);
+    this.healthBarBg.fillStyle(0x220000, 1);  // Dark red background
+    this.healthBarBg.fillRect(width / 2 - 420, 40, 840, 50);
+    this.healthBarBg.lineStyle(4, 0xFF0000, 1);  // Red border
+    this.healthBarBg.strokeRect(width / 2 - 420, 40, 840, 50);
     this.healthBarBg.setDepth(9000);
 
-    // Health bar
+    // Health bar (fills from left to right)
     this.healthBar = this.scene.add.graphics();
     this.healthBar.setDepth(9001);
 
-    // Boss name
+    // v3.8: Boss name with better font and positioning
     this.bossNameText = this.scene.add.text(
       width / 2,
-      25,
+      15,
       `🐻 ${this.bossDef.name} - ${this.bossDef.title}`,
       {
-        fontSize: '36px',
-        color: '#FF0000',
-        fontFamily: 'Arial',
+        fontSize: '32px',
+        color: '#FFFF00',  // Yellow for visibility
+        fontFamily: 'Impact, Arial Black, sans-serif',
         fontStyle: 'bold',
         stroke: '#000000',
-        strokeThickness: 4
+        strokeThickness: 5
       }
     ).setOrigin(0.5);
     this.bossNameText.setDepth(9002);
 
-    // Phase text
-    this.phaseText = this.scene.add.text(width / 2, 100, '', {
-      fontSize: '28px',
-      color: '#FFAA00',
-      fontFamily: 'Arial',
-      fontStyle: 'bold'
-    }).setOrigin(0.5);
-    this.phaseText.setDepth(9002);
-
-    // HP text
-    this.hpText = this.scene.add.text(width / 2, 65, '', {
+    // v3.8: Phase text below health bar
+    this.phaseText = this.scene.add.text(width / 2, 95, '', {
       fontSize: '24px',
-      color: '#FFFFFF',
-      fontFamily: 'Arial',
+      color: '#FFAA00',
+      fontFamily: 'Impact, Arial Black, sans-serif',
       fontStyle: 'bold',
       stroke: '#000000',
       strokeThickness: 3
+    }).setOrigin(0.5);
+    this.phaseText.setDepth(9002);
+
+    // v3.8: HP text inside the health bar
+    this.hpText = this.scene.add.text(width / 2, 65, '', {
+      fontSize: '22px',
+      color: '#FFFFFF',
+      fontFamily: 'Impact, Arial Black, sans-serif',
+      fontStyle: 'bold',
+      stroke: '#000000',
+      strokeThickness: 4
     }).setOrigin(0.5);
     this.hpText.setDepth(9002);
 
@@ -250,22 +301,23 @@ export class BossManagerV38 {
     if (!this.healthBar || !this.bossDef) return;
 
     const width = this.scene.cameras.main.width;
-    const barWidth = 800;
-    const barHeight = 40;
+    const barWidth = 840;  // Match new bar size
+    const barHeight = 50;  // Match new bar size
     const hpPercent = this.bossHP / this.maxBossHP;
 
-    // Color based on HP
+    // v3.8: Dynamic color based on HP with glow effect
     let color = 0x00FF00; // Green
     if (hpPercent < 0.66) color = 0xFFAA00; // Orange
     if (hpPercent < 0.33) color = 0xFF0000; // Red
 
     this.healthBar.clear();
     this.healthBar.fillStyle(color, 1);
-    this.healthBar.fillRect(width / 2 - 400, 50, barWidth * hpPercent, barHeight);
+    this.healthBar.fillRect(width / 2 - 420, 40, barWidth * hpPercent, barHeight);
 
-    // Update HP text
+    // Update HP text with percentage
     if (this.hpText) {
-      this.hpText.setText(`${Math.ceil(this.bossHP)} / ${this.maxBossHP}`);
+      const hpPercentText = Math.floor(hpPercent * 100);
+      this.hpText.setText(`${Math.ceil(this.bossHP)} / ${this.maxBossHP} (${hpPercentText}%)`);
     }
   }
 
@@ -513,42 +565,48 @@ export class BossManagerV38 {
   }
 
   /**
-   * Phase 1 Attack: Shield rotation with lawsuit papers
+   * Phase 1 Attack: Meme Barrage (shoots crypto meme emojis)
    */
   private fireShieldRotation(): void {
     if (!this.boss) return;
 
-    // Fire 3 lawsuit papers in spread pattern
-    for (let i = 0; i < 3; i++) {
-      const angle = -30 + (i * 30); // -30°, 0°, +30°
-      const angleRad = Phaser.Math.DegToRad(angle);
+    // v3.8: Fire 5 crypto meme projectiles in spread pattern
+    const memeEmojis = ['💸', '🌙', '📉', '💀', '🔥']; // FTX, Luna, Crash, Rug, Burn
 
-      const paper = this.scene.add.container(this.boss.x - 50, this.boss.y);
+    for (let i = 0; i < 5; i++) {
+      this.scene.time.delayedCall(i * 120, () => {
+        if (!this.boss) return;
 
-      const graphic = this.scene.add.graphics();
-      graphic.fillStyle(0xFFFFFF, 1);
-      graphic.fillRect(-15, -20, 30, 40);
-      graphic.lineStyle(2, 0x000000, 1);
-      graphic.strokeRect(-15, -20, 30, 40);
-      graphic.fillStyle(0x000000, 1);
-      graphic.fillCircle(0, -10, 3);
-      graphic.fillCircle(0, 0, 3);
-      graphic.fillCircle(0, 10, 3);
+        const angle = -40 + (i * 20); // -40°, -20°, 0°, +20°, +40° spread
+        const angleRad = Phaser.Math.DegToRad(angle);
 
-      paper.add(graphic);
-      paper.setDepth(999);
-      paper.setData('type', 'bossProjectile');
-      paper.setData('damage', 1);
+        const meme = this.scene.add.container(this.boss.x - 50, this.boss.y);
 
-      (paper as any).velocityX = Math.cos(angleRad) * -350;
-      (paper as any).velocityY = Math.sin(angleRad) * 350;
+        // Create meme emoji projectile
+        const memeText = this.scene.add.text(0, 0, memeEmojis[i], {
+          fontSize: '48px'
+        }).setOrigin(0.5);
 
-      this.projectiles.push(paper);
+        meme.add(memeText);
+        meme.setDepth(999);
+        meme.setData('type', 'bossProjectile');
+        meme.setData('damage', 1);
+
+        (meme as any).velocityX = Math.cos(angleRad) * -320;
+        (meme as any).velocityY = Math.sin(angleRad) * 320;
+
+        this.projectiles.push(meme);
+      });
+    }
+
+    // Play attack sound
+    if (this.scene.sound.get('enemyhit')) {
+      this.scene.sound.play('enemyhit', { volume: 0.5, rate: 0.8 });
     }
   }
 
   /**
-   * Phase 2 Attack: Sniper barrage (aimed shots)
+   * Phase 2 Attack: Blaster Barrage (rapid fire aimed shots)
    */
   private fireSniperBarrage(): void {
     if (!this.boss) return;
@@ -556,98 +614,92 @@ export class BossManagerV38 {
     const gameScene = this.scene as any;
     if (!gameScene.eagle) return;
 
-    // Fire 3 aimed laser shots with slight delay
-    for (let i = 0; i < 3; i++) {
-      this.scene.time.delayedCall(i * 300, () => {
+    // v3.8: Fire 6 rapid blaster shots aimed at player
+    for (let i = 0; i < 6; i++) {
+      this.scene.time.delayedCall(i * 200, () => {
         if (!this.boss || !gameScene.eagle) return;
 
-        const laser = this.scene.add.container(this.boss.x - 50, this.boss.y);
+        const blaster = this.scene.add.container(this.boss.x - 50, this.boss.y);
 
+        // Create glowing blaster projectile
         const graphic = this.scene.add.graphics();
-        graphic.fillStyle(0xFF0000, 1);
-        graphic.fillRect(-20, -4, 40, 8);
-        graphic.lineStyle(2, 0xFF6666, 1);
-        graphic.strokeRect(-20, -4, 40, 8);
+        graphic.fillStyle(0xFF6600, 1);  // Orange glow
+        graphic.fillCircle(0, 0, 12);
+        graphic.fillStyle(0xFFFF00, 1);  // Yellow center
+        graphic.fillCircle(0, 0, 6);
 
-        laser.add(graphic);
-        laser.setDepth(999);
-        laser.setData('type', 'bossProjectile');
-        laser.setData('damage', 1);
+        blaster.add(graphic);
+        blaster.setDepth(999);
+        blaster.setData('type', 'bossProjectile');
+        blaster.setData('damage', 1);
 
-        const angle = Phaser.Math.Angle.Between(this.boss.x, this.boss.y, gameScene.eagle.x, gameScene.eagle.y);
-        laser.setRotation(angle);
+        // Aim at player with slight random spread
+        const spreadAngle = Phaser.Math.FloatBetween(-0.15, 0.15);
+        const angle = Phaser.Math.Angle.Between(this.boss.x, this.boss.y, gameScene.eagle.x, gameScene.eagle.y) + spreadAngle;
 
-        (laser as any).velocityX = Math.cos(angle) * 450;
-        (laser as any).velocityY = Math.sin(angle) * 450;
+        (blaster as any).velocityX = Math.cos(angle) * 500;
+        (blaster as any).velocityY = Math.sin(angle) * 500;
 
-        this.projectiles.push(laser);
+        this.projectiles.push(blaster);
 
-        // Play laser sound
-        this.scene.sound.play('blastershot', { volume: 0.4, rate: 0.7 });
+        // Play blaster sound
+        if (this.scene.sound.get('blastershot')) {
+          this.scene.sound.play('blastershot', { volume: 0.3, rate: 1.2 });
+        }
       });
     }
   }
 
   /**
-   * Phase 3 Attack: Laser sweep across screen
+   * Phase 3 Attack: Chaos Spray (360° bullet spray)
    */
   private fireLaserSweep(): void {
     if (!this.boss) return;
 
-    const height = this.scene.cameras.main.height;
+    // v3.8: RAGE MODE - Fire 12 projectiles in full circle spray
+    const projectileCount = 12;
+    const angleStep = 360 / projectileCount;
 
-    // Create sweeping laser wall
-    const laser = this.scene.add.graphics();
-    laser.fillStyle(0xFF0000, 0.8);
-    laser.fillRect(0, 0, 40, height);
-    laser.setDepth(999);
-    laser.setPosition(this.boss.x, 0);
-    laser.setData('type', 'bossLaser');
+    for (let i = 0; i < projectileCount; i++) {
+      this.scene.time.delayedCall(i * 50, () => {
+        if (!this.boss) return;
 
-    // Sweep across screen
-    this.scene.tweens.add({
-      targets: laser,
-      x: -100,
-      duration: 2500,
-      ease: 'Linear',
-      onComplete: () => laser.destroy()
-    });
+        const angle = i * angleStep;
+        const angleRad = Phaser.Math.DegToRad(angle);
 
-    // Screen shake
-    this.scene.cameras.main.shake(2000, 0.005);
+        const bullet = this.scene.add.container(this.boss.x, this.boss.y);
+
+        // Create red diamond projectile (rage mode)
+        const graphic = this.scene.add.graphics();
+        graphic.fillStyle(0xFF0000, 1);
+        graphic.beginPath();
+        graphic.moveTo(0, -15);
+        graphic.lineTo(10, 0);
+        graphic.lineTo(0, 15);
+        graphic.lineTo(-10, 0);
+        graphic.closePath();
+        graphic.fillPath();
+        graphic.lineStyle(2, 0xFFFF00, 1);
+        graphic.strokePath();
+
+        bullet.add(graphic);
+        bullet.setDepth(999);
+        bullet.setData('type', 'bossProjectile');
+        bullet.setData('damage', 1);
+
+        (bullet as any).velocityX = Math.cos(angleRad) * 400;
+        (bullet as any).velocityY = Math.sin(angleRad) * 400;
+
+        this.projectiles.push(bullet);
+      });
+    }
+
+    // Screen shake for rage mode
+    this.scene.cameras.main.shake(800, 0.006);
 
     // Play roar sound
     if (this.scene.sound.get('ground-impact-352053')) {
       this.scene.sound.play('ground-impact-352053', { volume: 0.6 });
-    }
-
-    // Check collision with laser in GameScene
-    const gameScene = this.scene as any;
-    if (gameScene.eagle) {
-      const checkInterval = this.scene.time.addEvent({
-        delay: 100,
-        callback: () => {
-          if (laser.active && gameScene.eagle) {
-            const laserBounds = new Phaser.Geom.Rectangle(laser.x, 0, 40, height);
-            const eagleBounds = new Phaser.Geom.Rectangle(
-              gameScene.eagle.x - 40,
-              gameScene.eagle.y - 40,
-              80,
-              80
-            );
-
-            if (Phaser.Geom.Intersects.RectangleToRectangle(laserBounds, eagleBounds)) {
-              if (gameScene.takeDamage) {
-                gameScene.takeDamage();
-              }
-              checkInterval.remove();
-            }
-          }
-        },
-        loop: true
-      });
-
-      this.scene.time.delayedCall(2500, () => checkInterval.remove());
     }
   }
 

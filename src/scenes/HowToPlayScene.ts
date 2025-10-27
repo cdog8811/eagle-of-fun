@@ -13,10 +13,13 @@ export class HowToPlayScene extends Phaser.Scene {
     // Background - clean white
     this.cameras.main.setBackgroundColor('#FFFFFF');
 
-    // America.Fun Logo - bottom right corner
-    const logo = this.add.image(width - 80, height - 40, 'america-logo');
-    logo.setScale(0.15);
+    // v3.8: America.Fun Logo - bottom right (same as StartScene)
+    const footerY = height - 30;
+    const logo = this.add.image(0, footerY, 'america-logo');
+    logo.setScale(0.36); // Same scale as StartScene
     logo.setAlpha(0.9);
+    // Position logo so its right edge is 30px from screen edge
+    logo.setX(width - (logo.width * 0.36 / 2) - 30);
 
     // Title - professional
     const title = this.add.text(width / 2, 80, 'HOW TO PLAY', {
@@ -32,45 +35,55 @@ export class HowToPlayScene extends Phaser.Scene {
     underline.lineStyle(4, 0xE63946, 1);
     underline.lineBetween(width / 2 - 200, 120, width / 2 + 200, 120);
 
-    // Instructions - UPDATED
+    // Instructions - v3.8 UPDATED (Current Mechanics)
     const instructions = [
       {
         number: '1',
         title: 'CONTROLS',
-        text: 'Click, Tap or SPACE to fly • P = Pause\nAvoid Jeeters and collect coins!'
+        text: 'SPACE = Fly/Glide • P = Pause\nQ/W/E = Shoot (Forward/Up/Down when weapon unlocked)'
       },
       {
         number: '2',
-        title: 'ENEMIES',
-        text: 'Jeeters fly towards you from the right\nTouch any Jeeter = GAME OVER'
+        title: 'COINS & SCORING',
+        text: '$BONK = 1pt • $AOL = 5pts • $BURGER = 3pts\nCollect coins to gain XP and charge weapon energy!'
       },
       {
         number: '3',
-        title: 'COLLECTIBLES',
-        text: '$AOL = 5 points • $BURGER = 3 points\nCollect as many as you can!'
+        title: 'WEAPONS & COMBAT',
+        text: 'Unlock weapons by leveling up (XP)\nShoot enemies with Q/W/E • Energy recharges from coins'
       },
       {
         number: '4',
-        title: 'POWER-UPS',
-        text: '5x Burgers = Magnet Mode (5s)\n250 points = Shield Powerup (10s protection)'
+        title: 'ENEMIES & BOSSES',
+        text: 'Destroy enemies with weapons or avoid them\nBoss appears at 5000 score - find the weakpoint!'
       },
       {
         number: '5',
-        title: 'GOAL',
-        text: 'Survive as long as possible • Beat the high score\nThe longer you fly, the faster it gets!'
+        title: 'POWER-UPS',
+        text: '5x BURGER = Magnet Mode • Shield = 10s protection\nBandana = Speed boost • Collect for advantages!'
+      },
+      {
+        number: '6',
+        title: 'PROGRESSION',
+        text: 'Earn XP → Level Up → Upgrade Hall → Choose Upgrades\nComplete daily missions for bonus rewards!'
+      },
+      {
+        number: '7',
+        title: 'MARKET PHASES',
+        text: 'Bull Run = More coins • Bear Market = Harder enemies\nCrash/Rally = Chaos mode • Adapt to survive!'
       }
     ];
 
-    let yPos = 180;
+    let yPos = 170;
     instructions.forEach((instruction) => {
       this.createInstructionCard(width / 2, yPos, instruction.number, instruction.title, instruction.text);
-      yPos += 95;
+      yPos += 85; // Slightly smaller spacing for 7 items
     });
 
-    // Pro tip - clean design, updated
-    this.add.text(width / 2, height - 100, 'PRO TIP: STACK BURGERS FOR MAGNET POWER!', {
+    // Pro tip - updated for v3.8
+    this.add.text(width / 2, height - 100, 'PRO TIP: UPGRADE IN THE HALL AFTER EACH RUN!', {
       fontSize: '14px',
-      color: '#FBB13C',
+      color: '#E63946',
       fontFamily: 'Arial',
       fontStyle: 'bold',
       letterSpacing: 1
@@ -90,10 +103,10 @@ export class HowToPlayScene extends Phaser.Scene {
   private createInstructionCard(x: number, y: number, number: string, title: string, text: string): void {
     const card = this.add.container(x, y);
 
-    // Background - subtle, clean
+    // Background - subtle, clean (slightly smaller for 7 items)
     const bg = this.add.graphics();
     bg.fillStyle(0x000000, 0.03);
-    bg.fillRoundedRect(-500, -35, 1000, 80, 4);
+    bg.fillRoundedRect(-500, -32, 1000, 72, 4);
 
     // Number marker - red circle
     const numberBg = this.add.graphics();

@@ -147,11 +147,13 @@ export class GameOverScene extends Phaser.Scene {
       this.scene.start('LeaderboardScene');
     });
 
-    // Footer - Logo rechts unten, kein Überlappen mit Buttons
-    const logo = this.add.image(0, height - 25, 'america-logo');
-    logo.setScale(0.25);
+    // v3.8: America.Fun Logo - bottom right (same as StartScene)
+    const footerY = height - 30;
+    const logo = this.add.image(0, footerY, 'america-logo');
+    logo.setScale(0.36); // Same scale as StartScene
     logo.setAlpha(0.9);
-    logo.setX(width - (logo.width * 0.25 / 2) - 25);
+    // Position logo so its right edge is 30px from screen edge
+    logo.setX(width - (logo.width * 0.36 / 2) - 30);
 
     // Share button - positioned left bottom
     const shareBtn = this.add.text(width / 2 - 300, height - 60, 'SHARE ON X', {

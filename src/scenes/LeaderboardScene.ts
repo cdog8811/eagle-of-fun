@@ -28,20 +28,13 @@ export class LeaderboardScene extends Phaser.Scene {
       });
     }
 
-    // America.Fun Logo - bigger with pulse
-    const logo = this.add.image(width - 150, height - 80, 'america-logo');
-    logo.setScale(0.3);
+    // v3.8: America.Fun Logo - bottom right (same as StartScene)
+    const footerY = height - 30;
+    const logo = this.add.image(0, footerY, 'america-logo');
+    logo.setScale(0.36); // Same scale as StartScene
     logo.setAlpha(0.9);
-
-    // Pulse animation for logo
-    this.tweens.add({
-      targets: logo,
-      scale: 0.32,
-      duration: 1500,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.easeInOut'
-    });
+    // Position logo so its right edge is 30px from screen edge
+    logo.setX(width - (logo.width * 0.36 / 2) - 30);
 
     // Title - professional, bigger
     this.add.text(width / 2, 150, 'HALL OF DEGENS', {

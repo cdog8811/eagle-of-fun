@@ -76,7 +76,7 @@ export const BOSS_CZ_9000: BossDef = {
 
   trigger: {
     type: 'score',
-    value: 5000
+    value: 30000  // v3.8: Boss spawns at 30k score milestone
   },
 
   phases: [
@@ -186,10 +186,10 @@ export interface AttackPattern {
 export const BOSS_ATTACK_PATTERNS: Record<string, AttackPattern> = {
   shield_rotation: {
     id: 'shield_rotation',
-    description: 'Rotating shields block frontal damage',
+    description: 'Meme barrage attack',
     telegraphDuration: 0,
-    executionDuration: 0, // Passive
-    cooldown: 0
+    executionDuration: 1.0,
+    cooldown: 3.0  // v3.8: Was 0 - caused performance issues! Fire every 3 seconds
   },
 
   sniper_barrage: {

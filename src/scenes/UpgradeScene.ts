@@ -4,7 +4,7 @@ import { getUpgradeSystem, type UpgradeDef, type PlayerStats } from '../systems/
 import type { XPState } from '../systems/xpSystem';
 
 /**
- * UpgradeScene - Upgrade Hangar
+ * UpgradeScene - Upgrade Hangar (v3.8 - Redesigned)
  *
  * Displayed after GameOver, allows spending XP on upgrades
  * Flow: GameOver → UpgradeScene → [PLAY AGAIN] → Intro/GameScene
@@ -26,19 +26,12 @@ export default class UpgradeScene extends Phaser.Scene {
   private scrollY: number = 0;
   private maxScrollY: number = 0;
 
-  // Patriotic Colors
-  private readonly NAVY_BLUE = 0x002868;
-  private readonly CRIMSON_RED = 0xDC143C;
-  private readonly PURE_WHITE = 0xFFFFFF;
-  private readonly GOLD = 0xFFD700;
-  private readonly DARK_BG = 0x001845;
-
   constructor() {
     super({ key: 'UpgradeScene' });
   }
 
   create(): void {
-    console.log('🛠 UPGRADE HANGAR LOADED - v3.7');
+    console.log('🛠 UPGRADE HANGAR LOADED - v3.8');
 
     // Get current state
     this.xpState = this.xpSystem.getState();
@@ -46,97 +39,151 @@ export default class UpgradeScene extends Phaser.Scene {
 
     const { width, height } = this.cameras.main;
 
-    // Background
-    this.add.rectangle(0, 0, width, height, this.DARK_BG).setOrigin(0);
+    // v3.8: Clean white background (like StartScene)
+    this.cameras.main.setBackgroundColor('#FFFFFF');
 
-    // Title
-    this.add.text(width / 2, 40, '🛠 UPGRADE HANGAR', {
-      fontSize: '42px',
+    // v3.8: Start menu music (same as StartScene)
+    if (!this.sound.get('menu-music') || !this.sound.get('menu-music')?.isPlaying) {
+      this.sound.play('menu-music', { volume: 0.5, loop: true });
+    }
+
+    // v3.8: Minimal floating elements (like StartScene)
+    this.createMinimalElements();
+
+    // v3.8: Title - clean, professional (FIXED to screen)
+    const title = this.add.text(width / 2, 60, 'UPGRADE HANGAR', {
+      fontSize: '72px',
+      color: '#000000',
       fontFamily: 'Arial',
-      color: '#FFD700',
-      fontStyle: 'bold'
-    }).setOrigin(0.5);
+      fontStyle: 'bold',
+      letterSpacing: 6
+    }).setOrigin(0.5).setScrollFactor(0);
 
-    // Subtitle
-    this.add.text(width / 2, 85, 'Enhance your Eagle with permanent upgrades', {
-      fontSize: '18px',
+    // Subtle underline (FIXED to screen)
+    const underline = this.add.graphics();
+    underline.fillStyle(0xE63946, 1);
+    underline.fillRect(width / 2 - 240, 110, 480, 5);
+    underline.setScrollFactor(0);
+
+    // Subtitle (FIXED to screen)
+    this.add.text(width / 2, 140, 'SPEND XP TO ENHANCE YOUR EAGLE', {
+      fontSize: '22px',
+      color: '#666666',
       fontFamily: 'Arial',
-      color: '#FFFFFF'
-    }).setOrigin(0.5);
+      letterSpacing: 3
+    }).setOrigin(0.5).setScrollFactor(0);
 
-    // XP Display (Top)
+    // XP Display (Top) - FIXED to screen
     this.createXPDisplay();
 
     // Upgrade Cards (Scrollable Grid)
     this.createUpgradeCards();
 
-    // Bottom Buttons
+    // Bottom Buttons - FIXED to screen
     this.createBottomButtons();
+
+    // v3.8: America.Fun Logo - bottom right (same as StartScene)
+    const footerY = height - 30;
+    const logo = this.add.image(0, footerY, 'america-logo');
+    logo.setScale(0.36); // Same scale as StartScene
+    logo.setAlpha(0.9);
+    logo.setScrollFactor(0); // Fixed to screen
+    logo.setDepth(1000);
+    // Position logo so its right edge is 30px from screen edge
+    logo.setX(width - (logo.width * 0.36 / 2) - 30);
 
     // Setup scrolling
     this.setupScrolling();
   }
 
+  shutdown(): void {
+    // CRITICAL: Remove all event listeners to prevent memory leaks and performance issues!
+    console.log('🛠 UpgradeScene shutdown - removing event listeners');
+    this.input.off('wheel');
+
+    // Stop menu music
+    this.sound.stopByKey('menu-music');
+  }
+
+  private createMinimalElements(): void {
+    // Minimal subtle background elements - very discrete
+    const width = this.cameras.main.width;
+    const height = this.cameras.main.height;
+
+    // Just a few subtle lines for visual interest
+    for (let i = 0; i < 3; i++) {
+      const line = this.add.graphics();
+      line.lineStyle(1, 0xE63946, 0.1);
+      const x = Phaser.Math.Between(100, width - 100);
+      const y = Phaser.Math.Between(100, height - 100);
+      line.lineBetween(x, y, x + 100, y);
+    }
+  }
+
   private createXPDisplay(): void {
     const { width } = this.cameras.main;
-    const x = width / 2 - 300;
-    const y = 130;
-    const boxWidth = 600;
-    const boxHeight = 100;
+    const x = width / 2 - 350;
+    const y = 190;
+    const boxWidth = 700;
+    const boxHeight = 90;
 
-    // Background
+    // v3.8: Modern minimal box (FIXED to screen)
     this.xpDisplayBg = this.add.graphics();
-    this.xpDisplayBg.fillStyle(this.NAVY_BLUE, 0.9);
-    this.xpDisplayBg.fillRoundedRect(x, y, boxWidth, boxHeight, 12);
-    this.xpDisplayBg.lineStyle(3, this.GOLD, 1);
-    this.xpDisplayBg.strokeRoundedRect(x, y, boxWidth, boxHeight, 12);
+    this.xpDisplayBg.fillStyle(0x000000, 1);
+    this.xpDisplayBg.fillRoundedRect(x, y, boxWidth, boxHeight, 6);
+    this.xpDisplayBg.setScrollFactor(0);
 
-    // Level (Left side)
-    this.levelText = this.add.text(x + 30, y + 25, `LEVEL ${this.xpState.level}`, {
-      fontSize: '32px',
+    // Level (Left side) - FIXED to screen
+    this.levelText = this.add.text(x + 30, y + 20, `LEVEL ${this.xpState.level}`, {
+      fontSize: '36px',
       fontFamily: 'Arial',
       color: '#FFFFFF',
-      fontStyle: 'bold'
-    });
+      fontStyle: 'bold',
+      letterSpacing: 2
+    }).setScrollFactor(0);
 
     // XP Progress (Center)
-    const xpBarX = x + 200;
-    const xpBarY = y + 35;
-    const xpBarWidth = 250;
-    const xpBarHeight = 20;
+    const xpBarX = x + 220;
+    const xpBarY = y + 25;
+    const xpBarWidth = 300;
+    const xpBarHeight = 24;
 
-    // XP Bar Background
+    // XP Bar Background - FIXED to screen
     const xpBarBg = this.add.graphics();
-    xpBarBg.fillStyle(this.DARK_BG, 1);
-    xpBarBg.fillRoundedRect(xpBarX, xpBarY, xpBarWidth, xpBarHeight, 10);
+    xpBarBg.fillStyle(0x333333, 1);
+    xpBarBg.fillRoundedRect(xpBarX, xpBarY, xpBarWidth, xpBarHeight, 12);
+    xpBarBg.setScrollFactor(0);
 
-    // XP Bar Fill
+    // XP Bar Fill - FIXED to screen
     const progress = this.xpState.xp / this.xpState.xpToNext;
     const fillWidth = xpBarWidth * progress;
 
     const xpBarFill = this.add.graphics();
-    xpBarFill.fillStyle(this.CRIMSON_RED, 1);
-    xpBarFill.fillRoundedRect(xpBarX, xpBarY, fillWidth, xpBarHeight, 10);
+    xpBarFill.fillStyle(0xE63946, 1);  // Red accent
+    xpBarFill.fillRoundedRect(xpBarX, xpBarY, fillWidth, xpBarHeight, 12);
 
     // Highlight
     xpBarFill.fillStyle(0xFFFFFF, 0.3);
-    xpBarFill.fillRoundedRect(xpBarX, xpBarY, fillWidth, xpBarHeight / 3, 10);
+    xpBarFill.fillRoundedRect(xpBarX, xpBarY, fillWidth, xpBarHeight / 3, 12);
+    xpBarFill.setScrollFactor(0);
 
-    // XP Text (below bar)
-    this.xpText = this.add.text(xpBarX + xpBarWidth / 2, xpBarY + xpBarHeight + 15,
+    // XP Text (below bar) - FIXED to screen
+    this.xpText = this.add.text(xpBarX + xpBarWidth / 2, xpBarY + xpBarHeight + 12,
       `${this.xpState.xp} / ${this.xpState.xpToNext} XP`, {
       fontSize: '16px',
       fontFamily: 'Arial',
-      color: '#FFD700'
-    }).setOrigin(0.5, 0);
+      color: '#FFFFFF',
+      letterSpacing: 1
+    }).setOrigin(0.5, 0).setScrollFactor(0);
 
-    // Total XP (Right side)
-    this.totalXPText = this.add.text(x + boxWidth - 30, y + 40,
+    // Total XP (Right side) - FIXED to screen
+    this.totalXPText = this.add.text(x + boxWidth - 30, y + 35,
       `Total: ${this.xpState.totalXP} XP`, {
-      fontSize: '18px',
+      fontSize: '20px',
       fontFamily: 'Arial',
-      color: '#FFFFFF'
-    }).setOrigin(1, 0.5);
+      color: '#FFFFFF',
+      letterSpacing: 1
+    }).setOrigin(1, 0.5).setScrollFactor(0);
   }
 
   private createUpgradeCards(): void {
@@ -144,11 +191,11 @@ export default class UpgradeScene extends Phaser.Scene {
     const upgradeDefs = this.upgradeSystem.getDefs();
     const upgradeState = this.upgradeSystem.getState();
 
-    const cardWidth = 380;
-    const cardHeight = 180;
-    const spacing = 20;
+    const cardWidth = 480;  // Bigger cards!
+    const cardHeight = 200;
+    const spacing = 30;
     const columns = 2;
-    const startY = 260;
+    const startY = 320;
     const startX = width / 2 - (cardWidth * columns + spacing) / 2;
 
     let row = 0;
@@ -183,51 +230,84 @@ export default class UpgradeScene extends Phaser.Scene {
     // Calculate max scroll
     const totalRows = Math.ceil(upgradeDefs.length / columns);
     const totalHeight = totalRows * (cardHeight + spacing);
-    const viewportHeight = this.cameras.main.height - startY - 120; // 120 = bottom buttons
+    const viewportHeight = this.cameras.main.height - startY - 100; // 100 = bottom buttons
     this.maxScrollY = Math.max(0, totalHeight - viewportHeight);
   }
 
   private createBottomButtons(): void {
     const { width, height } = this.cameras.main;
-    const buttonY = height - 60;
+    const buttonY = height - 70;
 
-    // Play Button (Green)
-    const playButton = this.add.rectangle(width / 2 - 120, buttonY, 200, 50, 0x00AA00)
-      .setInteractive({ useHandCursor: true })
-      .on('pointerdown', () => this.onPlayAgain());
+    // v3.8: Modern minimal buttons (like StartScene)
+    this.createButton(width / 2 - 220, buttonY, 'PLAY AGAIN', () => this.onPlayAgain(), 0x000000);
+    this.createButton(width / 2 + 220, buttonY, 'RESET ALL', () => this.onReset(), 0x000000);
+  }
 
-    const playButtonBorder = this.add.graphics();
-    playButtonBorder.lineStyle(3, this.GOLD, 1);
-    playButtonBorder.strokeRoundedRect(width / 2 - 220, buttonY - 25, 200, 50, 8);
+  private createButton(x: number, y: number, text: string, callback: () => void, color: number): void {
+    // v3.8: Use StartScene button style (Container based)
+    const button = this.add.container(x, y);
+    button.setScrollFactor(0); // Fixed to screen
+    button.setDepth(1000);
 
-    this.add.text(width / 2 - 120, buttonY, '▶ PLAY AGAIN', {
-      fontSize: '20px',
-      fontFamily: 'Arial',
+    // Modern minimal button - same as StartScene
+    const bg = this.add.graphics();
+    bg.fillStyle(color, 1);
+    bg.fillRoundedRect(-200, -35, 400, 70, 6);
+
+    const buttonText = this.add.text(0, 0, text.toUpperCase(), {
+      fontSize: '28px',
       color: '#FFFFFF',
-      fontStyle: 'bold'
+      fontFamily: 'Arial',
+      fontStyle: 'bold',
+      letterSpacing: 3
     }).setOrigin(0.5);
 
-    // Reset Button (Red)
-    const resetButton = this.add.rectangle(width / 2 + 120, buttonY, 200, 50, 0xAA0000)
-      .setInteractive({ useHandCursor: true })
-      .on('pointerdown', () => this.onReset());
+    button.add([bg, buttonText]);
+    button.setSize(400, 70);
+    button.setInteractive(new Phaser.Geom.Rectangle(-200, -35, 400, 70), Phaser.Geom.Rectangle.Contains);
 
-    const resetButtonBorder = this.add.graphics();
-    resetButtonBorder.lineStyle(3, this.GOLD, 1);
-    resetButtonBorder.strokeRoundedRect(width / 2 + 20, buttonY - 25, 200, 50, 8);
+    // Elegant hover effect (same as StartScene)
+    button.on('pointerover', () => {
+      if (this.sound.get('hover-button')) {
+        this.sound.play('hover-button', { volume: 0.3 });
+      }
+      bg.clear();
+      bg.fillStyle(0xE63946, 1); // Red hover
+      bg.fillRoundedRect(-200, -35, 400, 70, 6);
+      this.tweens.add({
+        targets: button,
+        scaleX: 1.05,
+        scaleY: 1.05,
+        duration: 200,
+        ease: 'Back.easeOut'
+      });
+    });
 
-    this.add.text(width / 2 + 120, buttonY, '🔄 RESET ALL', {
-      fontSize: '20px',
-      fontFamily: 'Arial',
-      color: '#FFFFFF',
-      fontStyle: 'bold'
-    }).setOrigin(0.5);
+    button.on('pointerout', () => {
+      bg.clear();
+      bg.fillStyle(color, 1);
+      bg.fillRoundedRect(-200, -35, 400, 70, 6);
+      this.tweens.add({
+        targets: button,
+        scaleX: 1,
+        scaleY: 1,
+        duration: 200
+      });
+    });
 
-    // Hover effects
-    playButton.on('pointerover', () => playButton.setFillStyle(0x00CC00));
-    playButton.on('pointerout', () => playButton.setFillStyle(0x00AA00));
-    resetButton.on('pointerover', () => resetButton.setFillStyle(0xCC0000));
-    resetButton.on('pointerout', () => resetButton.setFillStyle(0xAA0000));
+    button.on('pointerdown', () => {
+      if (this.sound.get('menu-button')) {
+        this.sound.play('menu-button', { volume: 0.4 });
+      }
+      this.tweens.add({
+        targets: button,
+        scaleX: 0.98,
+        scaleY: 0.98,
+        duration: 100,
+        yoyo: true,
+        onComplete: callback
+      });
+    });
   }
 
   private setupScrolling(): void {
@@ -320,6 +400,10 @@ export default class UpgradeScene extends Phaser.Scene {
 
   private onPlayAgain(): void {
     console.log('▶ Play Again clicked - skipping directly to game');
+
+    // Stop menu music before starting game
+    this.sound.stopByKey('menu-music');
+
     this.scene.start('GameScene');
   }
 
@@ -327,91 +411,127 @@ export default class UpgradeScene extends Phaser.Scene {
     const { width, height } = this.cameras.main;
 
     // Dark overlay
-    const overlay = this.add.rectangle(0, 0, width, height, 0x000000, 0.8)
+    const overlay = this.add.rectangle(0, 0, width, height, 0x000000, 0.7)
       .setOrigin(0)
       .setDepth(2000)
       .setInteractive();
 
-    // Confirmation box
-    const boxWidth = 500;
-    const boxHeight = 250;
+    // v3.8: Larger white confirmation box for better text visibility
+    const boxWidth = 700;
+    const boxHeight = 380;
     const box = this.add.graphics();
     box.setDepth(2001);
-    box.fillStyle(this.NAVY_BLUE, 1);
-    box.fillRoundedRect(width / 2 - boxWidth / 2, height / 2 - boxHeight / 2, boxWidth, boxHeight, 15);
-    box.lineStyle(4, this.GOLD, 1);
-    box.strokeRoundedRect(width / 2 - boxWidth / 2, height / 2 - boxHeight / 2, boxWidth, boxHeight, 15);
+    box.fillStyle(0xFFFFFF, 1);
+    box.fillRoundedRect(width / 2 - boxWidth / 2, height / 2 - boxHeight / 2, boxWidth, boxHeight, 12);
+    box.lineStyle(5, 0x000000, 1);
+    box.strokeRoundedRect(width / 2 - boxWidth / 2, height / 2 - boxHeight / 2, boxWidth, boxHeight, 12);
 
-    // Title
-    const title = this.add.text(width / 2, height / 2 - 80, 'Confirm Purchase', {
-      fontSize: '32px',
+    // Title - larger and clearer
+    const title = this.add.text(width / 2, height / 2 - 140, 'CONFIRM PURCHASE', {
+      fontSize: '46px',
       fontFamily: 'Arial',
-      color: '#FFD700',
-      fontStyle: 'bold'
+      color: '#000000',
+      fontStyle: 'bold',
+      letterSpacing: 3
     }).setOrigin(0.5).setDepth(2002);
 
-    // Details
+    // Red underline accent
+    const underline = this.add.graphics();
+    underline.fillStyle(0xE63946, 1);
+    underline.fillRect(width / 2 - 160, height / 2 - 110, 320, 4);
+    underline.setDepth(2002);
+
+    // Details - better spacing and readability
     const currentLevel = this.upgradeSystem.getState().levels[def.id] || 0;
-    const details = this.add.text(width / 2, height / 2 - 20,
-      `${def.name}\nLevel ${currentLevel} → ${currentLevel + 1}\n\nCost: ${cost} XP`, {
-      fontSize: '20px',
+    const details = this.add.text(width / 2, height / 2 - 40,
+      `${def.name}\n\nLevel ${currentLevel} → ${currentLevel + 1}\n\nCost: ${cost} XP`, {
+      fontSize: '26px',
       fontFamily: 'Arial',
-      color: '#FFFFFF',
+      color: '#000000',
+      fontStyle: 'bold',
       align: 'center',
-      lineSpacing: 8
+      lineSpacing: 12
     }).setOrigin(0.5).setDepth(2002);
 
-    // Confirm button
-    const confirmBtn = this.add.rectangle(width / 2 - 80, height / 2 + 80, 140, 50, 0x00AA00)
-      .setDepth(2002)
-      .setInteractive({ useHandCursor: true });
+    // Confirm button (green) - larger
+    const confirmBtnContainer = this.add.container(width / 2 - 130, height / 2 + 130).setDepth(2003);
+    const confirmBtnBg = this.add.graphics();
+    confirmBtnBg.fillStyle(0x00AA00, 1);
+    confirmBtnBg.fillRoundedRect(-100, -30, 200, 60, 8);
 
-    const confirmText = this.add.text(width / 2 - 80, height / 2 + 80, '✓ BUY', {
-      fontSize: '24px',
+    const confirmText = this.add.text(0, 0, 'BUY', {
+      fontSize: '28px',
       fontFamily: 'Arial',
       color: '#FFFFFF',
-      fontStyle: 'bold'
-    }).setOrigin(0.5).setDepth(2003);
+      fontStyle: 'bold',
+      letterSpacing: 3
+    }).setOrigin(0.5);
 
-    // Cancel button
-    const cancelBtn = this.add.rectangle(width / 2 + 80, height / 2 + 80, 140, 50, 0xAA0000)
-      .setDepth(2002)
-      .setInteractive({ useHandCursor: true });
+    confirmBtnContainer.add([confirmBtnBg, confirmText]);
+    confirmBtnContainer.setSize(200, 60);
+    confirmBtnContainer.setInteractive(new Phaser.Geom.Rectangle(-100, -30, 200, 60), Phaser.Geom.Rectangle.Contains);
 
-    const cancelText = this.add.text(width / 2 + 80, height / 2 + 80, '✗ CANCEL', {
-      fontSize: '24px',
+    // Cancel button (red) - larger
+    const cancelBtnContainer = this.add.container(width / 2 + 130, height / 2 + 130).setDepth(2003);
+    const cancelBtnBg = this.add.graphics();
+    cancelBtnBg.fillStyle(0xE63946, 1);
+    cancelBtnBg.fillRoundedRect(-100, -30, 200, 60, 8);
+
+    const cancelText = this.add.text(0, 0, 'CANCEL', {
+      fontSize: '28px',
       fontFamily: 'Arial',
       color: '#FFFFFF',
-      fontStyle: 'bold'
-    }).setOrigin(0.5).setDepth(2003);
+      fontStyle: 'bold',
+      letterSpacing: 3
+    }).setOrigin(0.5);
+
+    cancelBtnContainer.add([cancelBtnBg, cancelText]);
+    cancelBtnContainer.setSize(200, 60);
+    cancelBtnContainer.setInteractive(new Phaser.Geom.Rectangle(-100, -30, 200, 60), Phaser.Geom.Rectangle.Contains);
 
     // Cleanup function
     const cleanup = () => {
       overlay.destroy();
       box.destroy();
       title.destroy();
+      underline.destroy();
       details.destroy();
-      confirmBtn.destroy();
-      confirmText.destroy();
-      cancelBtn.destroy();
-      cancelText.destroy();
+      confirmBtnContainer.destroy();
+      cancelBtnContainer.destroy();
     };
 
     // Confirm action
-    confirmBtn.on('pointerdown', () => {
+    confirmBtnContainer.on('pointerdown', () => {
       cleanup();
       onConfirm();
     });
 
     // Cancel action
-    cancelBtn.on('pointerdown', cleanup);
+    cancelBtnContainer.on('pointerdown', cleanup);
     overlay.on('pointerdown', cleanup);
 
-    // Hover effects
-    confirmBtn.on('pointerover', () => confirmBtn.setFillStyle(0x00CC00));
-    confirmBtn.on('pointerout', () => confirmBtn.setFillStyle(0x00AA00));
-    cancelBtn.on('pointerover', () => cancelBtn.setFillStyle(0xCC0000));
-    cancelBtn.on('pointerout', () => cancelBtn.setFillStyle(0xAA0000));
+    // Hover effects - updated for larger buttons
+    confirmBtnContainer.on('pointerover', () => {
+      confirmBtnBg.clear();
+      confirmBtnBg.fillStyle(0x00CC00, 1);
+      confirmBtnBg.fillRoundedRect(-100, -30, 200, 60, 8);
+    });
+    confirmBtnContainer.on('pointerout', () => {
+      confirmBtnBg.clear();
+      confirmBtnBg.fillStyle(0x00AA00, 1);
+      confirmBtnBg.fillRoundedRect(-100, -30, 200, 60, 8);
+    });
+
+    cancelBtnContainer.on('pointerover', () => {
+      cancelBtnBg.clear();
+      cancelBtnBg.fillStyle(0xFF4456, 1);
+      cancelBtnBg.fillRoundedRect(-100, -30, 200, 60, 8);
+    });
+    cancelBtnContainer.on('pointerout', () => {
+      cancelBtnBg.clear();
+      cancelBtnBg.fillStyle(0xE63946, 1);
+      cancelBtnBg.fillRoundedRect(-100, -30, 200, 60, 8);
+    });
   }
 
   private showNotification(message: string, color: number): void {
@@ -454,94 +574,161 @@ export default class UpgradeScene extends Phaser.Scene {
   private onReset(): void {
     console.log('🔄 Reset All clicked');
 
-    // Confirm dialog (simple)
+    const { width, height } = this.cameras.main;
+
+    // v3.8: Clean white confirmation dialog
+    const overlay = this.add.rectangle(0, 0, width, height, 0x000000, 0.7)
+      .setOrigin(0)
+      .setDepth(1000)
+      .setInteractive();
+
+    const boxWidth = 550;
+    const boxHeight = 260;
+    const box = this.add.graphics();
+    box.setDepth(1001);
+    box.fillStyle(0xFFFFFF, 1);
+    box.fillRoundedRect(width / 2 - boxWidth / 2, height / 2 - boxHeight / 2, boxWidth, boxHeight, 10);
+    box.lineStyle(4, 0xE63946, 1);
+    box.strokeRoundedRect(width / 2 - boxWidth / 2, height / 2 - boxHeight / 2, boxWidth, boxHeight, 10);
+
     const confirmText = this.add.text(
-      this.cameras.main.width / 2,
-      this.cameras.main.height / 2,
-      'Are you sure? This will reset ALL upgrades!\n\n[Click anywhere to cancel]',
+      width / 2,
+      height / 2 - 60,
+      'RESET ALL UPGRADES?',
       {
-        fontSize: '24px',
+        fontSize: '32px',
         fontFamily: 'Arial',
-        color: '#FF0000',
-        backgroundColor: '#000000',
-        padding: { x: 20, y: 20 },
-        align: 'center'
-      }
-    ).setOrigin(0.5).setDepth(1000);
-
-    // Confirm button
-    const confirmButton = this.add.rectangle(
-      this.cameras.main.width / 2,
-      this.cameras.main.height / 2 + 80,
-      200,
-      50,
-      0xFF0000
-    ).setInteractive({ useHandCursor: true }).setDepth(1001);
-
-    const confirmButtonText = this.add.text(
-      this.cameras.main.width / 2,
-      this.cameras.main.height / 2 + 80,
-      'YES, RESET',
-      {
-        fontSize: '20px',
-        fontFamily: 'Arial',
-        color: '#FFFFFF',
-        fontStyle: 'bold'
+        color: '#000000',
+        fontStyle: 'bold',
+        letterSpacing: 2
       }
     ).setOrigin(0.5).setDepth(1002);
 
-    // Background blocker to prevent clicks
-    const blocker = this.add.rectangle(
-      0, 0,
-      this.cameras.main.width,
-      this.cameras.main.height,
-      0x000000,
-      0.7
-    ).setOrigin(0).setDepth(999);
+    const warningText = this.add.text(
+      width / 2,
+      height / 2 - 10,
+      'This will reset ALL upgrades!\nYour XP will be refunded.',
+      {
+        fontSize: '20px',
+        fontFamily: 'Arial',
+        color: '#666666',
+        align: 'center',
+        lineSpacing: 5
+      }
+    ).setOrigin(0.5).setDepth(1002);
+
+    // Confirm button
+    const confirmBtnContainer = this.add.container(width / 2 - 100, height / 2 + 70).setDepth(1003);
+    const confirmBtnBg = this.add.graphics();
+    confirmBtnBg.fillStyle(0xE63946, 1);
+    confirmBtnBg.fillRoundedRect(-85, -25, 170, 50, 6);
+
+    const confirmBtnText = this.add.text(0, 0, 'RESET', {
+      fontSize: '24px',
+      fontFamily: 'Arial',
+      color: '#FFFFFF',
+      fontStyle: 'bold',
+      letterSpacing: 2
+    }).setOrigin(0.5);
+
+    confirmBtnContainer.add([confirmBtnBg, confirmBtnText]);
+    confirmBtnContainer.setSize(170, 50);
+    confirmBtnContainer.setInteractive(new Phaser.Geom.Rectangle(-85, -25, 170, 50), Phaser.Geom.Rectangle.Contains);
+
+    // Cancel button
+    const cancelBtnContainer = this.add.container(width / 2 + 100, height / 2 + 70).setDepth(1003);
+    const cancelBtnBg = this.add.graphics();
+    cancelBtnBg.fillStyle(0x000000, 1);
+    cancelBtnBg.fillRoundedRect(-85, -25, 170, 50, 6);
+
+    const cancelBtnText = this.add.text(0, 0, 'CANCEL', {
+      fontSize: '24px',
+      fontFamily: 'Arial',
+      color: '#FFFFFF',
+      fontStyle: 'bold',
+      letterSpacing: 2
+    }).setOrigin(0.5);
+
+    cancelBtnContainer.add([cancelBtnBg, cancelBtnText]);
+    cancelBtnContainer.setSize(170, 50);
+    cancelBtnContainer.setInteractive(new Phaser.Geom.Rectangle(-85, -25, 170, 50), Phaser.Geom.Rectangle.Contains);
 
     // Confirm action
-    confirmButton.once('pointerdown', () => {
+    confirmBtnContainer.once('pointerdown', () => {
       console.log('🗑️ Confirming reset...');
       this.upgradeSystem.resetAll();
       this.xpSystem.resetForNewProfile();
       this.xpState = this.xpSystem.getState();
       this.refreshUI();
-      blocker.destroy();
+      overlay.destroy();
+      box.destroy();
       confirmText.destroy();
-      confirmButton.destroy();
-      confirmButtonText.destroy();
+      warningText.destroy();
+      confirmBtnContainer.destroy();
+      cancelBtnContainer.destroy();
       console.log('✅ Reset complete');
     });
 
-    // Cancel on blocker click
-    blocker.setInteractive();
-    blocker.once('pointerdown', () => {
-      console.log('❌ Reset cancelled');
-      blocker.destroy();
+    // Cancel action
+    const cleanup = () => {
+      overlay.destroy();
+      box.destroy();
       confirmText.destroy();
-      confirmButton.destroy();
-      confirmButtonText.destroy();
+      warningText.destroy();
+      confirmBtnContainer.destroy();
+      cancelBtnContainer.destroy();
+    };
+
+    cancelBtnContainer.once('pointerdown', cleanup);
+    overlay.once('pointerdown', cleanup);
+
+    // Hover effects
+    confirmBtnContainer.on('pointerover', () => {
+      confirmBtnBg.clear();
+      confirmBtnBg.fillStyle(0xFF4456, 1);
+      confirmBtnBg.fillRoundedRect(-85, -25, 170, 50, 6);
+    });
+    confirmBtnContainer.on('pointerout', () => {
+      confirmBtnBg.clear();
+      confirmBtnBg.fillStyle(0xE63946, 1);
+      confirmBtnBg.fillRoundedRect(-85, -25, 170, 50, 6);
+    });
+
+    cancelBtnContainer.on('pointerover', () => {
+      cancelBtnBg.clear();
+      cancelBtnBg.fillStyle(0x333333, 1);
+      cancelBtnBg.fillRoundedRect(-85, -25, 170, 50, 6);
+    });
+    cancelBtnContainer.on('pointerout', () => {
+      cancelBtnBg.clear();
+      cancelBtnBg.fillStyle(0x000000, 1);
+      cancelBtnBg.fillRoundedRect(-85, -25, 170, 50, 6);
     });
   }
 }
 
 /**
- * UpgradeCard - Individual upgrade card component
+ * UpgradeCard - Individual upgrade card component (v3.8 - Redesigned)
  */
 class UpgradeCard {
   public def: UpgradeDef;
   private container: Phaser.GameObjects.Container;
   private levelText: Phaser.GameObjects.Text;
   private costText: Phaser.GameObjects.Text;
-  private buyButton: Phaser.GameObjects.Rectangle;
+  private buyButton: Phaser.GameObjects.Container;
+  private buyButtonBg: Phaser.GameObjects.Graphics;
+  private buyButtonRect?: Phaser.GameObjects.Rectangle;  // v3.8: Rectangle for hit detection
   private buyButtonText: Phaser.GameObjects.Text;
   private effectText: Phaser.GameObjects.Text;
+  private bgGraphics: Phaser.GameObjects.Graphics;
 
   private baseY: number;
-
-  private readonly NAVY_BLUE = 0x002868;
-  private readonly GOLD = 0xFFD700;
-  private readonly DARK_BG = 0x001845;
+  private cardWidth: number;
+  private cardHeight: number;
+  private buttonX: number;  // v3.8: Store button position
+  private buttonY: number;
+  private buttonWidth: number = 160;
+  private buttonHeight: number = 50;
 
   constructor(
     scene: Phaser.Scene,
@@ -556,131 +743,135 @@ class UpgradeCard {
   ) {
     this.def = def;
     this.baseY = y;
+    this.cardWidth = width;
+    this.cardHeight = height;
 
-    // Background
-    const bg = scene.add.graphics();
-    bg.fillStyle(this.NAVY_BLUE, 0.85);
-    bg.fillRoundedRect(0, 0, width, height, 10);
-    bg.lineStyle(2, this.GOLD, 1);
-    bg.strokeRoundedRect(0, 0, width, height, 10);
+    // v3.8: Clean white background with black border
+    this.bgGraphics = scene.add.graphics();
+    this.bgGraphics.fillStyle(0xFFFFFF, 1);
+    this.bgGraphics.fillRoundedRect(0, 0, width, height, 8);
+    this.bgGraphics.lineStyle(3, 0x000000, 1);
+    this.bgGraphics.strokeRoundedRect(0, 0, width, height, 8);
 
-    // Title
-    const titleText = scene.add.text(15, 15, def.name, {
-      fontSize: '22px',
+    // Title with red underline
+    const titleText = scene.add.text(20, 20, def.name.toUpperCase(), {
+      fontSize: '26px',
       fontFamily: 'Arial',
-      color: '#FFD700',
-      fontStyle: 'bold'
+      color: '#000000',
+      fontStyle: 'bold',
+      letterSpacing: 2
     });
 
+    const titleUnderline = scene.add.graphics();
+    titleUnderline.fillStyle(0xE63946, 1);
+    titleUnderline.fillRect(20, 52, 100, 3);
+
     // Description
-    const descText = scene.add.text(15, 45, def.desc, {
-      fontSize: '14px',
+    const descText = scene.add.text(20, 65, def.desc, {
+      fontSize: '16px',
       fontFamily: 'Arial',
-      color: '#FFFFFF',
-      wordWrap: { width: width - 30 }
+      color: '#666666',
+      wordWrap: { width: width - 40 }
     });
 
     // Level display
-    this.levelText = scene.add.text(15, 75, `Level: ${currentLevel} / ${def.maxLevel}`, {
-      fontSize: '16px',
+    this.levelText = scene.add.text(20, 105, `LEVEL: ${currentLevel} / ${def.maxLevel}`, {
+      fontSize: '18px',
       fontFamily: 'Arial',
-      color: '#FFFFFF'
+      color: '#000000',
+      fontStyle: 'bold',
+      letterSpacing: 1
     });
 
     // Effect preview
-    this.effectText = scene.add.text(15, 100, this.getEffectPreview(currentLevel), {
-      fontSize: '14px',
+    this.effectText = scene.add.text(20, 130, this.getEffectPreview(currentLevel), {
+      fontSize: '15px',
       fontFamily: 'Arial',
-      color: '#00FF00'
+      color: '#00AA00'
     });
 
     // Cost display
     const nextLevel = currentLevel + 1;
     const cost = (scene as any).upgradeSystem.getCost(def.id, nextLevel);
-    this.costText = scene.add.text(15, 130, `Cost: ${cost} XP`, {
-      fontSize: '16px',
+    this.costText = scene.add.text(20, 160, `COST: ${cost} XP`, {
+      fontSize: '18px',
       fontFamily: 'Arial',
-      color: '#FFD700',
-      fontStyle: 'bold'
+      color: '#E63946',
+      fontStyle: 'bold',
+      letterSpacing: 1
     });
 
-    // Buy button
+    // v3.8: Modern buy button - using Rectangle for better hit detection
     const canBuy = (scene as any).upgradeSystem.canBuy(def.id, xpState);
-    const buttonColor = canBuy.ok ? 0x00AA00 : 0x555555;
+    const buttonColor = canBuy.ok ? 0x000000 : 0x999999;
+    this.buttonX = width - 100;
+    this.buttonY = height - 35;
 
-    this.buyButton = scene.add.rectangle(width - 100, height - 30, 160, 40, buttonColor)
-      .setInteractive({ useHandCursor: canBuy.ok })
-      .setOrigin(0.5);
+    // Background rectangle
+    this.buyButtonRect = scene.add.rectangle(this.buttonX, this.buttonY, this.buttonWidth, this.buttonHeight, buttonColor, 1);
 
-    if (canBuy.ok) {
-      this.buyButton.on('pointerdown', onBuy);
-      this.buyButton.on('pointerover', () => this.buyButton.setFillStyle(0x00CC00));
-      this.buyButton.on('pointerout', () => this.buyButton.setFillStyle(0x00AA00));
-    }
+    // Round corners overlay
+    this.buyButtonBg = scene.add.graphics();
+    this.buyButtonBg.fillStyle(buttonColor, 1);
+    this.buyButtonBg.fillRoundedRect(this.buttonX - this.buttonWidth / 2, this.buttonY - this.buttonHeight / 2, this.buttonWidth, this.buttonHeight, 6);
 
-    this.buyButtonText = scene.add.text(width - 100, height - 30,
-      currentLevel >= def.maxLevel ? 'MAX' : (canBuy.ok ? 'BUY' : canBuy.reason || 'Locked'), {
-      fontSize: '16px',
+    // Button text
+    this.buyButtonText = scene.add.text(this.buttonX, this.buttonY,
+      currentLevel >= def.maxLevel ? 'MAX' : (canBuy.ok ? 'BUY' : 'LOCKED'), {
+      fontSize: '20px',
       fontFamily: 'Arial',
       color: '#FFFFFF',
-      fontStyle: 'bold'
+      fontStyle: 'bold',
+      letterSpacing: 2
     }).setOrigin(0.5);
+
+    // Store reference for updates
+    this.buyButton = scene.add.container(0, 0);
+    this.buyButton.add([this.buyButtonRect, this.buyButtonBg, this.buyButtonText]);
+
+    // Make rectangle interactive (NOT container!)
+    this.buyButtonRect.setInteractive({ useHandCursor: canBuy.ok });
+
+    if (canBuy.ok) {
+      this.buyButtonRect.on('pointerdown', onBuy);
+      this.buyButtonRect.on('pointerover', () => {
+        this.buyButtonRect!.setFillStyle(0xE63946, 1);
+        this.buyButtonBg.clear();
+        this.buyButtonBg.fillStyle(0xE63946, 1);
+        this.buyButtonBg.fillRoundedRect(this.buttonX - this.buttonWidth / 2, this.buttonY - this.buttonHeight / 2, this.buttonWidth, this.buttonHeight, 6);
+      });
+      this.buyButtonRect.on('pointerout', () => {
+        this.buyButtonRect!.setFillStyle(0x000000, 1);
+        this.buyButtonBg.clear();
+        this.buyButtonBg.fillStyle(0x000000, 1);
+        this.buyButtonBg.fillRoundedRect(this.buttonX - this.buttonWidth / 2, this.buttonY - this.buttonHeight / 2, this.buttonWidth, this.buttonHeight, 6);
+      });
+    }
 
     // Requirement text
     if (def.requiresLevel && xpState.level < def.requiresLevel) {
-      scene.add.text(15, 155, `Requires Level ${def.requiresLevel}`, {
-        fontSize: '12px',
+      scene.add.text(width - 200, 160, `Requires Level ${def.requiresLevel}`, {
+        fontSize: '13px',
         fontFamily: 'Arial',
-        color: '#FF0000'
+        color: '#E63946'
       });
     }
 
     // Container
     this.container = scene.add.container(x, y, [
-      bg,
+      this.bgGraphics,
       titleText,
+      titleUnderline,
       descText,
       this.levelText,
       this.effectText,
       this.costText,
-      this.buyButton,
-      this.buyButtonText
+      this.buyButton
     ]);
 
-    // Add hover effect to entire card
-    this.container.setSize(width, height);
-    this.container.setInteractive(new Phaser.Geom.Rectangle(0, 0, width, height), Phaser.Geom.Rectangle.Contains);
-
-    this.container.on('pointerover', () => {
-      if (canBuy.ok) {
-        scene.tweens.add({
-          targets: this.container,
-          scaleX: 1.02,
-          scaleY: 1.02,
-          duration: 150,
-          ease: 'Back.easeOut'
-        });
-        bg.clear();
-        bg.fillStyle(this.NAVY_BLUE, 0.95);
-        bg.fillRoundedRect(0, 0, width, height, 10);
-        bg.lineStyle(3, this.GOLD, 1);
-        bg.strokeRoundedRect(0, 0, width, height, 10);
-      }
-    });
-
-    this.container.on('pointerout', () => {
-      scene.tweens.add({
-        targets: this.container,
-        scaleX: 1,
-        scaleY: 1,
-        duration: 150
-      });
-      bg.clear();
-      bg.fillStyle(this.NAVY_BLUE, 0.85);
-      bg.fillRoundedRect(0, 0, width, height, 10);
-      bg.lineStyle(2, this.GOLD, 1);
-      bg.strokeRoundedRect(0, 0, width, height, 10);
-    });
+    // v3.8: Card hover effect - REMOVED container interactivity to not block button clicks
+    // The card background itself handles visual feedback without blocking child elements
+    // Note: No setInteractive on container to allow button clicks to work properly
   }
 
   private getEffectPreview(level: number): string {
@@ -717,20 +908,29 @@ class UpgradeCard {
   }
 
   public updateLevel(newLevel: number, xpState: XPState): void {
-    this.levelText.setText(`Level: ${newLevel} / ${this.def.maxLevel}`);
+    this.levelText.setText(`LEVEL: ${newLevel} / ${this.def.maxLevel}`);
     this.effectText.setText(this.getEffectPreview(newLevel));
 
     const nextLevel = newLevel + 1;
     const cost = (this.container.scene as any).upgradeSystem.getCost(this.def.id, nextLevel);
-    this.costText.setText(`Cost: ${cost} XP`);
+    this.costText.setText(`COST: ${cost} XP`);
 
     const canBuy = (this.container.scene as any).upgradeSystem.canBuy(this.def.id, xpState);
-    const buttonColor = canBuy.ok ? 0x00AA00 : 0x555555;
+    const buttonColor = canBuy.ok ? 0x000000 : 0x999999;
 
-    this.buyButton.setFillStyle(buttonColor);
-    this.buyButton.setInteractive({ useHandCursor: canBuy.ok });
+    // Update rectangle fill
+    if (this.buyButtonRect) {
+      this.buyButtonRect.setFillStyle(buttonColor, 1);
+      this.buyButtonRect.setInteractive({ useHandCursor: canBuy.ok });
+    }
+
+    // Update graphics overlay
+    this.buyButtonBg.clear();
+    this.buyButtonBg.fillStyle(buttonColor, 1);
+    this.buyButtonBg.fillRoundedRect(this.buttonX - this.buttonWidth / 2, this.buttonY - this.buttonHeight / 2, this.buttonWidth, this.buttonHeight, 6);
+
     this.buyButtonText.setText(
-      newLevel >= this.def.maxLevel ? 'MAX' : (canBuy.ok ? 'BUY' : canBuy.reason || 'Locked')
+      newLevel >= this.def.maxLevel ? 'MAX' : (canBuy.ok ? 'BUY' : 'LOCKED')
     );
   }
 }
