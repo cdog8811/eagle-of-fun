@@ -3759,6 +3759,7 @@ export class GameScene extends Phaser.Scene {
       }
 
       // v3.9: SHIELD BEARER AI - Rotating shield protection
+      // v3.9.1 PERFORMANCE FIX: Only redraw shield every 3 frames (60 FPS → 20 visual updates/sec)
       if (aiType === 'shielded' && (enemyType === 'shieldBearer' || enemyConfig.shieldRotationSpeed)) {
         // Update shield rotation
         let shieldAngle = enemy.getData('shieldAngle') || 0;
@@ -3766,30 +3767,45 @@ export class GameScene extends Phaser.Scene {
         shieldAngle += rotationSpeed * (this.game.loop.delta / 1000);
         enemy.setData('shieldAngle', shieldAngle);
 
-        // Draw rotating shield (visual feedback)
-        let shieldGraphic = enemy.getData('shieldGraphic');
-        if (!shieldGraphic || !shieldGraphic.active) {
-          shieldGraphic = this.add.graphics();
-          enemy.add(shieldGraphic);
-          enemy.setData('shieldGraphic', shieldGraphic);
+        // PERFORMANCE: Only redraw every 3 frames
+        let redrawCounter = enemy.getData('shieldRedrawCounter') || 0;
+        redrawCounter++;
+        enemy.setData('shieldRedrawCounter', redrawCounter);
+
+        if (redrawCounter >= 3) {
+          enemy.setData('shieldRedrawCounter', 0);
+
+          // Draw rotating shield (visual feedback)
+          let shieldGraphic = enemy.getData('shieldGraphic');
+          if (!shieldGraphic || !shieldGraphic.active) {
+            shieldGraphic = this.add.graphics();
+            enemy.add(shieldGraphic);
+            enemy.setData('shieldGraphic', shieldGraphic);
+          }
+
+          // Clear and redraw shield
+          shieldGraphic.clear();
+          const shieldArc = enemyConfig.shieldArc || Math.PI * 0.6; // 108 degrees
+          const shieldRadius = Math.max(enemyConfig.size.width, enemyConfig.size.height) / 2 + 10;
+
+          // Draw shield arc (single layer for performance)
+          shieldGraphic.lineStyle(4, 0x00AAFF, 0.8);
+          shieldGraphic.beginPath();
+          shieldGraphic.arc(0, 0, shieldRadius, shieldAngle - shieldArc / 2, shieldAngle + shieldArc / 2, false);
+          shieldGraphic.strokePath();
+
+          // Add rim highlight ONLY if less than 5 shield bearers (performance)
+          const shieldBearerCount = this.enemies.filter(e =>
+            e && e.active && (e.getData('type') === 'shieldBearer' || e.getData('aiType') === 'shielded')
+          ).length;
+
+          if (shieldBearerCount < 5) {
+            shieldGraphic.lineStyle(2, 0xFFFFFF, 0.6);
+            shieldGraphic.beginPath();
+            shieldGraphic.arc(0, 0, shieldRadius - 2, shieldAngle - shieldArc / 2, shieldAngle + shieldArc / 2, false);
+            shieldGraphic.strokePath();
+          }
         }
-
-        // Clear and redraw shield
-        shieldGraphic.clear();
-        const shieldArc = enemyConfig.shieldArc || Math.PI * 0.6; // 108 degrees
-        const shieldRadius = Math.max(enemyConfig.size.width, enemyConfig.size.height) / 2 + 10;
-
-        // Draw shield arc
-        shieldGraphic.lineStyle(4, 0x00AAFF, 0.8);
-        shieldGraphic.beginPath();
-        shieldGraphic.arc(0, 0, shieldRadius, shieldAngle - shieldArc / 2, shieldAngle + shieldArc / 2, false);
-        shieldGraphic.strokePath();
-
-        // Shield rim highlights
-        shieldGraphic.lineStyle(2, 0xFFFFFF, 0.6);
-        shieldGraphic.beginPath();
-        shieldGraphic.arc(0, 0, shieldRadius - 2, shieldAngle - shieldArc / 2, shieldAngle + shieldArc / 2, false);
-        shieldGraphic.strokePath();
       }
 
       // v3.9: KAMIKAZE AI - Rushes directly at the eagle!
