@@ -29,6 +29,7 @@ export class GameScene extends Phaser.Scene {
   private score: number = 0;
   private gameTime: number = 0;
   private scoreText!: Phaser.GameObjects.Text;
+  private scoreBlinkTween?: Phaser.Tweens.Tween;  // v3.9.2: Reusable tween to prevent memory leak
   private timerText!: Phaser.GameObjects.Text;
   private phaseText!: Phaser.GameObjects.Text;
   private burgerCountText?: Phaser.GameObjects.Text; // Actually shows AOL combo (legacy name)
@@ -403,6 +404,17 @@ export class GameScene extends Phaser.Scene {
     this.scoreText = this.add.text(width * 0.45, hudY, 'SCORE: 0', hudStyle);
     this.scoreText.setOrigin(0.5, 0.5);
     this.scoreText.setDepth(1000);
+
+    // v3.9.2 CRITICAL: Create reusable score blink tween ONCE to prevent memory leak
+    // BEFORE: New tween created for EVERY coin = 3000+ tweens after 20 seconds!
+    // AFTER: Single tween restarted = 0 memory leak!
+    this.scoreBlinkTween = this.tweens.add({
+      targets: this.scoreText,
+      scale: 1.1,
+      duration: 100,
+      yoyo: true,
+      paused: true  // Start paused, restart when needed
+    });
 
     // v3.8: FPS Overlay (disabled - performance fixed! 60 FPS achieved!)
     // Uncomment for debugging if needed:
@@ -3361,13 +3373,12 @@ export class GameScene extends Phaser.Scene {
             meta: { coinType: type, baseXP: coinXP, multiplier: playerStats.coinGainMul }
           });
 
-          // Score blink animation
-          this.tweens.add({
-            targets: this.scoreText,
-            scale: 1.1,
-            duration: 100,
-            yoyo: true
-          });
+          // v3.9.2 CRITICAL: Restart existing tween instead of creating new one
+          // BEFORE: this.tweens.add() = new tween every coin = 3000+ tweens!
+          // AFTER: restart() = reuse same tween = 0 leak!
+          if (this.scoreBlinkTween) {
+            this.scoreBlinkTween.restart();
+          }
         } else {
           console.error('Invalid points value:', points);
         }
