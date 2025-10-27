@@ -3376,8 +3376,18 @@ export class GameScene extends Phaser.Scene {
           // v3.9.2 CRITICAL: Restart existing tween instead of creating new one
           // BEFORE: this.tweens.add() = new tween every coin = 3000+ tweens!
           // AFTER: restart() = reuse same tween = 0 leak!
-          if (this.scoreBlinkTween) {
+          // FIX: Check if tween was destroyed (e.g. on scene restart)
+          if (this.scoreBlinkTween && !this.scoreBlinkTween.isDestroyed()) {
             this.scoreBlinkTween.restart();
+          } else {
+            // Tween was destroyed, recreate it
+            this.scoreBlinkTween = this.tweens.add({
+              targets: this.scoreText,
+              scale: 1.1,
+              duration: 100,
+              yoyo: true,
+              paused: false  // Start immediately
+            });
           }
         } else {
           console.error('Invalid points value:', points);
