@@ -1936,8 +1936,10 @@ export class GameScene extends Phaser.Scene {
       scale: 0.5
     });
 
-    // Sound effect
-    this.sound.play('power-up', { volume: 0.4, rate: 1.3 });
+    // Sound effect (v3.9.2: Add cache check to prevent crash)
+    if (this.cache.audio.exists('power-up')) {
+      this.sound.play('power-up', { volume: 0.4, rate: 1.3 });
+    }
   }
 
   private spawnPowerup(): void {
@@ -3011,9 +3013,8 @@ export class GameScene extends Phaser.Scene {
       // Play enemy hit sound
       this.sound.play('enemyhit', { volume: 0.6 });
 
-      // v3.8: REVERTED - Back to one-shot kills for performance
-      // HP system caused 15-27 FPS, too slow
-      // v3.8 PERFORMANCE: Removed screen shake for 60 FPS
+      // v3.9.2: Light screen shake for projectile kills (very subtle)
+      this.cameras.main.shake(100, 0.004);
 
       // v3.8: Check if exploder enemy - spawn splinters before death
       const shouldExplode = hit.enemy.getData('shouldExplode');
@@ -3057,13 +3058,13 @@ export class GameScene extends Phaser.Scene {
         hitY,
         `+${pointsAwarded}`,
         {
-          fontSize: '24px',
+          fontSize: '36px', // v3.9.2: Increased from 24px for better visibility
           color: '#FFD700',
           fontFamily: 'Arial',
           fontStyle: 'bold'
         },
         {
-          yOffset: -40,
+          yOffset: -50, // Increased offset for larger text
           duration: 800,
           fadeOut: true
         }
@@ -3422,7 +3423,7 @@ export class GameScene extends Phaser.Scene {
           this.aolCount++;
           this.updateAOLCombo();
           if (this.aolCountText) {
-            this.aolCountText.setText(`🟣 $AOL: ${this.aolCount}`);
+            this.aolCountText.setText(`🦅 $AOL: ${this.aolCount}`); // v3.9.2: Fixed purple circle bug - use eagle emoji
           }
 
           if (this.aolCombo >= 3) {
@@ -3506,13 +3507,13 @@ export class GameScene extends Phaser.Scene {
           coin.y,
           `${coinName} +${finalPoints}`,
           {
-            fontSize: '20px',
+            fontSize: '32px', // v3.9.2: Increased from 20px for better visibility
             color: coinColor,
             fontFamily: 'Arial',
             fontStyle: 'bold'
           },
           {
-            yOffset: -40,
+            yOffset: -50, // Increased offset for larger text
             duration: 600,
             fadeOut: true
           }
@@ -3637,12 +3638,50 @@ export class GameScene extends Phaser.Scene {
         // Check if shield or Belle MOD is active
         if (this.shieldActive || this.belleModActive) {
           // Shield or Belle MOD protects against fake coins
+          // v3.9.2: Show "PROTECTED" text
+          this.showFloatingText(
+            fakeCoin.x,
+            fakeCoin.y,
+            '🛡️ PROTECTED',
+            {
+              fontSize: '28px',
+              color: '#00FFFF',
+              fontFamily: 'Arial',
+              fontStyle: 'bold'
+            },
+            {
+              yOffset: -40,
+              duration: 600,
+              fadeOut: true
+            }
+          );
+
           this.fakeCoins.splice(i, 1);
           fakeCoin.destroy();
           continue;
         }
 
-        // v3.8 PERFORMANCE: Removed FAKE text, tween, and shake animations
+        // v3.9.2: Show "FAKE!" warning text
+        this.showFloatingText(
+          fakeCoin.x,
+          fakeCoin.y,
+          '⚠️ FAKE!',
+          {
+            fontSize: '32px',
+            color: '#FF0000',
+            fontFamily: 'Arial',
+            fontStyle: 'bold',
+            stroke: '#000000',
+            strokeThickness: 3
+          },
+          {
+            yOffset: -50,
+            duration: 800,
+            fadeOut: true,
+            scale: true
+          }
+        );
+
         this.fakeCoins.splice(i, 1);
         fakeCoin.destroy();
 
@@ -4021,23 +4060,94 @@ export class GameScene extends Phaser.Scene {
             this.spawnExplosionSplinters(enemy.x, enemy.y, splinterCount);
           }
 
-          enemy.destroy();
-          this.enemies.splice(i, 1);
-
-          // v3.2: Award points for killing enemy
+          // Award points for killing enemy
           const killPoints = 50;
           this.score += killPoints;
           this.scoreText.setText(`SCORE: ${this.score}`);
 
-          // v3.5: Play explosion sound when enemy defeated
+          // v3.9.2: Show visual feedback based on mode
+          if (this.belleModActive) {
+            // Belle MOD: Show "BANNED" text + points
+            this.showFloatingText(
+              enemy.x,
+              enemy.y - 20,
+              '🚫 BANNED',
+              {
+                fontSize: '40px',
+                color: '#FF0000',
+                fontFamily: 'Arial',
+                fontStyle: 'bold',
+                stroke: '#000000',
+                strokeThickness: 4
+              },
+              {
+                yOffset: -60,
+                duration: 1000,
+                fadeOut: true,
+                scale: true
+              }
+            );
+
+            // Show points below BANNED text
+            this.showFloatingText(
+              enemy.x,
+              enemy.y + 20,
+              `+${killPoints}`,
+              {
+                fontSize: '32px',
+                color: '#FFD700',
+                fontFamily: 'Arial',
+                fontStyle: 'bold'
+              },
+              {
+                yOffset: -40,
+                duration: 800,
+                fadeOut: true
+              }
+            );
+          } else {
+            // Shield: Show points only
+            this.showFloatingText(
+              enemy.x,
+              enemy.y,
+              `+${killPoints}`,
+              {
+                fontSize: '32px',
+                color: '#00FFFF',
+                fontFamily: 'Arial',
+                fontStyle: 'bold'
+              },
+              {
+                yOffset: -40,
+                duration: 800,
+                fadeOut: true
+              }
+            );
+          }
+
+          enemy.destroy();
+          this.enemies.splice(i, 1);
+
+          // v3.9.2: Visual feedback for shield/belle kills
+          // Subtle screen shake (less intense than damage)
+          this.cameras.main.shake(150, 0.008);
+
+          // Explosion particles at enemy position
+          this.graphicsPool.createExplosion(this, enemy.x, enemy.y, {
+            count: 8,
+            color: this.belleModActive ? 0xFFD700 : 0x00FFFF,
+            speed: { min: 80, max: 150 },
+            lifespan: 400,
+            scale: 0.5
+          });
+
+          // Play explosion sound
           this.sound.play('explosion', { volume: 0.7 });
 
-          // v3.2: Track enemy kill for missions
+          // Track enemy kill for missions
           this.missionManager.onEnemyKilled(enemyType);
           this.missionManager.onScoreUpdate(this.score);
           this.updateMissionUI();
-
-          // v3.8 PERFORMANCE: Removed visual feedback (text + tween + shake) for 60 FPS
         } else {
           // v3.2: Hit by enemy - take damage instead of instant game over
           // Play crash sound
