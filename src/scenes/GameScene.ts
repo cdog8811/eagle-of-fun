@@ -3237,6 +3237,9 @@ export class GameScene extends Phaser.Scene {
     const collisionRadius = 80; // Coin collection radius
     const collisionRadiusSq = collisionRadius * collisionRadius; // Squared for faster checks
 
+    // v3.9.2 PERFORMANCE: Track if any coins were collected this frame
+    let coinsCollectedThisFrame = false;
+
     // Update coins - move towards player (FIXED: Use reverse loop to avoid splice issues)
     for (let i = this.coins.length - 1; i >= 0; i--) {
       const coin = this.coins[i];
@@ -3303,7 +3306,7 @@ export class GameScene extends Phaser.Scene {
 
             // v3.2: Track combo for missions
             this.missionManager.onComboAchieved(this.comboCount);
-            this.updateMissionUI();
+            // v3.9.2 PERFORMANCE: Removed updateMissionUI() - will be called once at end of coin collection
           } else {
             // Reset combo
             this.comboCount = 1;
@@ -3332,7 +3335,7 @@ export class GameScene extends Phaser.Scene {
 
           // v3.2: Track score for missions
           this.missionManager.onScoreUpdate(this.score);
-          this.updateMissionUI();
+          // v3.9.2 PERFORMANCE: Removed updateMissionUI() - will be called once at end of coin collection
 
           // v3.7: Award XP for coin collection
           const coinXP = getXPForCoin(type);
@@ -3424,7 +3427,8 @@ export class GameScene extends Phaser.Scene {
 
         // v3.2: Track coin collection for missions
         this.missionManager.onCoinCollected(type);
-        this.updateMissionUI();
+        // v3.9.2 PERFORMANCE: Mark that coins were collected (update UI once at end)
+        coinsCollectedThisFrame = true;
 
         // Show coin collection feedback with points
         let coinName = '';
@@ -3480,6 +3484,13 @@ export class GameScene extends Phaser.Scene {
         this.coins.splice(i, 1);
         coin.destroy();
       }
+    }
+
+    // v3.9.2 PERFORMANCE: Update mission UI ONCE per frame instead of per coin!
+    // BEFORE: 50 coins collected = 50x updateMissionUI() calls = MASSIVE SLOWDOWN!
+    // AFTER: 50 coins collected = 1x updateMissionUI() call = SMOOTH!
+    if (coinsCollectedThisFrame) {
+      this.updateMissionUI();
     }
 
     // Update powerups
