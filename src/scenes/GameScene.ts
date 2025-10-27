@@ -2940,16 +2940,29 @@ export class GameScene extends Phaser.Scene {
     const coinMoveSpeed = this.coinSpeed * deltaSeconds;
     const enemyMoveSpeed = this.enemySpeed * deltaSeconds;
 
+    // v3.9.2 DEBUG: Performance profiling to identify slowdown
+    const perfStart = performance.now();
+    const perfMarks: { [key: string]: number } = {};
+
     // v3.9.2 CRITICAL FIX: Count shield bearers ONCE per frame instead of per enemy!
     // BEFORE: 5 shield bearers × 50 enemies = 250 filter operations per frame!
     // AFTER: 1 filter operation per frame (250x faster!)
     const shieldBearerCount = this.enemies.filter(e =>
       e && e.active && (e.getData('type') === 'shieldBearer' || e.getData('aiType') === 'shielded')
     ).length;
+    perfMarks['shieldBearerCount'] = performance.now() - perfStart;
 
+    const t1 = performance.now();
     this.weaponManager.update(delta);
+    perfMarks['weaponManager'] = performance.now() - t1;
+
+    const t2 = performance.now();
     this.bossManager.update(delta);
+    perfMarks['bossManager'] = performance.now() - t2;
+
+    const t3 = performance.now();
     this.bandanaPowerUp.update(); // Bandana effects, magnet, trail
+    perfMarks['bandanaPowerUp'] = performance.now() - t3;
 
     // v3.8: Check if boss should spawn (at score milestones like 5000)
     if (!this.bossManager.isBossActive() && !this.bossManager.isBossDefeated()) {
@@ -3241,6 +3254,7 @@ export class GameScene extends Phaser.Scene {
     let coinsCollectedThisFrame = false;
 
     // Update coins - move towards player (FIXED: Use reverse loop to avoid splice issues)
+    const t4 = performance.now();
     for (let i = this.coins.length - 1; i >= 0; i--) {
       const coin = this.coins[i];
 
@@ -3486,6 +3500,8 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
+    perfMarks['coinLoop'] = performance.now() - t4;
+
     // v3.9.2 PERFORMANCE: Update mission UI ONCE per frame instead of per coin!
     // BEFORE: 50 coins collected = 50x updateMissionUI() calls = MASSIVE SLOWDOWN!
     // AFTER: 50 coins collected = 1x updateMissionUI() call = SMOOTH!
@@ -3494,6 +3510,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     // Update powerups
+    const t5 = performance.now();
     for (let i = this.powerups.length - 1; i >= 0; i--) {
       const powerup = this.powerups[i];
 
@@ -3651,8 +3668,10 @@ export class GameScene extends Phaser.Scene {
         this.lawsuitPapers.splice(i, 1);
       }
     }
+    perfMarks['powerupLoop'] = performance.now() - t5;
 
     // Update enemies - move towards player
+    const t6 = performance.now();
     for (let i = this.enemies.length - 1; i >= 0; i--) {
       const enemy = this.enemies[i];
 
@@ -4022,6 +4041,16 @@ export class GameScene extends Phaser.Scene {
           // v3.8 PERFORMANCE: Removed screen shake for 60 FPS
         }
       }
+    }
+    perfMarks['enemyLoop'] = performance.now() - t6;
+
+    // v3.9.2 DEBUG: Log performance metrics every 60 frames (once per second at 60 FPS)
+    const perfTotal = performance.now() - perfStart;
+    perfMarks['TOTAL'] = perfTotal;
+
+    // Only log if frame time is slow (> 16ms = below 60 FPS)
+    if (perfTotal > 16) {
+      console.warn('🐌 SLOW FRAME:', perfTotal.toFixed(2) + 'ms', perfMarks);
     }
   }
 

@@ -21,16 +21,19 @@ const config: Phaser.Types.Core.GameConfig = {
   fps: {
     target: 60,
     min: 30,
-    forceSetTimeOut: true,  // Chrome fix: uses setTimeout instead of RAF
-    deltaHistory: 10
-    // smoothStep defaults to true - keeps frame timing smooth
+    forceSetTimeOut: false,  // v3.9.2: Use RAF (requestAnimationFrame) for better performance
+    deltaHistory: 10,
+    smoothStep: true,  // Smooth out frame time variations
+    panicMax: 120  // Don't panic if frame takes longer than 120ms
   },
   render: {
     pixelArt: false,
     roundPixels: false,
     antialias: true,
-    powerPreference: 'high-performance'  // Force Chrome to use dedicated GPU
-    // Use Phaser defaults for batchSize (2048) and maxTextures (8) for stability
+    powerPreference: 'high-performance',  // Force Chrome to use dedicated GPU
+    batchSize: 4096,  // v3.9.2: Increase batch size (default 2048) for more sprites per draw call
+    maxTextures: 16,  // v3.9.2: Allow more textures (default 8) to reduce texture swaps
+    mipmapFilter: 'LINEAR'  // Better texture filtering
   },
   scale: {
     mode: Phaser.Scale.FIT,
@@ -65,16 +68,24 @@ const game = new Phaser.Game(config);
 // Make game instance globally accessible for debugging
 (window as any).game = game;
 
-// Low FPS warning after 5 seconds
+// v3.9.2: Enhanced FPS monitoring and diagnostics
 setTimeout(() => {
   const actualFps = Math.round(game.loop.actualFps);
+  const avgDelta = game.loop.delta;
+
+  console.log('🎮 FPS Report:');
+  console.log('   Actual FPS:', actualFps);
+  console.log('   Avg Frame Time:', avgDelta.toFixed(2) + 'ms (target: 16.67ms)');
+  console.log('   Renderer:', game.renderer.type === Phaser.WEBGL ? 'WebGL' : 'Canvas');
+
   if (actualFps < 55) {
     console.warn('⚠️ Low FPS detected:', actualFps, 'FPS');
     console.warn('💡 Recommendations:');
-    console.warn('   1. Use Safari instead of Chrome for 60 FPS on macOS');
+    console.warn('   1. Try Safari instead of Chrome for 60 FPS on macOS');
     console.warn('   2. Enable Hardware Acceleration in Chrome settings');
     console.warn('   3. Check chrome://gpu to verify GPU acceleration');
     console.warn('   4. Close other browser tabs to free up resources');
+    console.warn('   5. Disable browser extensions (especially crypto wallets)');
   } else {
     console.log('✅ Good FPS:', actualFps, 'FPS');
   }
