@@ -4791,6 +4791,28 @@ export class GameScene extends Phaser.Scene {
     this.shieldGraphics = this.add.graphics();
     this.shieldGraphics.setDepth(999); // Higher depth to ensure visibility
 
+    // v3.9.2 FIX: Draw VALOR shield (gold/yellow themed)
+    // Outer glow (golden)
+    this.shieldGraphics.fillStyle(0xFFD700, 0.2);
+    this.shieldGraphics.fillCircle(0, 0, 100);
+
+    // Middle ring (bright gold)
+    this.shieldGraphics.lineStyle(6, 0xFFDD00, 0.8);
+    this.shieldGraphics.strokeCircle(0, 0, 85);
+
+    // Inner ring (yellow-white)
+    this.shieldGraphics.lineStyle(4, 0xFFFF88, 1);
+    this.shieldGraphics.strokeCircle(0, 0, 75);
+
+    // Energy particles effect (8 static dots in circle) - white/gold
+    for (let i = 0; i < 8; i++) {
+      const angle = (i * Math.PI / 4);
+      const px = Math.cos(angle) * 82;
+      const py = Math.sin(angle) * 82;
+      this.shieldGraphics.fillStyle(0xFFFFFF, 0.9);
+      this.shieldGraphics.fillCircle(px, py, 3);
+    }
+
     // v3.8: Stage 1: Speed ×2, Coins ×1.5 (reduced for performance)
     this.coinSpeed = this.originalCoinSpeed * 2;  // Was 3x
     this.enemySpeed = this.originalEnemySpeed * 2;  // Was 3x
