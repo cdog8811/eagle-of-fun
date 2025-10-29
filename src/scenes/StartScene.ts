@@ -97,22 +97,22 @@ export class StartScene extends Phaser.Scene {
       this.scene.start('HowToPlayScene');
     });
 
-    // Community buttons - 40px below last menu button
-    const communityY = buttonY + buttonSpacing * 2 + 110;
-    const communityButtonSpacing = 220;
-
-    this.createCommunityButton(width / 2 - communityButtonSpacing, communityY, '💬 Telegram (EN)', 'https://t.me/official_america_dot_fun');
-    this.createCommunityButton(width / 2, communityY, '💬 Telegram (CN)', 'https://t.me/americafunchinese');
-    this.createCommunityButton(width / 2 + communityButtonSpacing, communityY, '🌐 America.Fun', 'https://www.america.fun/');
-
     // High score display - center
     const highScore = this.registry.get('highScore') || 0;
-    this.add.text(width / 2, height - 90, `BEST: ${highScore}`, {
+    this.add.text(width / 2, height - 140, `BEST: ${highScore}`, {
       fontSize: '24px',
       color: '#999999',
       fontFamily: 'Arial',
       letterSpacing: 2
     }).setOrigin(0.5);
+
+    // Community text links - below score, almost at bottom
+    const communityY = height - 100;
+    const communityLinkSpacing = 220;
+
+    this.createCommunityTextLink(width / 2 - communityLinkSpacing, communityY, '💬 Telegram (EN)', 'https://t.me/official_america_dot_fun');
+    this.createCommunityTextLink(width / 2, communityY, '💬 Telegram (CN)', 'https://t.me/americafunchinese');
+    this.createCommunityTextLink(width / 2 + communityLinkSpacing, communityY, '🌐 America.Fun', 'https://www.america.fun/');
 
     // Footer Container - Text links, Logo rechts, auf einer Linie
     const footerY = height - 40;
@@ -212,84 +212,38 @@ export class StartScene extends Phaser.Scene {
     });
   }
 
-  private createCommunityButton(x: number, y: number, text: string, url: string): void {
-    const button = this.add.container(x, y);
-
-    // Gradient button - 75% size of main buttons (300x52 instead of 400x70)
-    const bg = this.add.graphics();
-
-    // Blue-Red gradient effect (simulated with layered fills)
-    bg.fillStyle(0x1DA1F2, 1);
-    bg.fillRoundedRect(-150, -26, 300, 52, 4);
-    bg.fillGradientStyle(0x1DA1F2, 0x1DA1F2, 0xD62828, 0xD62828, 0.85);
-    bg.fillRoundedRect(-150, -26, 300, 52, 4);
-
-    const buttonText = this.add.text(0, 0, text, {
+  private createCommunityTextLink(x: number, y: number, text: string, url: string): void {
+    const link = this.add.text(x, y, text, {
       fontSize: '18px',
-      color: '#FFFFFF',
+      color: '#888888',
       fontFamily: 'Arial',
-      fontStyle: 'bold',
       letterSpacing: 1
     }).setOrigin(0.5);
-    buttonText.setAlpha(0.85);
 
-    button.add([bg, buttonText]);
-    button.setSize(300, 52);
-    button.setInteractive(new Phaser.Geom.Rectangle(-150, -26, 300, 52), Phaser.Geom.Rectangle.Contains);
+    link.setInteractive({ useHandCursor: true });
 
     // Hover effects
-    button.on('pointerover', () => {
-      this.sound.play('hover-button', { volume: 0.2 });
-
-      // Glow effect
-      bg.clear();
-      bg.lineStyle(2, 0xFFFFFF, 0.5);
-      bg.fillStyle(0x1DA1F2, 1);
-      bg.fillRoundedRect(-150, -26, 300, 52, 4);
-      bg.strokeRoundedRect(-150, -26, 300, 52, 4);
-      bg.fillGradientStyle(0x1DA1F2, 0x1DA1F2, 0xD62828, 0xD62828, 0.85);
-      bg.fillRoundedRect(-150, -26, 300, 52, 4);
-
-      buttonText.setAlpha(1);
-
+    link.on('pointerover', () => {
+      link.setColor('#E63946'); // Red hover
       this.tweens.add({
-        targets: button,
-        scaleX: 1.05,
-        scaleY: 1.05,
+        targets: link,
+        scale: 1.05,
         duration: 200,
         ease: 'Back.easeOut'
       });
     });
 
-    button.on('pointerout', () => {
-      bg.clear();
-      bg.fillStyle(0x1DA1F2, 1);
-      bg.fillRoundedRect(-150, -26, 300, 52, 4);
-      bg.fillGradientStyle(0x1DA1F2, 0x1DA1F2, 0xD62828, 0xD62828, 0.85);
-      bg.fillRoundedRect(-150, -26, 300, 52, 4);
-
-      buttonText.setAlpha(0.85);
-
+    link.on('pointerout', () => {
+      link.setColor('#888888');
       this.tweens.add({
-        targets: button,
-        scaleX: 1,
-        scaleY: 1,
+        targets: link,
+        scale: 1,
         duration: 200
       });
     });
 
-    button.on('pointerdown', () => {
-      this.sound.play('menu-button', { volume: 0.3 });
-      this.tweens.add({
-        targets: button,
-        scaleX: 0.98,
-        scaleY: 0.98,
-        duration: 100,
-        yoyo: true,
-        onComplete: () => {
-          window.open(url, '_blank');
-        }
-      });
+    link.on('pointerdown', () => {
+      window.open(url, '_blank');
     });
   }
 
