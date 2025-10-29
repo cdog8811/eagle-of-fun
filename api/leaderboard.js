@@ -104,7 +104,13 @@ export default async function handler(req, res) {
     return res.status(500).json({
       success: false,
       error: 'Internal server error',
-      details: process.env.NODE_ENV === 'development' ? String(error) : undefined
+      details: String(error),
+      stack: error.stack,
+      envVars: {
+        hasPostgresUrl: !!process.env.POSTGRES_URL,
+        hasPostgresPrismaUrl: !!process.env.POSTGRES_PRISMA_URL,
+        hasDatabaseUrl: !!process.env.DATABASE_URL
+      }
     });
   }
 }
