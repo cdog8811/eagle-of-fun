@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
+import { getI18n } from '../systems/i18n';
 
 export class DonationScene extends Phaser.Scene {
+  private i18n = getI18n();
   private cdogImage?: Phaser.GameObjects.Image;
   private donationText?: Phaser.GameObjects.Text;
   private solAddress: string = '8Cnaouzi4sCn4v69bgxRUtgmAZeEt93HgemtZENUVWP5';
@@ -34,23 +36,23 @@ export class DonationScene extends Phaser.Scene {
     });
 
     // Main text on RIGHT side (52% width), vertically centered
-    const messageText = `Thanks for playing, Patriots. 🦅
+    const messageText = `${this.i18n.t('donation.message1')}
 
-If you had fun, laughed a bit, or just enjoyed the chaos, you can help keep Eagle of Fun alive.
+${this.i18n.t('donation.message2')}
 
-Every bit of support goes into server costs, AI time, and new features we will build together as a community.
+${this.i18n.t('donation.message3')}
 
-SOL: ${this.solAddress}
-(tap or click to copy)
+${this.i18n.t('donation.solLabel')}: ${this.solAddress}
+${this.i18n.t('donation.tapToCopy')}
 
-No pressure, this is for the culture, not for profit.
+${this.i18n.t('donation.message4')}
 
-Thank you for flying with me. ❤️`;
+${this.i18n.t('donation.thanks')}`;
 
     this.donationText = this.add.text(width * 0.52, height / 2 - 100, messageText, {
       fontSize: '24px',
       color: '#000000',
-      fontFamily: 'Arial',
+      fontFamily: this.i18n.getFontFamily(),
       lineSpacing: 8,
       align: 'left',
       wordWrap: { width: 700 }
@@ -69,11 +71,11 @@ Thank you for flying with me. ❤️`;
     this.createCopyButton(width * 0.52, height / 2 + 180);
 
     // Two navigation buttons at the bottom
-    this.createButton(width / 2 - 200, height - 150, 'MAIN MENU', () => {
+    this.createButton(width / 2 - 200, height - 150, this.i18n.t('donation.mainMenu'), () => {
       this.returnToMainMenu();
     });
 
-    this.createButton(width / 2 + 200, height - 150, 'HALL OF DEGENS', () => {
+    this.createButton(width / 2 + 200, height - 150, this.i18n.t('donation.hallOfDegens'), () => {
       this.goToLeaderboard();
     });
 
@@ -81,7 +83,7 @@ Thank you for flying with me. ❤️`;
     this.add.text(
       width / 2,
       height - 90,
-      'Press SPACE to view Hall of Degens',
+      this.i18n.t('donation.spaceHint'),
       {
         fontSize: '18px',
         color: '#888888',
@@ -93,7 +95,7 @@ Thank you for flying with me. ❤️`;
     const footerText = this.add.text(
       width / 2,
       height - 60,
-      'Private donation — voluntary support for development (no commercial purchase).\nDonations are considered private gifts under German tax law (EStG §22, Nr. 3).',
+      this.i18n.t('donation.footer'),
       {
         fontSize: '14px',
         color: '#999999',
@@ -123,7 +125,7 @@ Thank you for flying with me. ❤️`;
     bg.fillStyle(0x000000, 1);
     bg.fillRoundedRect(0, 0, 300, 50, 6);
 
-    const buttonText = this.add.text(150, 25, 'COPY ADDRESS', {
+    const buttonText = this.add.text(150, 25, this.i18n.t('donation.copyButton'), {
       fontSize: '20px',
       color: '#FFFFFF',
       fontFamily: 'Arial',
@@ -246,11 +248,11 @@ Thank you for flying with me. ❤️`;
     } catch (error) {
       console.error('Failed to copy address:', error);
       // Show error message
-      this.showCopyConfirmation('Failed to copy ❌');
+      this.showCopyConfirmation(this.i18n.t('donation.copyFailed'));
     }
   }
 
-  private showCopyConfirmation(message: string = 'Address copied ✅'): void {
+  private showCopyConfirmation(message: string = this.i18n.t('donation.copied')): void {
     const width = this.cameras.main.width;
 
     // Remove existing confirmation if any

@@ -1,6 +1,8 @@
 import Phaser from 'phaser';
+import { getI18n } from '../systems/i18n';
 
 export class IntroScene extends Phaser.Scene {
+  private i18n = getI18n();
   private dialogText?: Phaser.GameObjects.Text;
   private promptText?: Phaser.GameObjects.Text;
   private skipHintText?: Phaser.GameObjects.Text;
@@ -11,35 +13,41 @@ export class IntroScene extends Phaser.Scene {
   private keyboardSound?: Phaser.Sound.BaseSound;
   private spacePressed: boolean = false;
   private textSkipped: boolean = false;
-
-  private readonly fullDialog = `Ogle: Hi, Degen.
-Glad you showed up.
-
-The markets are a mess...
-Jeeters are dumping, Paper Hands are crying,
-and the Bear is waking up again.
-
-We need someone brave.
-Someone fast.
-Someone who can fly through FUD and buy back the Fun.
-
-That's you, Eagle.
-
-Collect the tokens.
-Avoid the Paperhands.
-Save the market.
-
-Let's rebuild America.Fun together.
-
-Ready to fly?`;
+  private fullDialog!: string;
 
   constructor() {
     super({ key: 'IntroScene' });
   }
 
+  private getFullDialog(): string {
+    return `${this.i18n.t('intro.ogle.line1')}
+${this.i18n.t('intro.ogle.line2')}
+
+${this.i18n.t('intro.ogle.line3')}
+${this.i18n.t('intro.ogle.line4')}
+${this.i18n.t('intro.ogle.line5')}
+
+${this.i18n.t('intro.ogle.line6')}
+${this.i18n.t('intro.ogle.line7')}
+${this.i18n.t('intro.ogle.line8')}
+
+${this.i18n.t('intro.ogle.line9')}
+
+${this.i18n.t('intro.ogle.line10')}
+${this.i18n.t('intro.ogle.line11')}
+${this.i18n.t('intro.ogle.line12')}
+
+${this.i18n.t('intro.ogle.line13')}
+
+${this.i18n.t('intro.ogle.line14')}`;
+  }
+
   create(): void {
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
+
+    // Initialize dialog text
+    this.fullDialog = this.getFullDialog();
 
     // White background
     this.cameras.main.setBackgroundColor('#FFFFFF');
@@ -60,14 +68,14 @@ Ready to fly?`;
     this.dialogText = this.add.text(width * 0.08, height / 2, '', {
       fontSize: '28px',
       color: '#000000',
-      fontFamily: 'Courier New, monospace',
+      fontFamily: this.i18n.getFontFamily(),
       lineSpacing: 10,
       align: 'left',
       wordWrap: { width: 750 }
     }).setOrigin(0, 0.5); // Left-aligned, vertically centered
 
     // Create prompt text at bottom center (hidden initially)
-    this.promptText = this.add.text(width / 2, height - 80, '[PRESS SPACE TO LAUNCH 🚀]', {
+    this.promptText = this.add.text(width / 2, height - 80, this.i18n.t('intro.launch'), {
       fontSize: '36px',
       color: '#E63946',
       fontFamily: 'Arial',
@@ -76,7 +84,7 @@ Ready to fly?`;
     this.promptText.setVisible(false);
 
     // Create skip hint text - always visible during typing
-    this.skipHintText = this.add.text(width / 2, height - 40, 'Press SPACE to skip', {
+    this.skipHintText = this.add.text(width / 2, height - 40, this.i18n.t('intro.skip'), {
       fontSize: '20px',
       color: '#888888',
       fontFamily: 'Arial',
@@ -236,7 +244,7 @@ Ready to fly?`;
     this.dialogText?.setVisible(false);
 
     // Show RPC messages with faster timing
-    const rpcText1 = this.add.text(width / 2, height / 2, 'Connecting to America.fun RPC...', {
+    const rpcText1 = this.add.text(width / 2, height / 2, this.i18n.t('intro.connecting'), {
       fontSize: '36px',
       color: '#0033A0',
       fontFamily: 'Courier New, monospace',
@@ -245,12 +253,12 @@ Ready to fly?`;
 
     // After 1 second, show error
     this.time.delayedCall(1000, () => {
-      rpcText1.setText('Error 404 – FUD detected.');
+      rpcText1.setText(this.i18n.t('intro.error'));
       rpcText1.setColor('#E63946');
 
       // After another 0.8 seconds, show "Start Flight"
       this.time.delayedCall(800, () => {
-        rpcText1.setText('Start Flight');
+        rpcText1.setText(this.i18n.t('intro.startFlight'));
         rpcText1.setColor('#00AA00');
 
         // Fade out effect instead of flash

@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { getI18n } from '../systems/i18n';
 
 /**
  * BuilderIntroScene - Cdog Introduction
@@ -8,6 +9,7 @@ import Phaser from 'phaser';
  * SPACE skips to OgleScene (IntroScene)
  */
 export class BuilderIntroScene extends Phaser.Scene {
+  private i18n = getI18n();
   private dialogText?: Phaser.GameObjects.Text;
   private skipHintText?: Phaser.GameObjects.Text;
   private cdogImage?: Phaser.GameObjects.Image;
@@ -18,34 +20,40 @@ export class BuilderIntroScene extends Phaser.Scene {
   private keyboardSound?: Phaser.Sound.BaseSound;
   private spacePressed: boolean = false;
   private textSkipped: boolean = false;
-
-  private readonly fullDialog = `Hi Patriots,
-
-Cdog here.
-
-I'm just a creative, not a coder.
-No team. No plan. No idea what I'm doing.
-
-But I'm a small $AOL holder,
-and I wanted to build something for the culture.
-To connect the America.Fun communities and keep the vibes alive.
-
-Elon banned my X account,
-so I can't help with the raids anymore.
-So I built a game instead.
-
-Yeah, it's buggy. It's messy.
-But it's real, and made with love for this community.
-
-Let's make memes, not excuses. 🦅`;
+  private fullDialog!: string;
 
   constructor() {
     super({ key: 'BuilderIntroScene' });
   }
 
+  private getFullDialog(): string {
+    return `${this.i18n.t('intro.cdog.line1')}
+
+${this.i18n.t('intro.cdog.line2')}
+
+${this.i18n.t('intro.cdog.line3')}
+${this.i18n.t('intro.cdog.line4')}
+
+${this.i18n.t('intro.cdog.line5')}
+${this.i18n.t('intro.cdog.line6')}
+${this.i18n.t('intro.cdog.line7')}
+
+${this.i18n.t('intro.cdog.line8')}
+${this.i18n.t('intro.cdog.line9')}
+${this.i18n.t('intro.cdog.line10')}
+
+${this.i18n.t('intro.cdog.line11')}
+${this.i18n.t('intro.cdog.line12')}
+
+${this.i18n.t('intro.cdog.line13')}`;
+  }
+
   create(): void {
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
+
+    // Initialize dialog text
+    this.fullDialog = this.getFullDialog();
 
     // White background (same as Ogle scene)
     this.cameras.main.setBackgroundColor('#FFFFFF');
@@ -74,14 +82,14 @@ Let's make memes, not excuses. 🦅`;
     this.dialogText = this.add.text(width * 0.52, height / 2, '', {
       fontSize: '28px',
       color: '#000000',
-      fontFamily: 'Courier New, monospace',
+      fontFamily: this.i18n.getFontFamily(),
       lineSpacing: 10,
       align: 'left',
       wordWrap: { width: 750 }
     }).setOrigin(0, 0.5); // Left-aligned, vertically centered
 
     // Create skip hint text - always visible during typing
-    this.skipHintText = this.add.text(width / 2, height - 40, 'Press SPACE to skip', {
+    this.skipHintText = this.add.text(width / 2, height - 40, this.i18n.t('intro.skip'), {
       fontSize: '20px',
       color: '#888888',
       fontFamily: 'Arial',
@@ -188,7 +196,7 @@ Let's make memes, not excuses. 🦅`;
     }
 
     // Change skip hint to "continue" message
-    this.skipHintText?.setText('Press SPACE to continue');
+    this.skipHintText?.setText(this.i18n.t('intro.continue'));
     this.skipHintText?.setColor('#E63946');
     this.skipHintText?.setFontStyle('bold');
 

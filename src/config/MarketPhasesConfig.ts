@@ -1,5 +1,9 @@
 // Eagle of Fun v3.5 - Market Phases Configuration
 
+import { getI18n } from '../systems/i18n';
+
+const i18n = getI18n();
+
 export interface MarketPhase {
   name: string;
   theme: string;
@@ -28,7 +32,7 @@ export const MARKET_PHASES: { [key: string]: MarketPhase } = {
     enemySpawnModifier: 0.8, // -20% enemies
     speedModifier: 1.0,
     tickerColor: 0x00FF00, // Green
-    tickerMessage: '🐂 BULL RUN ACTIVE – Traders in euphoria!',
+    tickerMessage: i18n.t('marketPhase.bullRun'),
     audioTrack: 'background-music'
   },
 
@@ -43,7 +47,7 @@ export const MARKET_PHASES: { [key: string]: MarketPhase } = {
     enemySpawnModifier: 1.2, // +20% enemies
     speedModifier: 1.3,
     tickerColor: 0xFFFF00, // Yellow
-    tickerMessage: '📉 Correction Phase – Market cooling down.',
+    tickerMessage: i18n.t('marketPhase.correction'),
     audioTrack: 'background-music'
   },
 
@@ -58,7 +62,7 @@ export const MARKET_PHASES: { [key: string]: MarketPhase } = {
     enemySpawnModifier: 1.5, // +50% enemies
     speedModifier: 1.6,
     tickerColor: 0xFF0000, // Red
-    tickerMessage: '🐻 Bear Trap – Jeeters everywhere!',
+    tickerMessage: i18n.t('marketPhase.bearTrap'),
     backgroundFilter: 0x8B0000, // Dark red tint
     audioTrack: 'background-music-2'
   },
@@ -74,7 +78,7 @@ export const MARKET_PHASES: { [key: string]: MarketPhase } = {
     enemySpawnModifier: 1.0, // balanced
     speedModifier: 1.4,
     tickerColor: 0xADD8E6, // Light blue
-    tickerMessage: '↔️ Sideways Phase – Market consolidating.',
+    tickerMessage: i18n.t('marketPhase.sideways'),
     audioTrack: 'background-music'
   },
 
@@ -89,7 +93,7 @@ export const MARKET_PHASES: { [key: string]: MarketPhase } = {
     enemySpawnModifier: 1.3, // +30% enemies but manageable
     speedModifier: 2.0,
     tickerColor: 0xFFD700, // Gold
-    tickerMessage: '🦅 Valor Comeback – America rises again!',
+    tickerMessage: i18n.t('marketPhase.valorComeback'),
     audioTrack: 'background-music'
   },
 
@@ -104,7 +108,7 @@ export const MARKET_PHASES: { [key: string]: MarketPhase } = {
     enemySpawnModifier: 2.0, // extreme
     speedModifier: 2.5, // max speed
     tickerColor: 0xFF00FF, // Magenta
-    tickerMessage: '🌟 ENDLESS WAGMI MODE – Pure chaos!',
+    tickerMessage: i18n.t('marketPhase.endlessWagmi'),
     audioTrack: 'background-music-2'
   }
 };
@@ -121,35 +125,35 @@ export interface MicroEvent {
 export const MICRO_EVENTS: MicroEvent[] = [
   {
     name: 'Elon Tweet',
-    message: '🚀 Elon tweeted! Coins flooding in!',
+    message: i18n.t('microEvent.elonTweet'),
     duration: 5000,
     effect: 'coinSpawn3x',
     probability: 5
   },
   {
     name: 'SEC Down',
-    message: '😴 SEC servers down! Enemy pause!',
+    message: i18n.t('microEvent.secDown'),
     duration: 5000,
     effect: 'enemyPause',
     probability: 3
   },
   {
     name: 'Market Pump',
-    message: '💰 Market Pump! Coin rain!',
+    message: i18n.t('microEvent.marketPump'),
     duration: 10000,
     effect: 'coinRain',
     probability: 4
   },
   {
     name: 'Burger Friday',
-    message: '🍔 Burger Friday! XP ×2!',
+    message: i18n.t('microEvent.burgerFriday'),
     duration: 10000,
     effect: 'xpDouble',
     probability: 6
   },
   {
     name: 'Valor Drop',
-    message: '🦅 Valor Drop incoming! Get ready!',
+    message: i18n.t('microEvent.valorDrop'),
     duration: 10000,
     effect: 'guaranteedFeather',
     probability: 2

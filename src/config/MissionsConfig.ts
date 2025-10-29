@@ -1,3 +1,7 @@
+import { getI18n } from '../systems/i18n';
+
+const i18n = getI18n();
+
 export interface Mission {
   id: string;
   title: string;
@@ -31,14 +35,14 @@ export interface MissionTier {
 export const MissionTiers: MissionTier[] = [
   {
     tier: 1,
-    name: 'Rookie Eagle 🦅',
-    description: 'Learn to fly, collect, and survive',
+    name: i18n.t('mission.tier1.name'),
+    description: i18n.t('mission.tier1.desc'),
     requiredLevel: 0,
     missions: [
       {
         id: 'rookie_collect',
-        title: 'First Haul',
-        description: '💰 Collect 50 Tokens',
+        title: i18n.t('mission.rookieCollect.title'),
+        description: i18n.t('mission.rookieCollect.desc'),
         type: 'collect',
         target: 50,
         progress: 0,
@@ -49,8 +53,8 @@ export const MissionTiers: MissionTier[] = [
       },
       {
         id: 'rookie_time',
-        title: 'Survival Basics',
-        description: '⏱️ Survive 2 Minutes',
+        title: i18n.t('mission.rookieTime.title'),
+        description: i18n.t('mission.rookieTime.desc'),
         type: 'time',
         target: 120,
         progress: 0,
@@ -61,8 +65,8 @@ export const MissionTiers: MissionTier[] = [
       },
       {
         id: 'rookie_shield',
-        title: 'Shield Master',
-        description: '🛡️ Destroy 10 enemies with Belle/Shield',
+        title: i18n.t('mission.rookieShield.title'),
+        description: i18n.t('mission.rookieShield.desc'),
         type: 'kill',
         target: 10,
         progress: 0,
@@ -75,19 +79,19 @@ export const MissionTiers: MissionTier[] = [
     tierReward: {
       xp: 300,
       unlocks: ['background_patriot'],
-      title: 'Tier 1 Complete: Ready to Soar!'
+      title: i18n.t('mission.tier1.reward')
     }
   },
   {
     tier: 2,
-    name: 'Degen Flyer 🚀',
-    description: 'Master the basics and face tougher challenges',
+    name: i18n.t('mission.tier2.name'),
+    description: i18n.t('mission.tier2.desc'),
     requiredLevel: 2,
     missions: [
       {
         id: 'degen_collect',
-        title: 'Token Hoarder',
-        description: '💎 Collect 100 Tokens',
+        title: i18n.t('mission.degenCollect.title'),
+        description: i18n.t('mission.degenCollect.desc'),
         type: 'collect',
         target: 100,
         progress: 0,
@@ -98,8 +102,8 @@ export const MissionTiers: MissionTier[] = [
       },
       {
         id: 'degen_belle_kills',
-        title: 'MOD Power',
-        description: '👁️ Destroy 20 enemies with Belle Shield',
+        title: i18n.t('mission.degenBelleKills.title'),
+        description: i18n.t('mission.degenBelleKills.desc'),
         type: 'kill',
         target: 20,
         progress: 0,
@@ -110,8 +114,8 @@ export const MissionTiers: MissionTier[] = [
       },
       {
         id: 'degen_score',
-        title: 'Rising Star',
-        description: '⭐ Reach 15,000 points',
+        title: i18n.t('mission.degenScore.title'),
+        description: i18n.t('mission.degenScore.desc'),
         type: 'score',
         target: 15000,
         progress: 0,
@@ -122,8 +126,8 @@ export const MissionTiers: MissionTier[] = [
       },
       {
         id: 'degen_combo',
-        title: 'Combo King',
-        description: '🔥 Achieve a 15x combo',
+        title: i18n.t('mission.degenCombo.title'),
+        description: i18n.t('mission.degenCombo.desc'),
         type: 'combo',
         target: 15,
         progress: 0,
@@ -136,19 +140,19 @@ export const MissionTiers: MissionTier[] = [
     tierReward: {
       xp: 500,
       unlocks: ['powerup_usd1_boost', 'skin_chrome_eagle'],
-      title: 'Tier 2 Complete: Degen Status Achieved!'
+      title: i18n.t('mission.tier2.reward')
     }
   },
   {
     tier: 3,
-    name: 'Meme Commander 💪',
-    description: 'Face intense challenges and prove your skills',
+    name: i18n.t('mission.tier3.name'),
+    description: i18n.t('mission.tier3.desc'),
     requiredLevel: 5,
     missions: [
       {
         id: 'commander_score',
-        title: 'High Roller',
-        description: '🎯 Reach 50,000 points',
+        title: i18n.t('mission.commanderScore.title'),
+        description: i18n.t('mission.commanderScore.desc'),
         type: 'score',
         target: 50000,
         progress: 0,
@@ -159,8 +163,8 @@ export const MissionTiers: MissionTier[] = [
       },
       {
         id: 'commander_bear',
-        title: 'Bear Market Survivor',
-        description: '🐻 Survive a full Bear Market phase (45s)',
+        title: i18n.t('mission.commanderBear.title'),
+        description: i18n.t('mission.commanderBear.desc'),
         type: 'phase',
         target: 1,
         progress: 0,
@@ -171,8 +175,8 @@ export const MissionTiers: MissionTier[] = [
       },
       {
         id: 'commander_perfect',
-        title: 'Flawless Flight',
-        description: '💯 Survive 3 minutes without losing a life',
+        title: i18n.t('mission.commanderPerfect.title'),
+        description: i18n.t('mission.commanderPerfect.desc'),
         type: 'perfect',
         target: 180,
         progress: 0,
@@ -183,8 +187,8 @@ export const MissionTiers: MissionTier[] = [
       },
       {
         id: 'commander_enemies',
-        title: 'Enemy Crusher',
-        description: '💥 Destroy 50 enemies total',
+        title: i18n.t('mission.commanderEnemies.title'),
+        description: i18n.t('mission.commanderEnemies.desc'),
         type: 'kill',
         target: 50,
         progress: 0,
@@ -197,19 +201,19 @@ export const MissionTiers: MissionTier[] = [
     tierReward: {
       xp: 1000,
       unlocks: ['skin_golden_wings', 'trail_effect_stars'],
-      title: 'Tier 3 Complete: Commander Unlocked!'
+      title: i18n.t('mission.tier3.reward')
     }
   },
   {
     tier: 4,
-    name: 'Launch Patriot 🇺🇸',
-    description: 'Speed and precision - become unstoppable',
+    name: i18n.t('mission.tier4.name'),
+    description: i18n.t('mission.tier4.desc'),
     requiredLevel: 10,
     missions: [
       {
         id: 'patriot_perfect_kills',
-        title: 'Untouchable',
-        description: '🎖️ Destroy 10 enemies without losing a life',
+        title: i18n.t('mission.patriotPerfectKills.title'),
+        description: i18n.t('mission.patriotPerfectKills.desc'),
         type: 'perfect',
         target: 10,
         progress: 0,
@@ -220,8 +224,8 @@ export const MissionTiers: MissionTier[] = [
       },
       {
         id: 'patriot_score',
-        title: 'Elite Scorer',
-        description: '💫 Reach 100,000 points',
+        title: i18n.t('mission.patriotScore.title'),
+        description: i18n.t('mission.patriotScore.desc'),
         type: 'score',
         target: 100000,
         progress: 0,
@@ -232,8 +236,8 @@ export const MissionTiers: MissionTier[] = [
       },
       {
         id: 'patriot_phases',
-        title: 'Phase Master',
-        description: '🔄 Survive 10 market phase changes',
+        title: i18n.t('mission.patriotPhases.title'),
+        description: i18n.t('mission.patriotPhases.desc'),
         type: 'phase',
         target: 10,
         progress: 0,
@@ -244,8 +248,8 @@ export const MissionTiers: MissionTier[] = [
       },
       {
         id: 'patriot_combo',
-        title: 'Combo God',
-        description: '⚡ Achieve a 30x combo',
+        title: i18n.t('mission.patriotCombo.title'),
+        description: i18n.t('mission.patriotCombo.desc'),
         type: 'combo',
         target: 30,
         progress: 0,
@@ -258,19 +262,19 @@ export const MissionTiers: MissionTier[] = [
     tierReward: {
       xp: 2000,
       unlocks: ['hall_of_degen_access', 'skin_freedom_eagle'],
-      title: 'Tier 4 Complete: Hall of Degen Unlocked!'
+      title: i18n.t('mission.tier4.reward')
     }
   },
   {
     tier: 5,
-    name: 'America Legend 🏆',
-    description: 'The ultimate endgame challenge',
+    name: i18n.t('mission.tier5.name'),
+    description: i18n.t('mission.tier5.desc'),
     requiredLevel: 20,
     missions: [
       {
         id: 'legend_million',
-        title: 'Million Point Club',
-        description: '🌟 Hit 1,000,000 Score',
+        title: i18n.t('mission.legendMillion.title'),
+        description: i18n.t('mission.legendMillion.desc'),
         type: 'score',
         target: 1000000,
         progress: 0,
@@ -281,8 +285,8 @@ export const MissionTiers: MissionTier[] = [
       },
       {
         id: 'legend_flawless',
-        title: 'Immortal Run',
-        description: '👑 Complete all phases without dying',
+        title: i18n.t('mission.legendFlawless.title'),
+        description: i18n.t('mission.legendFlawless.desc'),
         type: 'perfect',
         target: 300,
         progress: 0,
@@ -293,8 +297,8 @@ export const MissionTiers: MissionTier[] = [
       },
       {
         id: 'legend_enemies',
-        title: 'Destroyer',
-        description: '💣 Destroy 200 enemies in one run',
+        title: i18n.t('mission.legendEnemies.title'),
+        description: i18n.t('mission.legendEnemies.desc'),
         type: 'kill',
         target: 200,
         progress: 0,
@@ -307,7 +311,7 @@ export const MissionTiers: MissionTier[] = [
     tierReward: {
       xp: 5000,
       unlocks: ['secret_ending', 'skin_launchpad_eagle', 'title_america_legend'],
-      title: 'TIER 5 COMPLETE: WELCOME TO THE LAUNCHPAD! 🇺🇸'
+      title: i18n.t('mission.tier5.reward')
     }
   }
 ];
@@ -316,8 +320,8 @@ export const MissionTiers: MissionTier[] = [
 export const MissionPool: Omit<Mission, 'progress' | 'completed'>[] = [
   {
     id: 'daily_bonk',
-    title: 'BONK Collector',
-    description: '🟠 Collect 30 BONK coins',
+    title: i18n.t('mission.dailyBonk.title'),
+    description: i18n.t('mission.dailyBonk.desc'),
     type: 'collect',
     target: 30,
     reward: { xp: 150 },
@@ -326,8 +330,8 @@ export const MissionPool: Omit<Mission, 'progress' | 'completed'>[] = [
   },
   {
     id: 'daily_burger',
-    title: 'Burger Hunter',
-    description: '🍔 Collect 5 BURGER tokens',
+    title: i18n.t('mission.dailyBurger.title'),
+    description: i18n.t('mission.dailyBurger.desc'),
     type: 'collect',
     target: 5,
     reward: { xp: 200 },
@@ -336,8 +340,8 @@ export const MissionPool: Omit<Mission, 'progress' | 'completed'>[] = [
   },
   {
     id: 'daily_pumpfun',
-    title: 'Pill Crusher',
-    description: '💊 Destroy 5 Pump.fun enemies',
+    title: i18n.t('mission.dailyPumpfun.title'),
+    description: i18n.t('mission.dailyPumpfun.desc'),
     type: 'kill',
     target: 5,
     reward: { xp: 150 },
@@ -346,8 +350,8 @@ export const MissionPool: Omit<Mission, 'progress' | 'completed'>[] = [
   },
   {
     id: 'daily_fourmeme',
-    title: 'Copycat Destroyer',
-    description: '🤡 Destroy 5 Four.meme enemies',
+    title: i18n.t('mission.dailyFourmeme.title'),
+    description: i18n.t('mission.dailyFourmeme.desc'),
     type: 'kill',
     target: 5,
     reward: { xp: 150 },
@@ -356,8 +360,8 @@ export const MissionPool: Omit<Mission, 'progress' | 'completed'>[] = [
   },
   {
     id: 'daily_quick',
-    title: 'Speedrun',
-    description: '⚡ Score 10,000 in under 2 minutes',
+    title: i18n.t('mission.dailyQuick.title'),
+    description: i18n.t('mission.dailyQuick.desc'),
     type: 'score',
     target: 10000,
     reward: { xp: 250 },
@@ -366,8 +370,8 @@ export const MissionPool: Omit<Mission, 'progress' | 'completed'>[] = [
   },
   {
     id: 'daily_bear',
-    title: 'Bear Slayer',
-    description: '🐻 Destroy 3 Bear Boss enemies',
+    title: i18n.t('mission.dailyBear.title'),
+    description: i18n.t('mission.dailyBear.desc'),
     type: 'kill',
     target: 3,
     reward: { xp: 300 },
