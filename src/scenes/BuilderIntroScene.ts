@@ -94,9 +94,11 @@ Let's make memes, not excuses. 🦅`;
       this.startTypewriter();
     });
 
-    // Listen for SPACE key
-    this.input.keyboard?.on('keydown-SPACE', () => {
-      this.handleSpacePress();
+    // Listen for SPACE key (delay to prevent accidental skip from previous scene)
+    this.time.delayedCall(300, () => {
+      this.input.keyboard?.on('keydown-SPACE', () => {
+        this.handleSpacePress();
+      });
     });
   }
 

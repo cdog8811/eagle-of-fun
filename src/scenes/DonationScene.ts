@@ -20,8 +20,8 @@ export class DonationScene extends Phaser.Scene {
     // Fade in from black
     this.cameras.main.fadeIn(1500, 0, 0, 0);
 
-    // Cdog image on RIGHT side (75% width), vertically centered
-    this.cdogImage = this.add.image(width * 0.75, height / 2, 'cdog-pixel');
+    // Cdog image on LEFT side (25% width), vertically centered
+    this.cdogImage = this.add.image(width * 0.25, height / 2, 'cdog-pixel');
     this.cdogImage.setScale(1.0);
     this.cdogImage.setAlpha(0);
 
@@ -33,7 +33,7 @@ export class DonationScene extends Phaser.Scene {
       ease: 'Cubic.easeOut'
     });
 
-    // Main text on LEFT side (8% width), vertically centered
+    // Main text on RIGHT side (52% width), vertically centered
     const messageText = `Thanks for playing, Patriots. 🦅
 
 If you had fun, laughed a bit, or just enjoyed the chaos, you can help keep Eagle of Fun alive.
@@ -47,7 +47,7 @@ No pressure, this is for the culture, not for profit.
 
 Thank you for flying with me. ❤️`;
 
-    this.donationText = this.add.text(width * 0.08, height / 2 - 100, messageText, {
+    this.donationText = this.add.text(width * 0.52, height / 2 - 100, messageText, {
       fontSize: '24px',
       color: '#000000',
       fontFamily: 'Arial',
@@ -66,7 +66,7 @@ Thank you for flying with me. ❤️`;
     });
 
     // Copy Address button
-    this.createCopyButton(width * 0.08, height / 2 + 180);
+    this.createCopyButton(width * 0.52, height / 2 + 180);
 
     // Back to Main Menu button
     this.createBackButton(width / 2, height - 150);
@@ -250,7 +250,7 @@ Thank you for flying with me. ❤️`;
 
     // Create floating confirmation text
     this.copyConfirmation = this.add.text(
-      width * 0.08 + 150,
+      width * 0.52 + 150,
       this.cameras.main.height / 2 + 240,
       message,
       {
