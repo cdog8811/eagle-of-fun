@@ -1,5 +1,4 @@
 import { sql } from '@vercel/postgres';
-import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 // CORS headers for frontend requests
 const corsHeaders = {
@@ -8,7 +7,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'Content-Type',
 };
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req, res) {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return res.status(200).json({ ok: true });
@@ -17,7 +16,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     // GET: Fetch top scores
     if (req.method === 'GET') {
-      const limit = parseInt(req.query.limit as string) || 100;
+      const limit = parseInt(req.query.limit) || 100;
 
       // Create table if it doesn't exist
       await sql`
