@@ -68,8 +68,26 @@ Thank you for flying with me. ❤️`;
     // Copy Address button
     this.createCopyButton(width * 0.52, height / 2 + 180);
 
-    // Back to Main Menu button
-    this.createBackButton(width / 2, height - 150);
+    // Two navigation buttons at the bottom
+    this.createButton(width / 2 - 200, height - 150, 'MAIN MENU', () => {
+      this.returnToMainMenu();
+    });
+
+    this.createButton(width / 2 + 200, height - 150, 'HALL OF DEGENS', () => {
+      this.goToLeaderboard();
+    });
+
+    // SPACE hint between buttons and footer
+    this.add.text(
+      width / 2,
+      height - 90,
+      'Press SPACE to view Hall of Degens',
+      {
+        fontSize: '18px',
+        color: '#888888',
+        fontFamily: 'Arial'
+      }
+    ).setOrigin(0.5);
 
     // Legal footer at bottom
     const footerText = this.add.text(
@@ -86,12 +104,12 @@ Thank you for flying with me. ❤️`;
       }
     ).setOrigin(0.5);
 
-    // SPACE key to return to Main Menu
+    // SPACE key to go to Hall of Degens
     this.input.keyboard?.on('keydown-SPACE', () => {
-      this.returnToMainMenu();
+      this.goToLeaderboard();
     });
 
-    // ESC key as alternative
+    // ESC key to return to Main Menu
     this.input.keyboard?.on('keydown-ESC', () => {
       this.returnToMainMenu();
     });
@@ -152,34 +170,26 @@ Thank you for flying with me. ❤️`;
     });
   }
 
-  private createBackButton(x: number, y: number): void {
+  private createButton(x: number, y: number, text: string, callback: () => void): void {
     const button = this.add.container(x, y);
 
     // Button background
     const bg = this.add.graphics();
     bg.fillStyle(0x000000, 1);
-    bg.fillRoundedRect(-180, -30, 360, 60, 6);
+    bg.fillRoundedRect(-180, -35, 360, 70, 6);
 
-    const buttonText = this.add.text(0, 0, 'BACK TO MAIN MENU', {
-      fontSize: '24px',
+    const buttonText = this.add.text(0, 0, text, {
+      fontSize: '28px',
       color: '#FFFFFF',
       fontFamily: 'Arial',
       fontStyle: 'bold',
       letterSpacing: 2
     }).setOrigin(0.5);
 
-    // SPACE hint
-    const spaceHint = this.add.text(0, 45, 'Press SPACE to continue', {
-      fontSize: '16px',
-      color: '#888888',
-      fontFamily: 'Arial'
-    }).setOrigin(0.5);
-
     button.add([bg, buttonText]);
-    this.add.existing(spaceHint);
-    button.setSize(360, 60);
+    button.setSize(360, 70);
     button.setInteractive(
-      new Phaser.Geom.Rectangle(-180, -30, 360, 60),
+      new Phaser.Geom.Rectangle(-180, -35, 360, 70),
       Phaser.Geom.Rectangle.Contains
     );
 
@@ -187,7 +197,7 @@ Thank you for flying with me. ❤️`;
     button.on('pointerover', () => {
       bg.clear();
       bg.fillStyle(0xE63946, 1);
-      bg.fillRoundedRect(-180, -30, 360, 60, 6);
+      bg.fillRoundedRect(-180, -35, 360, 70, 6);
       this.tweens.add({
         targets: button,
         scaleX: 1.05,
@@ -200,7 +210,7 @@ Thank you for flying with me. ❤️`;
     button.on('pointerout', () => {
       bg.clear();
       bg.fillStyle(0x000000, 1);
-      bg.fillRoundedRect(-180, -30, 360, 60, 6);
+      bg.fillRoundedRect(-180, -35, 360, 70, 6);
       this.tweens.add({
         targets: button,
         scaleX: 1,
@@ -209,9 +219,9 @@ Thank you for flying with me. ❤️`;
       });
     });
 
-    // Click to return
+    // Click callback
     button.on('pointerdown', () => {
-      this.returnToMainMenu();
+      callback();
     });
   }
 
@@ -282,6 +292,19 @@ Thank you for flying with me. ❤️`;
           this.copyConfirmation = undefined;
         }
       }
+    });
+  }
+
+  private goToLeaderboard(): void {
+    // Remove all event listeners
+    this.input.keyboard?.off('keydown-SPACE');
+    this.input.keyboard?.off('keydown-ESC');
+
+    // Fade out to black
+    this.cameras.main.fadeOut(1000, 0, 0, 0);
+
+    this.cameras.main.once('camerafadeoutcomplete', () => {
+      this.scene.start('LeaderboardScene');
     });
   }
 
