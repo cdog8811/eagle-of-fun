@@ -16,15 +16,15 @@ export class MarketDataManager {
   static readonly tokens = {
     AOL: {
       id: '2oQNkePakuPbHzrVVkQ875WHeewLHCd2cAwfwiLQbonk',
-      icon: '🇺🇸'
+      icon: ''
     },
     VALOR: {
       id: '3wPQhXYqy861Nhoc4bahtpf7G3e89XCLfZ67ptEfZUSA',
-      icon: '🦅'
+      icon: ''
     },
     BURGER: {
       id: '632SvBrfaep51NGKnKtUHTR9J2T4uYGKEQkCgy42USA',
-      icon: '🍔'
+      icon: ''
     }
   };
 
@@ -93,10 +93,13 @@ export class MarketDataManager {
   }
 
   /**
-   * Format price display text for a single token
+   * Format price display text for a single token (without percentage - will be colored separately)
    */
-  static formatTokenDisplay(data: TokenMarketData): string {
+  static formatTokenDisplay(data: TokenMarketData): { main: string; percent: string } {
     const changeSign = data.change > 0 ? '+' : '';
-    return `${data.icon} $${data.symbol}  $${data.price}  ${changeSign}${data.change.toFixed(1)}%  MC $${data.mc}M`;
+    return {
+      main: `$${data.symbol}  $${data.price}  `,
+      percent: `${changeSign}${data.change.toFixed(1)}%  MC $${data.mc}M`
+    };
   }
 }

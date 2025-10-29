@@ -5,7 +5,7 @@ import { MarketDataManager } from '../systems/marketDataManager';
 export class StartScene extends Phaser.Scene {
   private fallingCoins: Phaser.GameObjects.Graphics[] = [];
   private musicStarted: boolean = false;
-  private tokenTexts: Phaser.GameObjects.Text[] = [];
+  private tokenContainers: Phaser.GameObjects.Container[] = [];
   private priceUpdateTimer?: Phaser.Time.TimerEvent;
 
   constructor() {
@@ -139,17 +139,33 @@ export class StartScene extends Phaser.Scene {
     // 3-Token Live Ticker - below community links
     const tokenY = footerY + 30;
     const tokenSymbols = ['AOL', 'VALOR', 'BURGER'];
-    const tokenSpacing = 400;
+    const tokenSpacing = 480; // More space between tokens
     const startX = width / 2 - tokenSpacing;
 
     tokenSymbols.forEach((symbol, i) => {
-      const text = this.add.text(startX + i * tokenSpacing, tokenY, `${symbol}: loading...`, {
+      const container = this.add.container(startX + i * tokenSpacing, tokenY);
+
+      // Main text (black) - will show "$SYMBOL  $price  "
+      const mainText = this.add.text(0, 0, `${symbol}: loading...`, {
+        fontSize: '18px',
+        color: '#000000',
+        fontFamily: 'Arial',
+        letterSpacing: 0.5
+      }).setOrigin(0.5);
+
+      // Percent text (colored) - will show "+X.X%  MC $X.XM"
+      const percentText = this.add.text(0, 0, '', {
         fontSize: '18px',
         color: '#FFFFFF',
         fontFamily: 'Arial',
         letterSpacing: 0.5
-      }).setOrigin(0.5);
-      this.tokenTexts.push(text);
+      }).setOrigin(0, 0.5);
+
+      container.add([mainText, percentText]);
+      container.setData('mainText', mainText);
+      container.setData('percentText', percentText);
+
+      this.tokenContainers.push(container);
     });
 
     // Start token price updates
@@ -362,39 +378,60 @@ export class StartScene extends Phaser.Scene {
    * Update all token prices from Dexscreener API
    */
   private async updateTokenPrices(): Promise<void> {
-    if (this.tokenTexts.length === 0) return;
+    if (this.tokenContainers.length === 0) return;
 
     try {
       const tokenData = await MarketDataManager.fetchAll();
 
       if (tokenData.length === 0) {
         // No data fetched - show error for all tokens
-        this.tokenTexts.forEach((text, i) => {
+        this.tokenContainers.forEach((container, i) => {
           const symbols = ['AOL', 'VALOR', 'BURGER'];
-          text.setText(`${symbols[i]}: unavailable`);
-          text.setColor('#888888');
+          const mainText = container.getData('mainText') as Phaser.GameObjects.Text;
+          const percentText = container.getData('percentText') as Phaser.GameObjects.Text;
+
+          mainText.setText(`${symbols[i]}: unavailable`);
+          mainText.setColor('#888888');
+          percentText.setText('');
         });
         return;
       }
 
       // Update each token display
       tokenData.forEach((data, i) => {
-        if (i < this.tokenTexts.length) {
-          const displayText = MarketDataManager.formatTokenDisplay(data);
+        if (i < this.tokenContainers.length) {
+          const container = this.tokenContainers[i];
+          const mainText = container.getData('mainText') as Phaser.GameObjects.Text;
+          const percentText = container.getData('percentText') as Phaser.GameObjects.Text;
+
+          const formatted = MarketDataManager.formatTokenDisplay(data);
           const color = MarketDataManager.getColorForChange(data.change);
 
-          this.tokenTexts[i].setText(displayText);
-          this.tokenTexts[i].setColor(color);
+          // Main text stays black
+          mainText.setText(formatted.main);
+          mainText.setColor('#000000');
+
+          // Percent text gets color
+          percentText.setText(formatted.percent);
+          percentText.setColor(color);
+
+          // Position percent text after main text
+          const mainBounds = mainText.getBounds();
+          percentText.setX(mainBounds.width / 2);
         }
       });
 
       console.log('💰 Updated token prices:', tokenData.length, 'tokens');
     } catch (error) {
       console.error('❌ Error updating token prices:', error);
-      this.tokenTexts.forEach((text, i) => {
+      this.tokenContainers.forEach((container, i) => {
         const symbols = ['AOL', 'VALOR', 'BURGER'];
-        text.setText(`${symbols[i]}: error`);
-        text.setColor('#888888');
+        const mainText = container.getData('mainText') as Phaser.GameObjects.Text;
+        const percentText = container.getData('percentText') as Phaser.GameObjects.Text;
+
+        mainText.setText(`${symbols[i]}: error`);
+        mainText.setColor('#888888');
+        percentText.setText('');
       });
     }
   }
