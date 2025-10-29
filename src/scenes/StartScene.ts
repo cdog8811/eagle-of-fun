@@ -99,7 +99,7 @@ export class StartScene extends Phaser.Scene {
 
     // High score display - center
     const highScore = this.registry.get('highScore') || 0;
-    this.add.text(width / 2, height - 90, `BEST: ${highScore}`, {
+    this.add.text(width / 2, height - 110, `BEST: ${highScore}`, {
       fontSize: '24px',
       color: '#999999',
       fontFamily: 'Arial',
