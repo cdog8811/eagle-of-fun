@@ -97,16 +97,15 @@ export class LeaderboardScene extends Phaser.Scene {
     shareBtn.on('pointerout', () => shareBtn.setColor('#666666'));
     shareBtn.on('pointerdown', () => this.shareOnX(localHighScore));
 
-    // Community text links - centered, same style as StartScene
-    const communityY = height - 105;
+    // Community text links - centered, same height as logo
     const communityLinkSpacing = 180;
 
-    this.createCommunityLink(width / 2 - communityLinkSpacing, communityY, 'Telegram (EN)', 'https://t.me/official_america_dot_fun');
-    this.createCommunityLink(width / 2, communityY, 'Telegram (CN)', 'https://t.me/americafunchinese');
-    this.createCommunityLink(width / 2 + communityLinkSpacing, communityY, 'America.Fun', 'https://www.america.fun/');
+    this.createCommunityLink(width / 2 - communityLinkSpacing, footerY, 'Telegram (EN)', 'https://t.me/official_america_dot_fun');
+    this.createCommunityLink(width / 2, footerY, 'Telegram (CN)', 'https://t.me/americafunchinese');
+    this.createCommunityLink(width / 2 + communityLinkSpacing, footerY, 'America.Fun', 'https://www.america.fun/');
 
     // Back instruction - repositioned to avoid overlap
-    this.add.text(width / 2, height - 30, 'ESC = BACK', {
+    this.add.text(width / 2, height - 60, 'ESC = BACK', {
       fontSize: '20px',
       color: '#999999',
       fontFamily: 'Arial',
