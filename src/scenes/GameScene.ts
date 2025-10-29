@@ -19,6 +19,7 @@ import { ENEMIES, getEnemyXPReward, getEnemyScoreReward, getEnemy } from '../con
 import { getCurrentPhase, getPhaseRemainingTime } from '../config/PhaseConfig';
 import { ComboManager } from '../systems/ComboManager';
 import { NotificationManager, NotificationPriority } from '../managers/NotificationManager';
+import { MarketCapManager } from '../managers/MarketCapManager';
 
 export class GameScene extends Phaser.Scene {
   // XP & Upgrade Systems
@@ -131,6 +132,7 @@ export class GameScene extends Phaser.Scene {
   // v4.2: Notification & Combo Managers
   private notificationManager!: NotificationManager;
   private comboManager!: ComboManager;
+  private marketCapManager!: MarketCapManager;
 
   // === v3.2: LIFE SYSTEM ===
   private lives: number = 3; // Start with 3 hearts
@@ -337,6 +339,9 @@ export class GameScene extends Phaser.Scene {
     // v4.2: Initialize Notification & Combo Managers
     this.notificationManager = new NotificationManager(this);
     this.comboManager = new ComboManager(this, this.notificationManager);
+
+    // v4.2: Initialize MarketCap Manager for $AOL milestone system
+    this.marketCapManager = new MarketCapManager(this);
 
     // Stop any leftover menu music from UpgradeScene
     this.sound.stopByKey('menu-music');
@@ -874,6 +879,42 @@ export class GameScene extends Phaser.Scene {
         this.sound.play('bosswin', { volume: 0.8 });
       }
     });
+
+    // v4.2: Listen for MarketCap milestone events
+    this.events.on('milestone-coin-rain', () => {
+      // Spawn extra coins during Bull Market Unlocked
+      this.spawnCoin();
+    });
+
+    this.events.on('milestone-xp-boost', (multiplier: number, duration: number) => {
+      // Apply XP boost (could be tracked and applied in collectCoin)
+      console.log(`📈 XP Boost active: ${multiplier}x for ${duration}ms`);
+      // Store boost in a variable that can be checked when collecting coins
+      this.time.delayedCall(duration, () => {
+        console.log('📉 XP Boost ended');
+      });
+    });
+
+    this.events.on('milestone-freeze-enemies', (duration: number) => {
+      // Freeze all enemies for specified duration
+      console.log(`❄️ Freezing enemies for ${duration}ms`);
+      this.enemies.forEach(enemy => {
+        const body = enemy.getData('body') as Phaser.Physics.Arcade.Body;
+        if (body) {
+          const originalVelocity = { x: body.velocity.x, y: body.velocity.y };
+          body.setVelocity(0, 0);
+          enemy.setData('frozen', true);
+
+          // Unfreeze after duration
+          this.time.delayedCall(duration, () => {
+            if (enemy && enemy.active) {
+              body.setVelocity(originalVelocity.x, originalVelocity.y);
+              enemy.setData('frozen', false);
+            }
+          });
+        }
+      });
+    });
   }
 
   private startCountdown(): void {
@@ -1049,6 +1090,9 @@ export class GameScene extends Phaser.Scene {
       callbackScope: this,
       loop: true
     });
+
+    // v4.2: Start MarketCap Manager ($AOL milestone system)
+    this.marketCapManager.start();
 
     // Start Phase 1
     this.startPhase(1);
@@ -6766,6 +6810,9 @@ export class GameScene extends Phaser.Scene {
     this.input.keyboard?.off('keydown-E');
     this.input.keyboard?.off('keydown-TAB');
     this.events.off('bossDefeated');
+    this.events.off('milestone-coin-rain');
+    this.events.off('milestone-xp-boost');
+    this.events.off('milestone-freeze-enemies');
 
     // 2. STOP ALL TIMERS
     this.coinSpawnTimer?.remove();
@@ -6846,6 +6893,9 @@ export class GameScene extends Phaser.Scene {
     }
     if (this.bandanaPowerUp && typeof this.bandanaPowerUp.cleanup === 'function') {
       this.bandanaPowerUp.cleanup();
+    }
+    if (this.marketCapManager && typeof this.marketCapManager.destroy === 'function') {
+      this.marketCapManager.destroy();
     }
 
     console.log('GameScene cleanup complete - no memory leaks!');
