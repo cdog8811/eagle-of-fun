@@ -93,13 +93,14 @@ export class MarketDataManager {
   }
 
   /**
-   * Format price display text for a single token (without percentage - will be colored separately)
+   * Format price display text for a single token (percentage colored, rest black)
    */
-  static formatTokenDisplay(data: TokenMarketData): { main: string; percent: string } {
+  static formatTokenDisplay(data: TokenMarketData): { main: string; percent: string; mc: string } {
     const changeSign = data.change > 0 ? '+' : '';
     return {
       main: `$${data.symbol}  $${data.price}  `,
-      percent: `${changeSign}${data.change.toFixed(1)}%  MC $${data.mc}M`
+      percent: `${changeSign}${data.change.toFixed(1)}%  `,
+      mc: `MC $${data.mc}M`
     };
   }
 }

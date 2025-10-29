@@ -136,8 +136,8 @@ export class StartScene extends Phaser.Scene {
     this.createCommunityTextLink(width / 2, communityY, 'Telegram (CN)', 'https://t.me/americafunchinese');
     this.createCommunityTextLink(width / 2 + communityLinkSpacing, communityY, 'America.Fun', 'https://www.america.fun/');
 
-    // 3-Token Live Ticker - below community links
-    const tokenY = footerY + 30;
+    // 3-Token Live Ticker - at top with 40px spacing from top
+    const tokenY = 40;
     const tokenSymbols = ['AOL', 'VALOR', 'BURGER'];
     const tokenSpacing = 480; // More space between tokens
     const startX = width / 2 - tokenSpacing;
@@ -145,7 +145,7 @@ export class StartScene extends Phaser.Scene {
     tokenSymbols.forEach((symbol, i) => {
       const container = this.add.container(startX + i * tokenSpacing, tokenY);
 
-      // Main text (black) - will show "$SYMBOL  $price  "
+      // Main text (black) - "$SYMBOL  $price  "
       const mainText = this.add.text(0, 0, `${symbol}: loading...`, {
         fontSize: '18px',
         color: '#000000',
@@ -153,7 +153,7 @@ export class StartScene extends Phaser.Scene {
         letterSpacing: 0.5
       }).setOrigin(0.5);
 
-      // Percent text (colored) - will show "+X.X%  MC $X.XM"
+      // Percent text (colored) - "+X.X%  "
       const percentText = this.add.text(0, 0, '', {
         fontSize: '18px',
         color: '#FFFFFF',
@@ -161,9 +161,18 @@ export class StartScene extends Phaser.Scene {
         letterSpacing: 0.5
       }).setOrigin(0, 0.5);
 
-      container.add([mainText, percentText]);
+      // MC text (black) - "MC $X.XM"
+      const mcText = this.add.text(0, 0, '', {
+        fontSize: '18px',
+        color: '#000000',
+        fontFamily: 'Arial',
+        letterSpacing: 0.5
+      }).setOrigin(0, 0.5);
+
+      container.add([mainText, percentText, mcText]);
       container.setData('mainText', mainText);
       container.setData('percentText', percentText);
+      container.setData('mcText', mcText);
 
       this.tokenContainers.push(container);
     });
@@ -403,6 +412,7 @@ export class StartScene extends Phaser.Scene {
           const container = this.tokenContainers[i];
           const mainText = container.getData('mainText') as Phaser.GameObjects.Text;
           const percentText = container.getData('percentText') as Phaser.GameObjects.Text;
+          const mcText = container.getData('mcText') as Phaser.GameObjects.Text;
 
           const formatted = MarketDataManager.formatTokenDisplay(data);
           const color = MarketDataManager.getColorForChange(data.change);
@@ -415,9 +425,16 @@ export class StartScene extends Phaser.Scene {
           percentText.setText(formatted.percent);
           percentText.setColor(color);
 
-          // Position percent text after main text
+          // MC text stays black
+          mcText.setText(formatted.mc);
+          mcText.setColor('#000000');
+
+          // Position texts after each other
           const mainBounds = mainText.getBounds();
           percentText.setX(mainBounds.width / 2);
+
+          const percentBounds = percentText.getBounds();
+          mcText.setX(mainBounds.width / 2 + percentBounds.width);
         }
       });
 
