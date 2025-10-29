@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { GameConfig } from '../config/GameConfig';
+import { LeaderboardService } from '../services/LeaderboardService';
 
 export class GameOverScene extends Phaser.Scene {
   private nameInput: HTMLInputElement | null = null;
@@ -138,7 +139,13 @@ export class GameOverScene extends Phaser.Scene {
     this.createButton(width / 2 - 250, buttonGroupY, 'TRY AGAIN', () => {
       this.cleanupInput();
       this.sound.stopAll();
-      this.scene.start('UpgradeScene');
+
+      // Skip UpgradeScene if upgrade system is disabled
+      if (GameConfig.ENABLE_UPGRADE_SYSTEM) {
+        this.scene.start('UpgradeScene');
+      } else {
+        this.scene.start('GameScene', { autoStart: true });
+      }
     });
 
     this.createButton(width / 2 + 250, buttonGroupY, 'HALL OF DEGENS', () => {
@@ -253,39 +260,19 @@ export class GameOverScene extends Phaser.Scene {
     });
   }
 
-  private saveName(): void {
+  private async saveName(): Promise<void> {
     const name = this.nameInput?.value.trim() || 'Anonymous';
     const score = this.registry.get('currentScore') || 0;
+    const level = this.registry.get('playerLevel') || 1;
 
-    // Save to localStorage (leaderboard entry)
-    const leaderboardEntry = {
-      name: name,
-      score: score,
-      date: new Date().toISOString()
-    };
-
-    // Get existing leaderboard
-    const leaderboardJson = localStorage.getItem('eagleOfFun_leaderboard');
-    let leaderboard = leaderboardJson ? JSON.parse(leaderboardJson) : [];
-
-    // Add new entry
-    leaderboard.push(leaderboardEntry);
-
-    // Sort by score (highest first) and keep top 10
-    leaderboard.sort((a: any, b: any) => b.score - a.score);
-    leaderboard = leaderboard.slice(0, 10);
-
-    // Save back to localStorage
-    localStorage.setItem('eagleOfFun_leaderboard', JSON.stringify(leaderboard));
-
-    // Show confirmation and navigate to leaderboard
+    // v4.2: Save to online leaderboard
     const confirmText = this.add.text(
       this.cameras.main.width / 2,
       this.cameras.main.height / 2,
-      'SAVED!\n\nLoading Leaderboard...',
+      'SAVING...',
       {
         fontSize: '48px',
-        color: '#00AA00',
+        color: '#888888',
         fontFamily: 'Arial',
         fontStyle: 'bold',
         letterSpacing: 2,
@@ -293,6 +280,33 @@ export class GameOverScene extends Phaser.Scene {
       }
     ).setOrigin(0.5);
     confirmText.setDepth(3000);
+
+    // Submit to online leaderboard
+    const response = await LeaderboardService.submitScore(name, score, level);
+
+    if (response.success) {
+      console.log('✅ Score submitted to online leaderboard:', response.entry);
+      confirmText.setText('SAVED!\n\nLoading Leaderboard...');
+      confirmText.setColor('#00AA00');
+    } else {
+      console.warn('⚠️ Failed to submit to online leaderboard:', response.error);
+      confirmText.setText('SAVED LOCALLY!\n\nLoading Leaderboard...');
+      confirmText.setColor('#FBB13C');
+
+      // Fallback: Save to localStorage
+      const leaderboardEntry = {
+        name: name,
+        score: score,
+        date: new Date().toISOString()
+      };
+
+      const leaderboardJson = localStorage.getItem('eagleOfFun_leaderboard');
+      let leaderboard = leaderboardJson ? JSON.parse(leaderboardJson) : [];
+      leaderboard.push(leaderboardEntry);
+      leaderboard.sort((a: any, b: any) => b.score - a.score);
+      leaderboard = leaderboard.slice(0, 10);
+      localStorage.setItem('eagleOfFun_leaderboard', JSON.stringify(leaderboard));
+    }
 
     // Cleanup input
     this.cleanupInput();
@@ -302,8 +316,6 @@ export class GameOverScene extends Phaser.Scene {
       this.sound.stopAll();
       this.scene.start('LeaderboardScene');
     });
-
-    console.log('Name saved:', name, 'Score:', score);
   }
 
   private cleanupInput(): void {
@@ -332,7 +344,11 @@ export class GameOverScene extends Phaser.Scene {
 
     button.add([bg, buttonText]);
     button.setSize(360, 70);
-    button.setInteractive(new Phaser.Geom.Rectangle(-180, -35, 360, 70), Phaser.Geom.Rectangle.Contains);
+    button.setInteractive({
+      hitArea: new Phaser.Geom.Rectangle(-180, -35, 360, 70),
+      hitAreaCallback: Phaser.Geom.Rectangle.Contains,
+      useHandCursor: true
+    });
 
     // Hover effects
     button.on('pointerover', () => {

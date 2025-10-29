@@ -44,7 +44,7 @@ export default class UIScene extends Phaser.Scene {
   private readonly PURE_WHITE = 0xFFFFFF; // White
   private readonly GOLD = 0xFFD700; // Gold for accents
 
-  private readonly UI_BG_ALPHA = 0.75; // Slightly more visible
+  private readonly UI_BG_ALPHA = 0.35; // v4.2: More transparent so field is visible
   private readonly UI_BORDER_WIDTH = 3; // Thicker border
   private readonly UI_CORNER_RADIUS = 8;
 
@@ -455,7 +455,7 @@ export default class UIScene extends Phaser.Scene {
       repeat: 2
     });
 
-    // Particle effect (optional)
-    this.cameras.main.flash(300, 76, 175, 80, false);
+    // DISABLED: Camera flash effect was causing perceived slowdown + performance issues
+    // this.cameras.main.flash(300, 76, 175, 80, false);
   }
 }

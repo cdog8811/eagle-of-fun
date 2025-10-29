@@ -1,14 +1,18 @@
 import Phaser from 'phaser';
 import { GameConfig } from '../config/GameConfig';
+import { LeaderboardService, LeaderboardEntry as APILeaderboardEntry } from '../services/LeaderboardService';
 
 interface LeaderboardEntry {
   rank: number;
   name: string;
   score: number;
   title: string;
+  level?: number;
 }
 
 export class LeaderboardScene extends Phaser.Scene {
+  private loadingText?: Phaser.GameObjects.Text;
+
   constructor() {
     super({ key: 'LeaderboardScene' });
   }
@@ -53,37 +57,26 @@ export class LeaderboardScene extends Phaser.Scene {
     // Get local high score
     const localHighScore = this.registry.get('highScore') || 0;
 
-    // Load leaderboard from localStorage
-    const leaderboardJson = localStorage.getItem('eagleOfFun_leaderboard');
-    let leaderboardData: LeaderboardEntry[] = [];
+    // Show loading text
+    this.loadingText = this.add.text(width / 2, height / 2, 'Loading leaderboard...', {
+      fontSize: '32px',
+      color: '#888888',
+      fontFamily: 'Arial'
+    }).setOrigin(0.5);
 
-    if (leaderboardJson) {
-      const savedLeaderboard = JSON.parse(leaderboardJson);
-      leaderboardData = savedLeaderboard.map((entry: any, index: number) => ({
-        rank: index + 1,
-        name: entry.name,
-        score: entry.score,
-        title: this.getTitleForScore(entry.score)
-      }));
-    }
-
-    // If leaderboard is empty, show placeholder data
-    if (leaderboardData.length === 0) {
-      leaderboardData = [
-        { rank: 1, name: 'Play to be first!', score: 0, title: 'No scores yet' }
-      ];
-    }
-
-    // Limit to top 7 entries to avoid overlap with buttons
-    const topEntries = leaderboardData.slice(0, 7);
-
-    // Draw leaderboard - adjusted Y position for better spacing
-    this.drawLeaderboard(width / 2, 320, topEntries, localHighScore);
+    // Load leaderboard from API (v4.2: Online leaderboard)
+    this.loadOnlineLeaderboard(width, localHighScore);
 
     // Buttons - professional, better positioned
     this.createButton(width / 2 - 250, height - 100, 'PLAY AGAIN', () => {
       this.sound.stopAll();
-      this.scene.start('UpgradeScene');
+
+      // Skip UpgradeScene if upgrade system is disabled
+      if (GameConfig.ENABLE_UPGRADE_SYSTEM) {
+        this.scene.start('UpgradeScene');
+      } else {
+        this.scene.start('GameScene', { autoStart: true });
+      }
     });
 
     this.createButton(width / 2 + 250, height - 100, 'MAIN MENU', () => {
@@ -193,7 +186,11 @@ export class LeaderboardScene extends Phaser.Scene {
 
     button.add([bg, buttonText]);
     button.setSize(260, 44);
-    button.setInteractive(new Phaser.Geom.Rectangle(-130, -22, 260, 44), Phaser.Geom.Rectangle.Contains);
+    button.setInteractive({
+      hitArea: new Phaser.Geom.Rectangle(-130, -22, 260, 44),
+      hitAreaCallback: Phaser.Geom.Rectangle.Contains,
+      useHandCursor: true
+    });
 
     button.on('pointerover', () => {
       bg.clear();
@@ -241,6 +238,89 @@ export class LeaderboardScene extends Phaser.Scene {
     if (score >= 500) return 'Rising Star';
     if (score >= 100) return 'Eagle Scout';
     return 'Rookie Degen';
+  }
+
+  /**
+   * v4.2: Load online leaderboard from Vercel Postgres API
+   */
+  private async loadOnlineLeaderboard(width: number, localHighScore: number): Promise<void> {
+    try {
+      const response = await LeaderboardService.fetchLeaderboard(100);
+
+      // Hide loading text
+      if (this.loadingText) {
+        this.loadingText.destroy();
+      }
+
+      if (response.success && response.leaderboard && response.leaderboard.length > 0) {
+        // Convert API entries to display format
+        const leaderboardData: LeaderboardEntry[] = response.leaderboard.map((entry, index) => ({
+          rank: index + 1,
+          name: entry.player_name,
+          score: entry.score,
+          level: entry.level,
+          title: this.getTitleForScore(entry.score)
+        }));
+
+        // Limit to top 7 entries
+        const topEntries = leaderboardData.slice(0, 7);
+
+        // Draw leaderboard
+        this.drawLeaderboard(width / 2, 320, topEntries, localHighScore);
+      } else {
+        // Fallback to local leaderboard if API fails
+        this.loadLocalLeaderboard(width, localHighScore);
+      }
+    } catch (error) {
+      console.error('Error loading online leaderboard:', error);
+
+      // Hide loading text
+      if (this.loadingText) {
+        this.loadingText.destroy();
+      }
+
+      // Fallback to local leaderboard
+      this.loadLocalLeaderboard(width, localHighScore);
+    }
+  }
+
+  /**
+   * Fallback: Load leaderboard from localStorage
+   */
+  private loadLocalLeaderboard(width: number, localHighScore: number): void {
+    const leaderboardJson = localStorage.getItem('eagleOfFun_leaderboard');
+    let leaderboardData: LeaderboardEntry[] = [];
+
+    if (leaderboardJson) {
+      const savedLeaderboard = JSON.parse(leaderboardJson);
+      leaderboardData = savedLeaderboard.map((entry: any, index: number) => ({
+        rank: index + 1,
+        name: entry.name,
+        score: entry.score,
+        title: this.getTitleForScore(entry.score)
+      }));
+    }
+
+    // If leaderboard is empty, show placeholder data
+    if (leaderboardData.length === 0) {
+      leaderboardData = [
+        { rank: 1, name: 'Play to be first!', score: 0, title: 'No scores yet' }
+      ];
+    }
+
+    // Limit to top 7 entries
+    const topEntries = leaderboardData.slice(0, 7);
+
+    // Draw leaderboard
+    this.drawLeaderboard(width / 2, 320, topEntries, localHighScore);
+
+    // Show "Local Scores Only" message
+    this.add.text(width / 2, 280, '(Local Scores - Online leaderboard unavailable)', {
+      fontSize: '18px',
+      color: '#999999',
+      fontFamily: 'Arial',
+      fontStyle: 'italic'
+    }).setOrigin(0.5);
   }
 
   shutdown(): void {

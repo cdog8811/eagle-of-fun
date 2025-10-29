@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Upgrade Performance Test</title>
+  <style>
+    body {
+      font-family: monospace;
+      padding: 20px;
+      background: #1a1a1a;
+      color: #0f0;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin: 10px;
+      cursor: pointer;
+    }
+    #log {
+      margin-top: 20px;
+      white-space: pre-wrap;
+      border: 1px solid #0f0;
+      padding: 10px;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+    .error { color: #f00; }
+    .warning { color: #ff0; }
+    .info { color: #0ff; }
+  </style>
+</head>
+<body>
+  <h1>🔬 Upgrade System Performance Test</h1>
+  <p>This minimal test simulates the upgrade purchase → scene start flow</p>
+
+  <button onclick="runTest()">▶️ RUN TEST</button>
+  <button onclick="clearLog()">🗑️ CLEAR LOG</button>
+
+  <div id="log"></div>
+
+  <script>
+    const logEl = document.getElementById('log');
+
+    function log(msg, type = 'info') {
+      const line = document.createElement('div');
+      line.className = type;
+      line.textContent = `[${new Date().toISOString().split('T')[1].slice(0, -1)}] ${msg}`;
+      logEl.appendChild(line);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function clearLog() {
+      logEl.innerHTML = '';
+    }
+
+    // Minimal upgrade system simulation
+    const defaultStats = {
+      blasterCDMul: 1.0,
+      maxHeartsBonus: 0,
+      magnetRadius: 0,
+      shieldExtraSeconds: 0
+    };
+
+    const UPGRADE_DEFS = [
+      {
+        id: 'blaster_cooldown',
+        apply: (level, stats) => ({
+          ...stats,
+          blasterCDMul: defaultStats.blasterCDMul * Math.pow(0.9, level)
+        })
+      },
+      {
+        id: 'shield_duration',
+        apply: (level, stats) => ({
+          ...stats,
+          shieldExtraSeconds: stats.shieldExtraSeconds + level
+        })
+      },
+      {
+        id: 'wing_strength',
+        apply: (level, stats) => ({
+          ...stats,
+          flapBoost: 0.02 * level
+        })
+      },
+      {
+        id: 'magnet_range',
+        apply: (level, stats) => ({
+          ...stats,
+          magnetRadius: 25 * level
+        })
+      }
+    ];
+
+    let upgradeState = {
+      blaster_cooldown: 0,
+      shield_duration: 0,
+      wing_strength: 0,
+      magnet_range: 0
+    };
+
+    let cachedStats = null;
+    let cacheInvalidated = true;
+
+    function getPlayerStats() {
+      const start = performance.now();
+
+      if (!cacheInvalidated && cachedStats) {
+        const duration = performance.now() - start;
+        log(`getPlayerStats() [CACHED]: ${duration.toFixed(3)}ms`, 'info');
+        return cachedStats;
+      }
+
+      log('⚡ Recalculating player stats (cache miss)', 'warning');
+
+      let stats = { ...defaultStats };
+
+      UPGRADE_DEFS.forEach(def => {
+        const level = upgradeState[def.id] || 0;
+        if (level > 0) {
+          stats = def.apply(level, stats);
+        }
+      });
+
+      cachedStats = stats;
+      cacheInvalidated = false;
+
+      const duration = performance.now() - start;
+      log(`getPlayerStats() [RECALC]: ${duration.toFixed(3)}ms`, duration > 5 ? 'error' : 'warning');
+
+      return stats;
+    }
+
+    function buyUpgrade(upgradeId) {
+      const start = performance.now();
+
+      upgradeState[upgradeId] = (upgradeState[upgradeId] || 0) + 1;
+
+      // Simulate localStorage save
+      const saveStart = performance.now();
+      localStorage.setItem('eof_test_upgrades', JSON.stringify(upgradeState));
+      const saveDuration = performance.now() - saveStart;
+      log(`  localStorage.setItem(): ${saveDuration.toFixed(3)}ms`, saveDuration > 5 ? 'error' : 'info');
+
+      // Invalidate cache
+      cacheInvalidated = true;
+
+      const duration = performance.now() - start;
+      log(`buyUpgrade(${upgradeId}): ${duration.toFixed(3)}ms`, duration > 10 ? 'error' : 'info');
+    }
+
+    function simulateSceneStart() {
+      const start = performance.now();
+      log('--- SIMULATING SCENE START ---', 'info');
+
+      // Call getPlayerStats multiple times (like in GameScene.create())
+      const t1 = performance.now();
+      const stats1 = getPlayerStats();
+      log(`  create() getPlayerStats #1: ${(performance.now() - t1).toFixed(3)}ms`);
+
+      // Simulate some work
+      const t2 = performance.now();
+      for (let i = 0; i < 100000; i++) {
+        Math.random();
+      }
+      log(`  create() some work: ${(performance.now() - t2).toFixed(3)}ms`);
+
+      // Call getPlayerStats again (like in update loop)
+      const t3 = performance.now();
+      const stats2 = getPlayerStats();
+      log(`  update() getPlayerStats #2: ${(performance.now() - t3).toFixed(3)}ms`);
+
+      // Call many times in rapid succession (simulate 60 FPS)
+      const t4 = performance.now();
+      for (let frame = 0; frame < 60; frame++) {
+        getPlayerStats();
+      }
+      const duration60 = performance.now() - t4;
+      log(`  60 frames getPlayerStats: ${duration60.toFixed(3)}ms (${(duration60/60).toFixed(3)}ms per frame)`, duration60 > 100 ? 'error' : 'info');
+
+      const totalDuration = performance.now() - start;
+      log(`TOTAL SCENE START: ${totalDuration.toFixed(3)}ms`, totalDuration > 500 ? 'error' : 'warning');
+      log('', 'info');
+    }
+
+    function runTest() {
+      log('=== STARTING PERFORMANCE TEST ===', 'info');
+      log('', 'info');
+
+      // Test 1: Fresh start (no upgrades)
+      log('TEST 1: Fresh start (no upgrades)', 'info');
+      upgradeState = { blaster_cooldown: 0, shield_duration: 0, wing_strength: 0, magnet_range: 0 };
+      cacheInvalidated = true;
+      simulateSceneStart();
+
+      // Test 2: Buy 1 upgrade
+      log('TEST 2: Buy 1 upgrade', 'info');
+      buyUpgrade('blaster_cooldown');
+      simulateSceneStart();
+
+      // Test 3: Buy 3 more upgrades
+      log('TEST 3: Buy 3 more upgrades', 'info');
+      buyUpgrade('shield_duration');
+      buyUpgrade('wing_strength');
+      buyUpgrade('magnet_range');
+      simulateSceneStart();
+
+      // Test 4: Buy multiple levels
+      log('TEST 4: Buy multiple levels of same upgrade', 'info');
+      for (let i = 0; i < 5; i++) {
+        buyUpgrade('blaster_cooldown');
+      }
+      simulateSceneStart();
+
+      log('=== TEST COMPLETE ===', 'info');
+      log('', 'info');
+      log('🔍 DIAGNOSIS:', 'info');
+      log('If you see SLOW TIMES (>10ms) in getPlayerStats() RECALC,', 'warning');
+      log('that is the performance bottleneck!', 'warning');
+      log('', 'info');
+      log('If localStorage.setItem() is slow (>5ms), that\'s the issue!', 'warning');
+    }
+  </script>
+</body>
+</html>

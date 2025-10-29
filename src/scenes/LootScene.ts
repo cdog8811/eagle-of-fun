@@ -191,7 +191,7 @@ export class LootScene extends Phaser.Scene {
     this.applyReward(reward.type);
 
     // Sound effect
-    this.sound.play('power-up', { volume: 0.6 });
+    this.sound.play('belle-collect', { volume: 0.6 });
   }
 
   private applyReward(type: string): void {

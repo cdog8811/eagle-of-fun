@@ -1,4 +1,22 @@
+/**
+ * GameConfig.ts
+ * Eagle of Fun v4.2 - Main Game Configuration
+ *
+ * Updated to use new modular config system:
+ * - EnemiesConfig.ts for enemy definitions
+ * - PhaseConfig.ts for phase progression
+ * - CombosConfig.ts for power-up synergies
+ */
+
+import { PHASES } from './PhaseConfig';
+import { ENEMIES } from './EnemiesConfig';
+
 export const GameConfig = {
+  // === FEATURE FLAGS ===
+  ENABLE_UPGRADE_SYSTEM: true,   // Re-enabled to test performance
+  ENABLE_XP_SYSTEM: false,       // Keep disabled - XP causes slowdown
+  DEBUG_COLLISIONS: false,       // Disable debug logs for production
+
   // Game dimensions - high resolution for professional quality
   width: 1920,
   height: 1080,
@@ -16,8 +34,11 @@ export const GameConfig = {
   obstacleSpawnInterval: 1500, // milliseconds (schneller für mehr Action)
   obstacleGap: 220, // etwas größer für einfacheres Gameplay
 
-  // === PHASES SYSTEM (Time-based progression) ===
-  phases: [
+  // === PHASES SYSTEM (v4.2 - Imported from PhaseConfig.ts) ===
+  phases: PHASES,
+
+  // === LEGACY PHASE STRUCTURE (DEPRECATED - kept for compatibility) ===
+  legacyPhases: [
     {
       id: 1,
       name: 'Soft Launch 🚀',
@@ -134,13 +155,16 @@ export const GameConfig = {
     }
   },
 
-  // === ENEMIES ===
-  enemies: {
+  // === ENEMIES (v4.2 - Imported from EnemiesConfig.ts) ===
+  enemies: ENEMIES,
+
+  // === LEGACY ENEMIES (DEPRECATED - kept for compatibility) ===
+  legacyEnemies: {
     jeeter: {
       name: 'Jeeter',
       description: 'Paper-Hand-Symbol',
       behavior: 'horizontal',
-      speed: 250,
+      speed: 280, // Fast - annoying quick enemy
       hp: 20, // v3.8: Very low HP (1 shot at start)
       size: { width: 100, height: 100 }, // Slightly smaller hitbox
       sprite: 'jeet',
@@ -151,7 +175,7 @@ export const GameConfig = {
       name: 'Paper Hands Pete',
       description: 'Droppt Fake-Coins',
       behavior: 'drops_fake_coins',
-      speed: 200,
+      speed: 160, // Slow - easier to dodge
       hp: 30, // v3.8: Medium-low HP
       size: { width: 85, height: 85 }, // Slightly smaller hitbox
       sprite: 'paper-hands',
@@ -163,7 +187,7 @@ export const GameConfig = {
       name: 'Red Candles',
       description: 'Vertikale Barrieren',
       behavior: 'vertical_barrier',
-      speed: 180,
+      speed: 140, // Very slow - stationary threat
       hp: 35, // v3.8: Medium HP
       size: { width: 50, height: 150 }, // Smaller hitbox - was too dangerous
       sprite: 'red-candles',
@@ -174,7 +198,7 @@ export const GameConfig = {
       name: 'Gary (SEC)',
       description: 'Wirft Lawsuit Papers',
       behavior: 'throws_papers',
-      speed: 220,
+      speed: 190, // Medium speed
       hp: 25, // v3.8: Low HP for basic enemy
       size: { width: 90, height: 100 }, // Smaller hitbox
       sprite: 'gary',
@@ -187,7 +211,7 @@ export const GameConfig = {
       name: 'Bear Market Boss',
       description: 'Riesiger Endgegner',
       behavior: 'chaos',
-      speed: 150,
+      speed: 130, // Very slow - intimidating boss
       hp: 200, // v3.8: Boss has high HP
       size: { width: 180, height: 180 }, // Slightly smaller hitbox (still big boss)
       sprite: 'bear-boss',
@@ -199,7 +223,7 @@ export const GameConfig = {
       name: '4meme (CZ)',
       description: 'Kontrahent zu America.Fun - gehört zu CZ/Binance',
       behavior: 'horizontal',
-      speed: 230,
+      speed: 260, // Fast competitor
       hp: 28,
       size: { width: 95, height: 95 },
       sprite: 'fourmeme',
@@ -210,7 +234,7 @@ export const GameConfig = {
       name: 'Pump.fun',
       description: 'Größte Memecoin-Plattform - Kontrahent',
       behavior: 'horizontal',
-      speed: 240,
+      speed: 270, // Very fast platform
       hp: 30,
       size: { width: 90, height: 90 },
       sprite: 'pumpfun',
@@ -222,7 +246,7 @@ export const GameConfig = {
       name: 'HawkEye',
       description: 'Sniper - fires aimed laser shots',
       behavior: 'sniper',
-      speed: 180,
+      speed: 150, // Slow sniper - precision over speed
       hp: 35,
       size: { width: 95, height: 95 },
       sprite: 'emoji-hawkeye', // 🎯 emoji
@@ -236,7 +260,7 @@ export const GameConfig = {
       name: 'Droneling',
       description: 'Swarm enemy - spawns in groups of 5',
       behavior: 'swarm',
-      speed: 220,
+      speed: 240, // Medium-fast swarm
       hp: 20,
       size: { width: 70, height: 70 },
       sprite: 'emoji-droneling', // 🚁 emoji
@@ -249,7 +273,7 @@ export const GameConfig = {
       name: 'Custodian',
       description: 'Shielded - only vulnerable from top/bottom',
       behavior: 'shielded',
-      speed: 160,
+      speed: 120, // Very slow tank with shield
       hp: 50,
       size: { width: 100, height: 100 },
       sprite: 'emoji-custodian', // 🛡️ emoji
@@ -262,7 +286,7 @@ export const GameConfig = {
       name: 'FireCracker',
       description: 'Exploder - creates splinters on death',
       behavior: 'exploder',
-      speed: 200,
+      speed: 220, // Medium-fast explosive
       hp: 25,
       size: { width: 80, height: 80 },
       sprite: 'emoji-firecracker', // 💥 emoji
@@ -276,7 +300,7 @@ export const GameConfig = {
       name: 'SBF',
       description: 'Tank - high HP, slow movement',
       behavior: 'tank',
-      speed: 120,
+      speed: 100, // Extremely slow tank
       hp: 150,
       size: { width: 120, height: 120 },
       sprite: 'emoji-sbf', // 🏦 emoji
@@ -288,7 +312,7 @@ export const GameConfig = {
       name: 'Do Kwon',
       description: 'Elite - fast and dangerous',
       behavior: 'elite',
-      speed: 280,
+      speed: 320, // Very fast elite
       hp: 80,
       size: { width: 100, height: 100 },
       sprite: 'emoji-dokwon', // ⚡ emoji
@@ -300,7 +324,7 @@ export const GameConfig = {
       name: 'CZ',
       description: 'Boss-tier elite enemy',
       behavior: 'boss_tier',
-      speed: 200,
+      speed: 180, // Medium speed boss-tier
       hp: 300,
       size: { width: 140, height: 140 },
       sprite: 'emoji-cz', // 🐻 emoji
@@ -314,7 +338,7 @@ export const GameConfig = {
       name: 'Splitter',
       description: 'Divides into 2 smaller enemies on death',
       behavior: 'splitter',
-      speed: 190,
+      speed: 210, // Medium speed
       hp: 40,
       size: { width: 90, height: 90 },
       sprite: 'emoji-splitter', // 🔄 emoji
@@ -328,7 +352,7 @@ export const GameConfig = {
       name: 'Healer',
       description: 'Heals nearby enemies periodically',
       behavior: 'healer',
-      speed: 140,
+      speed: 110, // Very slow support unit
       hp: 60,
       size: { width: 95, height: 95 },
       sprite: 'emoji-healer', // 💚 emoji
@@ -343,21 +367,21 @@ export const GameConfig = {
       name: 'Kamikaze',
       description: 'Rushes directly at the eagle - high risk!',
       behavior: 'kamikaze',
-      speed: 350, // Very fast!
+      speed: 400, // EXTREMELY fast rush!
       hp: 20, // Low HP
       size: { width: 75, height: 75 },
       sprite: 'emoji-kamikaze', // 💥 emoji
       scale: 1.1,
       meme: '💥 All in! YOLO!',
       aiType: 'kamikaze',
-      rushSpeed: 500, // Speed when charging
+      rushSpeed: 600, // Even faster when charging!
       explosionDamage: 2 // Damage on impact
     },
     shieldBearer: {
       name: 'Shield Bearer',
       description: 'Has a rotating shield - attack from behind!',
       behavior: 'shield_rotating',
-      speed: 170,
+      speed: 145, // Slow defensive unit
       hp: 70,
       size: { width: 100, height: 100 },
       sprite: 'emoji-shield', // 🛡️ emoji
@@ -419,6 +443,50 @@ export const GameConfig = {
       sound: 'Vesper0x appears!',
       text: 'Vesper0x grants you an extra life! 🦌❤️',
       effect: 'extraLife'
+    },
+    cryptoActing: {
+      name: "CryptoActing's Early Entry",
+      icon: '🕶️',
+      description: 'The Early Believer - High risk, high reward!',
+      duration: 12000, // 12 seconds
+      trigger: 'pickup',
+      spawnChance: 8, // % chance to spawn (rare but not too rare)
+      sound: 'You got in before the rest!',
+      text: 'CryptoActing entered early — market goes nuts! 🕶️',
+      effect: 'earlyEntry',
+      scoreMultiplier: 3, // 3x score
+      enemySpeedIncrease: 1.2, // +20% enemy speed
+      perfectEntryBonus: 250 // XP bonus if no damage taken
+    },
+    danxxProtocol: {
+      name: 'Danxx Protocol',
+      icon: '🧱',
+      description: 'The Market Stabilizer - Brings order to chaos!',
+      duration: 8000, // 8 seconds
+      trigger: 'pickup',
+      spawnChance: 5, // % chance to spawn (medium-rare)
+      sound: 'When chaos hits, he brings order to the chain!',
+      text: 'Danxx initiated the Buyback Protocol. 🧱',
+      effect: 'marketStabilizer',
+      coinSpeedReduction: 0.7, // -30% coin speed (coins move 70% of normal)
+      xpBonus: 1.2, // +20% XP per coin
+      enemySpawnReduction: 0.5, // Enemy spawn rate halved
+      magnetActive: true // Magnet effect active
+    },
+    roseModMode: {
+      name: "Rose's Mod Mode",
+      icon: '🌹',
+      description: 'The Telegram Guardian - Mutes the FUD!',
+      duration: 10000, // 10 seconds
+      trigger: 'pickup',
+      spawnChance: 6, // % chance to spawn (frequent but pleasant)
+      sound: 'She mutes the FUD and keeps the vibes high.',
+      text: 'Rose muted the FUD! The chat is peaceful. 🌹',
+      effect: 'fudMuter',
+      freezeEnemies: true, // FUD-Bots, Jeeters, Influencers freeze
+      clearProjectiles: true, // Remove all enemy projectiles
+      magnetBoost: 1.3, // Slight coin magnet increase
+      xpBonus: 1.1 // +10% XP
     }
   },
 

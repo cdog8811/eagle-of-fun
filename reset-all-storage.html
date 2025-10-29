@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reset Eagle of Fun - Clear All Storage</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f0f0f0;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #E63946;
+      margin-top: 0;
+    }
+    button {
+      background: #E63946;
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      font-size: 18px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 10px 5px;
+    }
+    button:hover {
+      background: #d62839;
+    }
+    .success {
+      background: #4CAF50;
+      color: white;
+      padding: 15px;
+      border-radius: 5px;
+      margin-top: 20px;
+      display: none;
+    }
+    .info {
+      background: #2196F3;
+      color: white;
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+    }
+    ul {
+      text-align: left;
+      line-height: 1.8;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🦅 Eagle of Fun - Storage Reset</h1>
+
+    <div class="info">
+      <strong>This will clear ALL game data:</strong>
+      <ul>
+        <li>XP and Level progress</li>
+        <li>Upgrade purchases</li>
+        <li>Mission progress</li>
+        <li>Analytics data</li>
+        <li>All localStorage entries</li>
+      </ul>
+      <p><strong>Use this if you experience:</strong></p>
+      <ul>
+        <li>Game slowdown/lag</li>
+        <li>Crashes or freezes</li>
+        <li>Corrupted save data</li>
+      </ul>
+    </div>
+
+    <button onclick="resetAll()">🗑️ RESET ALL STORAGE</button>
+    <button onclick="window.location.reload()">🔄 Reload Page</button>
+
+    <div id="success" class="success"></div>
+  </div>
+
+  <script>
+    function resetAll() {
+      try {
+        // Clear localStorage
+        localStorage.clear();
+
+        // Clear sessionStorage
+        sessionStorage.clear();
+
+        // Clear IndexedDB (if any)
+        if (window.indexedDB) {
+          indexedDB.databases().then(databases => {
+            databases.forEach(db => {
+              indexedDB.deleteDatabase(db.name);
+            });
+          });
+        }
+
+        const successDiv = document.getElementById('success');
+        successDiv.style.display = 'block';
+        successDiv.innerHTML = `
+          ✅ <strong>Success!</strong><br>
+          All storage cleared!<br>
+          <br>
+          <strong>Cleared:</strong><br>
+          - localStorage<br>
+          - sessionStorage<br>
+          - IndexedDB<br>
+          <br>
+          <strong>Now:</strong> Click "Reload Page" or go to <a href="http://localhost:3007/eagle-of-fun/" style="color: white;">http://localhost:3007/eagle-of-fun/</a>
+        `;
+
+        console.log('✅ All storage cleared successfully!');
+      } catch (error) {
+        alert('Error clearing storage: ' + error.message);
+        console.error(error);
+      }
+    }
+  </script>
+</body>
+</html>

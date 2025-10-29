@@ -1,26 +1,23 @@
 import Phaser from 'phaser';
-import { getXPSystem } from '../systems/xpSystem';
+import { GameConfig } from '../config/GameConfig';
 import { getUpgradeSystem, type UpgradeDef, type PlayerStats } from '../systems/upgradeSystem';
-import type { XPState } from '../systems/xpSystem';
 
 /**
- * UpgradeScene - Upgrade Hangar (v3.8 - Redesigned)
+ * UpgradeScene - Upgrade Hangar (v3.10 - Score-based)
  *
- * Displayed after GameOver, allows spending XP on upgrades
+ * Displayed after GameOver, allows spending SCORE on upgrades (no XP!)
  * Flow: GameOver → UpgradeScene → [PLAY AGAIN] → Intro/GameScene
  */
 export default class UpgradeScene extends Phaser.Scene {
-  private xpSystem = getXPSystem();
   private upgradeSystem = getUpgradeSystem();
 
-  private xpState!: XPState;
+  private currentScore: number = 0; // Score-based instead of XP
   private playerStats!: PlayerStats;
 
   // UI Elements
-  private xpDisplayBg?: Phaser.GameObjects.Graphics;
-  private levelText?: Phaser.GameObjects.Text;
-  private xpText?: Phaser.GameObjects.Text;
-  private totalXPText?: Phaser.GameObjects.Text;
+  private scoreDisplayBg?: Phaser.GameObjects.Graphics;
+  private scoreText?: Phaser.GameObjects.Text;
+  private availableScoreText?: Phaser.GameObjects.Text;
 
   private upgradeCards: UpgradeCard[] = [];
   private scrollY: number = 0;
@@ -32,10 +29,12 @@ export default class UpgradeScene extends Phaser.Scene {
   }
 
   create(): void {
-    console.log('🛠 UPGRADE HANGAR LOADED - v3.8');
+    console.log('🛠 UPGRADE HANGAR LOADED - v3.10 (Score-based)');
 
-    // Get current state
-    this.xpState = this.xpSystem.getState();
+    // Get current score from registry (set by GameOverScene)
+    this.currentScore = this.registry.get('currentScore') || 0;
+    console.log('💰 Available Score for upgrades:', this.currentScore);
+
     this.playerStats = this.upgradeSystem.getPlayerStats();
 
     const { width, height } = this.cameras.main;
@@ -74,8 +73,8 @@ export default class UpgradeScene extends Phaser.Scene {
       letterSpacing: 3
     }).setOrigin(0.5).setScrollFactor(0);
 
-    // XP Display (Top) - FIXED to screen
-    this.createXPDisplay();
+    // Score Display (Top) - FIXED to screen
+    this.createScoreDisplay();
 
     // Upgrade Cards (Scrollable Grid)
     this.createUpgradeCards();
@@ -121,70 +120,27 @@ export default class UpgradeScene extends Phaser.Scene {
     }
   }
 
-  private createXPDisplay(): void {
+  private createScoreDisplay(): void {
     const { width } = this.cameras.main;
     const x = width / 2 - 350;
     const y = 190;
     const boxWidth = 700;
     const boxHeight = 90;
 
-    // v3.8: Modern minimal box (FIXED to screen)
-    this.xpDisplayBg = this.add.graphics();
-    this.xpDisplayBg.fillStyle(0x000000, 1);
-    this.xpDisplayBg.fillRoundedRect(x, y, boxWidth, boxHeight, 6);
-    this.xpDisplayBg.setScrollFactor(0);
+    // v4.2: Black score display box (no emojis in text, larger for readability)
+    this.scoreDisplayBg = this.add.graphics();
+    this.scoreDisplayBg.fillStyle(0x000000, 1);
+    this.scoreDisplayBg.fillRoundedRect(x, y, boxWidth, boxHeight, 10);
+    this.scoreDisplayBg.setScrollFactor(0);
 
-    // Level (Left side) - FIXED to screen
-    this.levelText = this.add.text(x + 30, y + 20, `LEVEL ${this.xpState.level}`, {
-      fontSize: '36px',
+    // Available Score (Center) - FIXED to screen, no emoji in text
+    this.scoreText = this.add.text(width / 2, y + 45, `AVAILABLE SCORE: ${this.currentScore}`, {
+      fontSize: '42px',
       fontFamily: 'Arial',
-      color: '#FFFFFF',
+      color: '#FFD700',
       fontStyle: 'bold',
       letterSpacing: 2
-    }).setScrollFactor(0);
-
-    // XP Progress (Center)
-    const xpBarX = x + 220;
-    const xpBarY = y + 25;
-    const xpBarWidth = 300;
-    const xpBarHeight = 24;
-
-    // XP Bar Background - FIXED to screen
-    const xpBarBg = this.add.graphics();
-    xpBarBg.fillStyle(0x333333, 1);
-    xpBarBg.fillRoundedRect(xpBarX, xpBarY, xpBarWidth, xpBarHeight, 12);
-    xpBarBg.setScrollFactor(0);
-
-    // XP Bar Fill - FIXED to screen
-    const progress = this.xpState.xp / this.xpState.xpToNext;
-    const fillWidth = xpBarWidth * progress;
-
-    const xpBarFill = this.add.graphics();
-    xpBarFill.fillStyle(0xE63946, 1);  // Red accent
-    xpBarFill.fillRoundedRect(xpBarX, xpBarY, fillWidth, xpBarHeight, 12);
-
-    // Highlight
-    xpBarFill.fillStyle(0xFFFFFF, 0.3);
-    xpBarFill.fillRoundedRect(xpBarX, xpBarY, fillWidth, xpBarHeight / 3, 12);
-    xpBarFill.setScrollFactor(0);
-
-    // XP Text (below bar) - FIXED to screen
-    this.xpText = this.add.text(xpBarX + xpBarWidth / 2, xpBarY + xpBarHeight + 12,
-      `${this.xpState.xp} / ${this.xpState.xpToNext} XP`, {
-      fontSize: '16px',
-      fontFamily: 'Arial',
-      color: '#FFFFFF',
-      letterSpacing: 1
-    }).setOrigin(0.5, 0).setScrollFactor(0);
-
-    // Total XP (Right side) - FIXED to screen
-    this.totalXPText = this.add.text(x + boxWidth - 30, y + 35,
-      `Total: ${this.xpState.totalXP} XP`, {
-      fontSize: '20px',
-      fontFamily: 'Arial',
-      color: '#FFFFFF',
-      letterSpacing: 1
-    }).setOrigin(1, 0.5).setScrollFactor(0);
+    }).setOrigin(0.5, 0.5).setScrollFactor(0);
   }
 
   private createUpgradeCards(): void {
@@ -215,7 +171,7 @@ export default class UpgradeScene extends Phaser.Scene {
         cardHeight,
         def,
         currentLevel,
-        this.xpState,
+        this.currentScore,
         () => this.onUpgradeBuy(def)
       );
 
@@ -265,7 +221,11 @@ export default class UpgradeScene extends Phaser.Scene {
 
     button.add([bg, buttonText]);
     button.setSize(400, 70);
-    button.setInteractive(new Phaser.Geom.Rectangle(-200, -35, 400, 70), Phaser.Geom.Rectangle.Contains);
+    button.setInteractive({
+      hitArea: new Phaser.Geom.Rectangle(-200, -35, 400, 70),
+      hitAreaCallback: Phaser.Geom.Rectangle.Contains,
+      useHandCursor: true
+    });
 
     // Elegant hover effect (same as StartScene)
     button.on('pointerover', () => {
@@ -332,11 +292,14 @@ export default class UpgradeScene extends Phaser.Scene {
     }
 
     console.log(`💰 Attempting to buy upgrade: ${def.id}`);
+    console.log(`   Current Score: ${this.currentScore}`);
 
-    // Get current state and cost
-    const currentState = this.xpSystem.getState();
+    // Get current level and cost
     const currentLevel = this.upgradeSystem.getState().levels[def.id] || 0;
     const cost = this.upgradeSystem.getCost(def.id, currentLevel + 1);
+
+    console.log(`   Cost: ${cost}`);
+    console.log(`   Current Level: ${currentLevel}/${def.maxLevel}`);
 
     // Check if already at max
     if (currentLevel >= def.maxLevel) {
@@ -345,8 +308,8 @@ export default class UpgradeScene extends Phaser.Scene {
     }
 
     // Check if can afford
-    if (currentState.totalXP < cost) {
-      this.showNotification(`Not enough XP! Need ${cost - currentState.totalXP} more XP`, 0xFF0000);
+    if (this.currentScore < cost) {
+      this.showNotification(`Not enough Score! Need ${cost - this.currentScore} more`, 0xFF0000);
       if (this.sound.get('enemyhit')) {
         this.sound.play('enemyhit', { volume: 0.3 });
       }
@@ -358,17 +321,17 @@ export default class UpgradeScene extends Phaser.Scene {
 
     // Show confirmation dialog
     this.showBuyConfirmation(def, cost, () => {
-      // Try to buy
-      const success = this.upgradeSystem.buy(def.id, (cost) => {
-        if (currentState.totalXP >= cost) {
-          this.xpSystem.spendXP(cost);
-          return true;
-        }
-        return false;
-      });
+      // Try to buy with score
+      const result = this.upgradeSystem.buyWithScore(def.id, this.currentScore);
 
-      if (success) {
-        console.log(`✅ Upgrade purchased: ${def.id}`);
+      if (result.success) {
+        console.log(`✅ Upgrade purchased: ${def.id} (cost: ${cost} score)`);
+
+        // Update current score
+        this.currentScore = result.newScore;
+
+        // Save updated score to registry
+        this.registry.set('currentScore', this.currentScore);
 
         // Visual feedback - flash green
         this.showNotification(`✅ ${def.name} upgraded to Level ${currentLevel + 1}!`, 0x00FF00);
@@ -407,17 +370,16 @@ export default class UpgradeScene extends Phaser.Scene {
     const upgradeState = this.upgradeSystem.getState();
     this.upgradeCards.forEach(card => {
       const currentLevel = upgradeState.levels[card.def.id] || 0;
-      card.updateLevel(currentLevel, this.xpState);
+      card.updateLevel(currentLevel, this.currentScore);
     });
   }
 
   private onPlayAgain(): void {
-    console.log('▶ Play Again clicked - skipping directly to game');
-
     // Stop menu music before starting game
     this.sound.stopByKey('menu-music');
 
-    this.scene.start('GameScene');
+    // Skip IntroScene, go directly to GameScene for faster game restart
+    this.scene.start('GameScene', { autoStart: true });
   }
 
   private showBuyConfirmation(def: UpgradeDef, cost: number, onConfirm: () => void): void {
@@ -457,7 +419,7 @@ export default class UpgradeScene extends Phaser.Scene {
     // Details - better spacing and readability
     const currentLevel = this.upgradeSystem.getState().levels[def.id] || 0;
     const details = this.add.text(width / 2, height / 2 - 40,
-      `${def.name}\n\nLevel ${currentLevel} → ${currentLevel + 1}\n\nCost: ${cost} XP`, {
+      `${def.name}\n\nLevel ${currentLevel} → ${currentLevel + 1}\n\nCost: ${cost} SCORE`, {
       fontSize: '26px',
       fontFamily: 'Arial',
       color: '#000000',
@@ -482,7 +444,11 @@ export default class UpgradeScene extends Phaser.Scene {
 
     confirmBtnContainer.add([confirmBtnBg, confirmText]);
     confirmBtnContainer.setSize(200, 60);
-    confirmBtnContainer.setInteractive(new Phaser.Geom.Rectangle(-100, -30, 200, 60), Phaser.Geom.Rectangle.Contains);
+    confirmBtnContainer.setInteractive({
+      hitArea: new Phaser.Geom.Rectangle(-100, -30, 200, 60),
+      hitAreaCallback: Phaser.Geom.Rectangle.Contains,
+      useHandCursor: true
+    });
 
     // Cancel button (red) - larger
     const cancelBtnContainer = this.add.container(width / 2 + 130, height / 2 + 130).setDepth(2003);
@@ -500,7 +466,11 @@ export default class UpgradeScene extends Phaser.Scene {
 
     cancelBtnContainer.add([cancelBtnBg, cancelText]);
     cancelBtnContainer.setSize(200, 60);
-    cancelBtnContainer.setInteractive(new Phaser.Geom.Rectangle(-100, -30, 200, 60), Phaser.Geom.Rectangle.Contains);
+    cancelBtnContainer.setInteractive({
+      hitArea: new Phaser.Geom.Rectangle(-100, -30, 200, 60),
+      hitAreaCallback: Phaser.Geom.Rectangle.Contains,
+      useHandCursor: true
+    });
 
     // Cleanup function
     const cleanup = () => {
@@ -598,7 +568,7 @@ export default class UpgradeScene extends Phaser.Scene {
       .setInteractive();
 
     const boxWidth = 550;
-    const boxHeight = 260;
+    const boxHeight = 340; // v4.2: Increased height for checkbox
     const box = this.add.graphics();
     box.setDepth(1001);
     box.fillStyle(0xFFFFFF, 1);
@@ -608,7 +578,7 @@ export default class UpgradeScene extends Phaser.Scene {
 
     const confirmText = this.add.text(
       width / 2,
-      height / 2 - 60,
+      height / 2 - 100,
       'RESET ALL UPGRADES?',
       {
         fontSize: '32px',
@@ -621,7 +591,7 @@ export default class UpgradeScene extends Phaser.Scene {
 
     const warningText = this.add.text(
       width / 2,
-      height / 2 - 10,
+      height / 2 - 50,
       'This will reset ALL upgrades!\nYour XP will be refunded.',
       {
         fontSize: '20px',
@@ -632,8 +602,64 @@ export default class UpgradeScene extends Phaser.Scene {
       }
     ).setOrigin(0.5).setDepth(1002);
 
-    // Confirm button
-    const confirmBtnContainer = this.add.container(width / 2 - 100, height / 2 + 70).setDepth(1003);
+    // v4.2: Checkbox for resetting XP level
+    let resetXP = false;
+    const checkboxSize = 30;
+    const checkboxX = width / 2 - 150;
+    const checkboxY = height / 2 + 10;
+
+    const checkbox = this.add.graphics();
+    checkbox.setDepth(1002);
+    checkbox.lineStyle(3, 0x000000, 1);
+    checkbox.strokeRect(checkboxX, checkboxY, checkboxSize, checkboxSize);
+    checkbox.fillStyle(0xFFFFFF, 1);
+    checkbox.fillRect(checkboxX, checkboxY, checkboxSize, checkboxSize);
+
+    const checkboxLabel = this.add.text(
+      checkboxX + checkboxSize + 15,
+      checkboxY + checkboxSize / 2,
+      'Also reset my Level to 0',
+      {
+        fontSize: '22px',
+        fontFamily: 'Arial',
+        color: '#000000',
+        fontStyle: 'normal'
+      }
+    ).setOrigin(0, 0.5).setDepth(1002);
+
+    // Make checkbox interactive
+    const checkboxHitArea = this.add.rectangle(
+      checkboxX + checkboxSize / 2,
+      checkboxY + checkboxSize / 2,
+      checkboxSize + 200,
+      checkboxSize + 10,
+      0x000000,
+      0
+    ).setDepth(1002).setInteractive({ useHandCursor: true });
+
+    checkboxHitArea.on('pointerdown', () => {
+      resetXP = !resetXP;
+      checkbox.clear();
+      checkbox.lineStyle(3, 0x000000, 1);
+      checkbox.strokeRect(checkboxX, checkboxY, checkboxSize, checkboxSize);
+      if (resetXP) {
+        checkbox.fillStyle(0xE63946, 1);
+        checkbox.fillRect(checkboxX + 3, checkboxY + 3, checkboxSize - 6, checkboxSize - 6);
+        // Draw checkmark
+        checkbox.lineStyle(4, 0xFFFFFF, 1);
+        checkbox.beginPath();
+        checkbox.moveTo(checkboxX + 7, checkboxY + 15);
+        checkbox.lineTo(checkboxX + 12, checkboxY + 20);
+        checkbox.lineTo(checkboxX + 23, checkboxY + 9);
+        checkbox.strokePath();
+      } else {
+        checkbox.fillStyle(0xFFFFFF, 1);
+        checkbox.fillRect(checkboxX + 3, checkboxY + 3, checkboxSize - 6, checkboxSize - 6);
+      }
+    });
+
+    // Confirm button (v4.2: moved down for checkbox)
+    const confirmBtnContainer = this.add.container(width / 2 - 100, height / 2 + 110).setDepth(1003);
     const confirmBtnBg = this.add.graphics();
     confirmBtnBg.fillStyle(0xE63946, 1);
     confirmBtnBg.fillRoundedRect(-85, -25, 170, 50, 6);
@@ -648,10 +674,14 @@ export default class UpgradeScene extends Phaser.Scene {
 
     confirmBtnContainer.add([confirmBtnBg, confirmBtnText]);
     confirmBtnContainer.setSize(170, 50);
-    confirmBtnContainer.setInteractive(new Phaser.Geom.Rectangle(-85, -25, 170, 50), Phaser.Geom.Rectangle.Contains);
+    confirmBtnContainer.setInteractive({
+      hitArea: new Phaser.Geom.Rectangle(-85, -25, 170, 50),
+      hitAreaCallback: Phaser.Geom.Rectangle.Contains,
+      useHandCursor: true
+    });
 
-    // Cancel button
-    const cancelBtnContainer = this.add.container(width / 2 + 100, height / 2 + 70).setDepth(1003);
+    // Cancel button (v4.2: moved down for checkbox)
+    const cancelBtnContainer = this.add.container(width / 2 + 100, height / 2 + 110).setDepth(1003);
     const cancelBtnBg = this.add.graphics();
     cancelBtnBg.fillStyle(0x000000, 1);
     cancelBtnBg.fillRoundedRect(-85, -25, 170, 50, 6);
@@ -666,22 +696,43 @@ export default class UpgradeScene extends Phaser.Scene {
 
     cancelBtnContainer.add([cancelBtnBg, cancelBtnText]);
     cancelBtnContainer.setSize(170, 50);
-    cancelBtnContainer.setInteractive(new Phaser.Geom.Rectangle(-85, -25, 170, 50), Phaser.Geom.Rectangle.Contains);
+    cancelBtnContainer.setInteractive({
+      hitArea: new Phaser.Geom.Rectangle(-85, -25, 170, 50),
+      hitAreaCallback: Phaser.Geom.Rectangle.Contains,
+      useHandCursor: true
+    });
 
     // Confirm action
     confirmBtnContainer.once('pointerdown', () => {
       console.log('🗑️ Confirming reset...');
       this.upgradeSystem.resetAll();
-      this.xpSystem.resetForNewProfile();
-      this.xpState = this.xpSystem.getState();
+
+      // v3.10: Reset score to 0 (no XP system anymore)
+      this.currentScore = 0;
+      this.registry.set('currentScore', 0);
+
+      // v4.2: Also reset XP level if checkbox is checked
+      if (resetXP) {
+        console.log('🔄 Resetting XP level to 0...');
+        this.xpSystem.resetAll();
+      }
+
       this.refreshUI();
       overlay.destroy();
       box.destroy();
       confirmText.destroy();
       warningText.destroy();
+      checkbox.destroy();
+      checkboxLabel.destroy();
+      checkboxHitArea.destroy();
       confirmBtnContainer.destroy();
       cancelBtnContainer.destroy();
-      console.log('✅ Reset complete');
+
+      const message = resetXP ? '🗑️ All upgrades and Level reset!' : '🗑️ All upgrades reset!';
+      console.log(`✅ Reset complete - ${message}`);
+
+      // Show notification
+      this.showNotification(message, 0xE63946);
     });
 
     // Cancel action
@@ -690,6 +741,9 @@ export default class UpgradeScene extends Phaser.Scene {
       box.destroy();
       confirmText.destroy();
       warningText.destroy();
+      checkbox.destroy();
+      checkboxLabel.destroy();
+      checkboxHitArea.destroy();
       confirmBtnContainer.destroy();
       cancelBtnContainer.destroy();
     };
@@ -753,7 +807,7 @@ class UpgradeCard {
     height: number,
     def: UpgradeDef,
     currentLevel: number,
-    xpState: XPState,
+    currentScore: number,
     onBuy: () => void
   ) {
     this.def = def;
@@ -808,7 +862,7 @@ class UpgradeCard {
     // Cost display
     const nextLevel = currentLevel + 1;
     const cost = (scene as any).upgradeSystem.getCost(def.id, nextLevel);
-    this.costText = scene.add.text(20, 160, `COST: ${cost} XP`, {
+    this.costText = scene.add.text(20, 160, `COST: ${cost} SCORE`, {
       fontSize: '18px',
       fontFamily: 'Arial',
       color: '#E63946',
@@ -816,8 +870,8 @@ class UpgradeCard {
       letterSpacing: 1
     });
 
-    // v3.8: Modern buy button - using Rectangle for better hit detection
-    const canBuy = (scene as any).upgradeSystem.canBuy(def.id, xpState);
+    // v3.10: Modern buy button - Score-based
+    const canBuy = (scene as any).upgradeSystem.canBuyWithScore(def.id, currentScore);
     const buttonColor = canBuy.ok ? 0x000000 : 0x999999;
     this.buttonX = width - 100;
     this.buttonY = height - 35;
@@ -863,14 +917,7 @@ class UpgradeCard {
       });
     }
 
-    // Requirement text
-    if (def.requiresLevel && xpState.level < def.requiresLevel) {
-      scene.add.text(width - 200, 160, `Requires Level ${def.requiresLevel}`, {
-        fontSize: '13px',
-        fontFamily: 'Arial',
-        color: '#E63946'
-      });
-    }
+    // v3.10: Requirement text removed (no more level requirements without XP system)
 
     // Container
     this.container = scene.add.container(x, y, [
@@ -922,15 +969,15 @@ class UpgradeCard {
     this.container.setY(this.baseY - scrollY);
   }
 
-  public updateLevel(newLevel: number, xpState: XPState): void {
+  public updateLevel(newLevel: number, currentScore: number): void {
     this.levelText.setText(`LEVEL: ${newLevel} / ${this.def.maxLevel}`);
     this.effectText.setText(this.getEffectPreview(newLevel));
 
     const nextLevel = newLevel + 1;
     const cost = (this.container.scene as any).upgradeSystem.getCost(this.def.id, nextLevel);
-    this.costText.setText(`COST: ${cost} XP`);
+    this.costText.setText(`COST: ${cost} SCORE`);
 
-    const canBuy = (this.container.scene as any).upgradeSystem.canBuy(this.def.id, xpState);
+    const canBuy = (this.container.scene as any).upgradeSystem.canBuyWithScore(this.def.id, currentScore);
     const buttonColor = canBuy.ok ? 0x000000 : 0x999999;
 
     // v3.9.2 CRITICAL FIX: Remove ALL event listeners before updating

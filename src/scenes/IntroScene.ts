@@ -54,7 +54,7 @@ Ready to fly?`;
 
     // Display Ogle-Pixel image on the LEFT, vertically centered
     this.ogleImage = this.add.image(width * 0.25, height / 2, 'ogle-pixel');
-    this.ogleImage.setScale(0.7);
+    this.ogleImage.setScale(1.0); // v4.2: Full size to match Cdog
 
     // Create text on the RIGHT, vertically centered, left-aligned
     this.dialogText = this.add.text(width * 0.52, height / 2, '', {

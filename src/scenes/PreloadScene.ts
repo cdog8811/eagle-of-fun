@@ -12,6 +12,11 @@ export class PreloadScene extends Phaser.Scene {
   preload(): void {
     this.createLoadingScreen();
 
+    // Add error handler for load failures
+    this.load.on('loaderror', (file: any) => {
+      console.error('❌ Failed to load file:', file.key, file.src);
+    });
+
     // === PLAYER ===
     // Load eagle sprite sheet for animations (4 frames, 2x2 grid, 512x512 each)
     // Total image size: 1024x1024
@@ -28,15 +33,20 @@ export class PreloadScene extends Phaser.Scene {
       frameWidth: 512,
       frameHeight: 512
     });
+    console.log('🔄 Loading eagleGold spritesheet from: assets/images/eagle-spreat-sheet-gold.png');
 
     // === INTRO ===
     this.load.image('ogle-pixel', 'assets/images/Ogle-Pixel.png');
+    this.load.image('cdog-pixel', 'assets/images/cdog-pixel.png'); // v4.2: Builder intro
 
     // === POWER-UPS ===
     this.load.image('mod-belle', 'assets/images/MOD-Belle-pixel.png');
     this.load.image('america-hat', 'assets/images/america-hat-pixel.png');
     this.load.image('feder-pixel', 'assets/images/feder-pixel.png'); // v3.2: Gold Feather
     this.load.image('bandana', 'assets/images/bandana-pixel.png'); // v3.7: Bandana Power-Up
+    this.load.image('cryptoacting', 'assets/images/CryptoActing-pixel.png'); // v3.9.3: CryptoActing Early Entry
+    this.load.image('danxx', 'assets/images/Danxx-Pixel.png'); // v3.9.3: Danxx Protocol
+    this.load.image('rose', 'assets/images/rose-pixel.png'); // v3.9.3: Rose Mod Mode
 
     // === NPC ===
     this.load.image('vesper', 'assets/images/vesper0x.png');
@@ -48,17 +58,32 @@ export class PreloadScene extends Phaser.Scene {
     this.load.image('coin-burger', 'assets/images/Token_Burger.png');
     this.load.image('coin-valor', 'assets/images/valorant-coin.png'); // v3.2
 
-    // === ENEMIES ===
-    this.load.image('jeet', 'assets/images/jeet.png'); // Jeeter (Phase 1)
-    this.load.image('paper-hands', 'assets/images/PaperHands-Pixel.png'); // Paper Hands Pete (Phase 2)
-    this.load.image('red-candles', 'assets/images/redcandles-pixel.png'); // Red Candles (Phase 3)
-    this.load.image('gary', 'assets/images/gary-pixel.png'); // Gary/SEC (Phase 4)
-    this.load.image('bear-boss', 'assets/images/bearmarket-pixel.png'); // Bear Market Boss (Phase 5)
-    this.load.image('fourmeme', 'assets/images/fourmeme-pixel.png'); // 4meme (CZ/Binance) - Kontrahent
-    this.load.image('pumpfun', 'assets/images/pumpfun-pixel.png'); // Pump.fun - Größte Memecoin-Plattform
+    // === ENEMIES (v4.2 - Updated roster) ===
+    // Core enemies (kept from v3.9)
+    this.load.image('jeet', 'assets/images/jeet.png'); // Jeeter Joe
+    this.load.image('paper-hands', 'assets/images/PaperHands-Pixel.png'); // Paper Hands Pete
+    this.load.image('red-candles', 'assets/images/redcandles-pixel.png'); // Red Candles
+    this.load.image('gary', 'assets/images/gary-pixel.png'); // Gary (SEC)
+    this.load.image('pumpfun', 'assets/images/pumpfun-pixel.png'); // Pump.fun
+    this.load.image('fourmeme', 'assets/images/fourmeme-pixel.png'); // 4meme
+
+    // Boss enemies
+    this.load.image('bear-boss', 'assets/images/bearmarket-pixel.png'); // Bear Boss
+    this.load.image('emoji-cz', 'assets/images/bearmarket-pixel.png'); // CZ Boss (placeholder)
+
+    // v4.2: New enemies
+    this.load.image('emoji-robot', 'assets/images/jeet.png'); // FUD Bot (placeholder)
+    this.load.image('rugpull-kevin', 'assets/images/rugpull-kevin-pixel.png'); // Rugpull Kevin (custom sprite!)
+    this.load.image('emoji-chart', 'assets/images/gary-pixel.png'); // Analyst Chad (placeholder)
+    this.load.image('emoji-wizard', 'assets/images/MOD-Belle-pixel.png'); // Rekt Wizard (placeholder)
+    this.load.image('emoji-whale', 'assets/images/bearmarket-pixel.png'); // Whale Manipulator (placeholder)
+    this.load.image('emoji-astronaut', 'assets/images/jeet.png'); // Moon Chad (placeholder)
 
     // === UI ===
     this.load.image('america-logo', 'assets/images/americalogo.png');
+
+    // === WEAPONS ===
+    this.load.image('weapon-blaster', 'assets/images/blaster-pixel.png'); // Dual-shot blaster upgrade
 
     // === BACKGROUNDS ===
     this.load.image('bg-phase1', 'assets/images/libertyoffreedom-background.jpg');
@@ -92,6 +117,7 @@ export class PreloadScene extends Phaser.Scene {
 
     // Voice Acting
     this.load.audio('ogle-voice', 'assets/audio/ElevenLabs_2025-10-17T20_59_40_Bradford_pvc_sp100_s50_sb75_v3.mp3');
+    this.load.audio('cdog-intro', 'assets/audio/Cdog-Intro.mp3'); // v4.2: Builder intro voice
 
     // Sound Effects
     this.load.audio('wing-flap', 'assets/audio/wing-flap-1-6434.mp3');
@@ -112,6 +138,28 @@ export class PreloadScene extends Phaser.Scene {
     this.load.audio('bandana-loop', 'assets/audio/shield-active-loop.mp3'); // Placeholder
     this.load.audio('bandana-end', 'assets/audio/whoosh-09-410876.mp3'); // Placeholder
 
+    // v3.9.3: CryptoActing Early Entry sounds
+    this.load.audio('cryptoacting-voice', 'assets/audio/yougotinbeforetherest.mp3'); // "You got in before the rest!"
+    this.load.audio('cryptoacting-collect', 'assets/audio/video-game-bonus-323603.mp3'); // Collection sound
+
+    // v3.9.3: Danxx Protocol sounds
+    this.load.audio('danxx-voice', 'assets/audio/WhenChaoshits.mp3'); // "When chaos hits, he brings order to the chain!"
+    this.load.audio('danxx-collect', 'assets/audio/game-bonus-144751.mp3'); // Collection sound
+
+    // v3.9.3: Rose Mod Mode sounds
+    this.load.audio('rose-voice', 'assets/audio/ShemutestheFUD.mp3'); // "She mutes the FUD and keeps the vibes high."
+    this.load.audio('rose-collect', 'assets/audio/collect-points-190037.mp3'); // Collection sound
+
+    // v4.2: Micro-Event sounds
+    this.load.audio('elon-tweet', 'assets/audio/Elontweeted.mp3');
+    this.load.audio('market-pump', 'assets/audio/Marketpump.mp3');
+    this.load.audio('sec-down', 'assets/audio/SEC.mp3');
+    this.load.audio('valor-drop', 'assets/audio/valor drop.mp3');
+    this.load.audio('burger-friday', 'assets/audio/xp2.mp3');
+
+    // v4.2: Weapon pickup sound
+    this.load.audio('weapon-drill', 'assets/audio/weapondrill.mp3');
+
     // Load progress
     this.load.on('progress', (value: number) => {
       this.progressBar.clear();
@@ -128,6 +176,14 @@ export class PreloadScene extends Phaser.Scene {
   }
 
   create(): void {
+    // DEBUG: Check if eagleGold loaded successfully
+    const eagleGoldLoaded = this.textures.exists('eagleGold');
+    console.log('🔍 PreloadScene.create() - eagleGold texture loaded:', eagleGoldLoaded);
+    if (!eagleGoldLoaded) {
+      console.error('❌ CRITICAL: eagleGold texture failed to load!');
+      console.log('   Checking if file exists at: assets/images/eagle-spreat-sheet-gold.png');
+    }
+
     // v3.8: Create emoji textures for new enemies using canvas rendering
     this.createEmojiTexture('emoji-hawkeye', '🎯', 80);
     this.createEmojiTexture('emoji-droneling', '🚁', 70);

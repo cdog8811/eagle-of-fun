@@ -3,6 +3,7 @@
 // Player stats, upgrades, costs, caps
 // ============================
 
+import { GameConfig } from '../config/GameConfig';
 import { Storage, LS_KEYS } from './storage';
 import type { XPState } from './xpSystem';
 
@@ -77,14 +78,15 @@ function getDefaultUpgradesState(): UpgradesState {
 }
 
 // Upgrade definitions
+// v4.2: DRAMATICALLY increased costs (5x) for long-term progression
 const UPGRADE_DEFS: UpgradeDef[] = [
   {
     id: 'wing_strength',
     name: 'Wing Strength',
     desc: 'Stronger flaps for better control',
     maxLevel: 10,
-    baseCost: 250,
-    costGrowth: 1.35,
+    baseCost: 2500,     // v4.2: 250 → 500 → 2500 (10x original)
+    costGrowth: 1.6,    // v4.2: 1.35 → 1.45 → 1.6
     apply: (level, stats) => ({
       ...stats,
       flapBoost: stats.flapBoost + (level * 0.02) // +2% per level
@@ -95,8 +97,8 @@ const UPGRADE_DEFS: UpgradeDef[] = [
     name: 'Magnet Range',
     desc: 'Pull coins from farther away',
     maxLevel: 8,
-    baseCost: 400,
-    costGrowth: 1.35,
+    baseCost: 4000,     // v4.2: 400 → 800 → 4000 (10x original)
+    costGrowth: 1.6,    // v4.2: 1.35 → 1.45 → 1.6
     apply: (level, stats) => ({
       ...stats,
       magnetRadius: stats.magnetRadius + (level * 25) // +25px per level
@@ -107,8 +109,8 @@ const UPGRADE_DEFS: UpgradeDef[] = [
     name: 'Shield Duration',
     desc: 'America Hat protection lasts longer',
     maxLevel: 5,
-    baseCost: 500,
-    costGrowth: 1.4,
+    baseCost: 5000,     // v4.2: 500 → 1000 → 5000 (10x original)
+    costGrowth: 1.65,   // v4.2: 1.4 → 1.5 → 1.65
     apply: (level, stats) => ({
       ...stats,
       shieldExtraSeconds: stats.shieldExtraSeconds + level // +1s per level
@@ -119,8 +121,8 @@ const UPGRADE_DEFS: UpgradeDef[] = [
     name: 'Blaster Cooldown',
     desc: 'Fire your blaster more frequently',
     maxLevel: 7,
-    baseCost: 600,
-    costGrowth: 1.4,
+    baseCost: 6000,     // v4.2: 600 → 1200 → 6000 (10x original)
+    costGrowth: 1.65,   // v4.2: 1.4 → 1.5 → 1.65
     apply: (level, stats) => ({
       ...stats,
       // v3.9.2 CRITICAL FIX: Use defaultStats.blasterCDMul (1.0) not stats.blasterCDMul!
@@ -134,8 +136,8 @@ const UPGRADE_DEFS: UpgradeDef[] = [
     name: 'Valor Cooldown',
     desc: 'Use VALOR mode more often',
     maxLevel: 5,
-    baseCost: 1000,
-    costGrowth: 1.45,
+    baseCost: 10000,    // v4.2: 1000 → 2000 → 10000 (10x original)
+    costGrowth: 1.7,    // v4.2: 1.45 → 1.6 → 1.7
     apply: (level, stats) => ({
       ...stats,
       valorCDMinus: stats.valorCDMinus + (level * 6) // -6s per level
@@ -147,8 +149,8 @@ const UPGRADE_DEFS: UpgradeDef[] = [
     name: 'Extra Heart',
     desc: 'Increase maximum health',
     maxLevel: 2,
-    baseCost: 1500,
-    costGrowth: 1.6,
+    baseCost: 15000,    // v4.2: 1500 → 3000 → 15000 (10x original)
+    costGrowth: 2.0,    // v4.2: 1.6 → 1.8 → 2.0
     apply: (level, stats) => ({
       ...stats,
       maxHeartsBonus: stats.maxHeartsBonus + level // +1 heart per level
@@ -160,8 +162,8 @@ const UPGRADE_DEFS: UpgradeDef[] = [
     name: 'Coin Value',
     desc: 'Earn more XP from coins',
     maxLevel: 5,
-    baseCost: 800,
-    costGrowth: 1.35,
+    baseCost: 7500,     // v4.2: 800 → 1500 → 7500 (9.4x original)
+    costGrowth: 1.6,    // v4.2: 1.35 → 1.45 → 1.6
     apply: (level, stats) => ({
       ...stats,
       coinGainMul: stats.coinGainMul + (level * 0.05) // +5% per level
@@ -172,8 +174,8 @@ const UPGRADE_DEFS: UpgradeDef[] = [
     name: 'Glide Efficiency',
     desc: 'Float more gracefully',
     maxLevel: 5,
-    baseCost: 500,
-    costGrowth: 1.35,
+    baseCost: 5000,     // v4.2: 500 → 1000 → 5000 (10x original)
+    costGrowth: 1.6,    // v4.2: 1.35 → 1.45 → 1.6
     apply: (level, stats) => ({
       ...stats,
       // v3.9.2 CRITICAL FIX: Use defaultStats.glideGravityMul (1.0) not stats.glideGravityMul!
@@ -187,8 +189,8 @@ const UPGRADE_DEFS: UpgradeDef[] = [
     name: 'Buyback Radius',
     desc: 'Magnet effect has wider range',
     maxLevel: 6,
-    baseCost: 600,
-    costGrowth: 1.35,
+    baseCost: 6000,     // v4.2: 600 → 1200 → 6000 (10x original)
+    costGrowth: 1.6,    // v4.2: 1.35 → 1.45 → 1.6
     apply: (level, stats) => ({
       ...stats,
       buybackRadiusBonus: stats.buybackRadiusBonus + (level * 30) // +30px per level
@@ -199,8 +201,8 @@ const UPGRADE_DEFS: UpgradeDef[] = [
     name: 'Burger Duration',
     desc: 'Burger multiplier lasts longer',
     maxLevel: 4,
-    baseCost: 700,
-    costGrowth: 1.35,
+    baseCost: 7000,     // v4.2: 700 → 1400 → 7000 (10x original)
+    costGrowth: 1.6,    // v4.2: 1.35 → 1.45 → 1.6
     apply: (level, stats) => ({
       ...stats,
       burgerDurationBonus: stats.burgerDurationBonus + (level * 0.75) // +0.75s per level
@@ -214,7 +216,9 @@ export interface UpgradeAPI {
   getDefs(): UpgradeDef[];
   getCost(id: UpgradeId, nextLevel: number): number;
   canBuy(id: UpgradeId, xpState: XPState): { ok: boolean; reason?: string };
+  canBuyWithScore(id: UpgradeId, currentScore: number): { ok: boolean; reason?: string }; // NEW: Score-based
   buy(id: UpgradeId, spendXP: (amount: number) => boolean): boolean;
+  buyWithScore(id: UpgradeId, currentScore: number): { success: boolean; newScore: number }; // NEW: Score-based
   resetAll(): void;
 }
 
@@ -234,13 +238,18 @@ class UpgradeSystemImpl implements UpgradeAPI {
   }
 
   getPlayerStats(): PlayerStats {
+    // FEATURE FLAG: If upgrade system is disabled, always return default stats
+    if (!GameConfig.ENABLE_UPGRADE_SYSTEM) {
+      return { ...defaultStats };
+    }
+
     // v3.9.2 CRITICAL PERFORMANCE FIX: Return cached stats if available
     if (!this.cacheInvalidated && this.cachedStats) {
       return this.cachedStats;
     }
 
-    // v3.9.2 DEBUG: Log when stats are recalculated
-    console.log('⚡ Recalculating player stats (cache miss)');
+    // v3.9.2 DEBUG: Stats recalculation (logging disabled to prevent slowdown)
+    // console.log('⚡ Recalculating player stats (cache miss)');
 
     // Recalculate stats
     let stats = { ...defaultStats };
@@ -249,7 +258,7 @@ class UpgradeSystemImpl implements UpgradeAPI {
     UPGRADE_DEFS.forEach(def => {
       const level = this.state.levels[def.id] || 0;
       if (level > 0) {
-        console.log(`  - ${def.id} level ${level}`);
+        // console.log(`  - ${def.id} level ${level}`); // DISABLED: Causes slowdown
         stats = def.apply(level, stats);
       }
     });
@@ -264,7 +273,7 @@ class UpgradeSystemImpl implements UpgradeAPI {
     this.cachedStats = stats;
     this.cacheInvalidated = false;
 
-    console.log('  - Final stats:', stats);
+    // console.log('  - Final stats:', stats); // DISABLED: Causes slowdown
 
     return stats;
   }
@@ -325,6 +334,53 @@ class UpgradeSystemImpl implements UpgradeAPI {
 
     console.log(`Upgraded ${id} to level ${this.state.levels[id]} (cost: ${cost} XP)`);
     return true;
+  }
+
+  // NEW: Score-based upgrade checking (no XP required)
+  canBuyWithScore(id: UpgradeId, currentScore: number): { ok: boolean; reason?: string } {
+    const def = UPGRADE_DEFS.find(d => d.id === id);
+    if (!def) {
+      return { ok: false, reason: 'Unknown upgrade' };
+    }
+
+    const currentLevel = this.state.levels[id] || 0;
+
+    // Check max level
+    if (currentLevel >= def.maxLevel) {
+      return { ok: false, reason: 'Max level reached' };
+    }
+
+    // Check cost (score-based: cost is same formula but interpreted as score)
+    const cost = this.getCost(id, currentLevel + 1);
+    if (currentScore < cost) {
+      return { ok: false, reason: 'Not enough Score' };
+    }
+
+    return { ok: true };
+  }
+
+  // NEW: Buy upgrade with score (returns remaining score)
+  buyWithScore(id: UpgradeId, currentScore: number): { success: boolean; newScore: number } {
+    const check = this.canBuyWithScore(id, currentScore);
+    if (!check.ok) {
+      return { success: false, newScore: currentScore };
+    }
+
+    const currentLevel = this.state.levels[id] || 0;
+    const cost = this.getCost(id, currentLevel + 1);
+
+    // Deduct score
+    const newScore = currentScore - cost;
+
+    // Upgrade successful
+    this.state.levels[id] = currentLevel + 1;
+    this.saveState();
+
+    // v3.9.2 CRITICAL: Invalidate cache when upgrade purchased!
+    this.cacheInvalidated = true;
+
+    console.log(`Upgraded ${id} to level ${this.state.levels[id]} (cost: ${cost} Score, remaining: ${newScore})`);
+    return { success: true, newScore };
   }
 
   resetAll(): void {

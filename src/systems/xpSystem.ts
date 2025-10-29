@@ -3,6 +3,7 @@
 // Meta progression: XP, Levels, Progress curve
 // ============================
 
+import { GameConfig } from '../config/GameConfig';
 import { Storage, LS_KEYS } from './storage';
 
 export interface XPState {
@@ -100,6 +101,11 @@ class XPSystemImpl implements XPPublicAPI {
   }
 
   addXP(evt: XPEvent): void {
+    // FEATURE FLAG: Skip all XP processing if XP system is disabled
+    if (!GameConfig.ENABLE_XP_SYSTEM) {
+      return;
+    }
+
     if (evt.delta <= 0) return;
 
     const before = this.state.level;
@@ -180,6 +186,11 @@ class XPSystemImpl implements XPPublicAPI {
 
   // v3.9.2: Force immediate save (important for game over, scene transitions)
   flush(): void {
+    // FEATURE FLAG: Skip flush if XP system is disabled
+    if (!GameConfig.ENABLE_XP_SYSTEM) {
+      return;
+    }
+
     if (this.pendingSave) {
       this.saveStateImmediate();
       console.log('[XP] Flushed pending save to localStorage');

@@ -113,8 +113,18 @@ export class BandanaPowerUp {
 
     this.bandanaActive = true;
 
-    // Store original values
+    // v4.2: Show notification using NotificationManager
     const gameScene = this.scene as any;
+    if (gameScene.notificationManager) {
+      gameScene.notificationManager.showNotification({
+        title: 'BANDANA MODE ACTIVE',
+        message: '',
+        icon: '🥷',
+        color: '#FF0000'
+      });
+    }
+
+    // Store original values
     this.originalCoinSpeed = gameScene.coinSpeed;
     this.originalEnemySpeed = gameScene.enemySpeed;
 

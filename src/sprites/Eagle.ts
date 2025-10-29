@@ -209,13 +209,31 @@ export class Eagle extends Phaser.GameObjects.Container {
     try {
       console.log('✨ Switching to GOLD sprite');
 
+      // DEBUG: Check if resources exist
+      const goldTextureExists = this.scene.textures.exists('eagleGold');
+      const flyAnimExists = this.scene.anims.exists('eagleGold_fly');
+      console.log('  - eagleGold texture exists:', goldTextureExists);
+      console.log('  - eagleGold_fly animation exists:', flyAnimExists);
+
+      if (!goldTextureExists) {
+        console.error('❌ CRITICAL: eagleGold texture NOT LOADED!');
+        return;
+      }
+      if (!flyAnimExists) {
+        console.error('❌ CRITICAL: eagleGold_fly animation NOT CREATED!');
+        console.log('   Available anims:', this.scene.anims.anims.entries.map((a: any) => a.key));
+        return;
+      }
+
       // Get current animation name and progress
       const currentAnim = this.eagleSprite.anims.currentAnim;
       if (!currentAnim) {
         // No animation running, just switch texture and start fly animation
-        this.eagleSprite.setTexture('eagleGold');
+        console.log('  - No current anim, setting texture and playing eagleGold_fly');
+        this.eagleSprite.setTexture('eagleGold', 0);
         this.eagleSprite.play('eagleGold_fly', true);
         console.log('  - Gold sprite switch complete (no anim)');
+        console.log('  - Current texture after switch:', this.eagleSprite.texture.key);
         return;
       }
 

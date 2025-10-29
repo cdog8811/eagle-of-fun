@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { BootScene } from './scenes/BootScene';
 import { PreloadScene } from './scenes/PreloadScene';
 import { StartScene } from './scenes/StartScene';
+import { BuilderIntroScene } from './scenes/BuilderIntroScene';
 import { IntroScene } from './scenes/IntroScene';
 import { GameScene } from './scenes/GameScene';
 import { GameOverScene } from './scenes/GameOverScene';
@@ -52,6 +53,7 @@ const config: Phaser.Types.Core.GameConfig = {
     BootScene,
     PreloadScene,
     StartScene,
+    BuilderIntroScene,
     IntroScene,
     GameScene,
     UIScene,
@@ -89,4 +91,12 @@ setTimeout(() => {
   } else {
     console.log('✅ Good FPS:', actualFps, 'FPS');
   }
+
+  // CRITICAL PERFORMANCE FIX: Disable ALL console logging AFTER startup diagnostics
+  // Console calls are EXPENSIVE and cause frame drops + timer skips!
+  console.log = () => {};
+  console.warn = () => {};
+  console.info = () => {};
+  console.debug = () => {};
+  console.error = () => {};  // DISABLED: Was causing timer to skip seconds!
 }, 5000);

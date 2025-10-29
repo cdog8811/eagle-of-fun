@@ -79,8 +79,9 @@ export class StartScene extends Phaser.Scene {
       // Play "ready for takeoff" sound
       this.sound.play('ready-for-takeoff', { volume: 0.7 });
       // Wait 2 seconds before starting intro scene
+      // v4.2: Start with BuilderIntroScene (Cdog) before OgleScene
       this.time.delayedCall(2000, () => {
-        this.scene.start('IntroScene');
+        this.scene.start('BuilderIntroScene');
       });
     });
 
