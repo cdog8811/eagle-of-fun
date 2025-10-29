@@ -5,7 +5,7 @@ import { MarketDataManager } from '../systems/marketDataManager';
 export class StartScene extends Phaser.Scene {
   private fallingCoins: Phaser.GameObjects.Graphics[] = [];
   private musicStarted: boolean = false;
-  private priceText?: Phaser.GameObjects.Text;
+  private tokenTexts: Phaser.GameObjects.Text[] = [];
   private priceUpdateTimer?: Phaser.Time.TimerEvent;
 
   constructor() {
@@ -136,21 +136,28 @@ export class StartScene extends Phaser.Scene {
     this.createCommunityTextLink(width / 2, communityY, 'Telegram (CN)', 'https://t.me/americafunchinese');
     this.createCommunityTextLink(width / 2 + communityLinkSpacing, communityY, 'America.Fun', 'https://www.america.fun/');
 
-    // $AOL Live Price Display - below community links
-    const priceY = footerY + 30;
-    this.priceText = this.add.text(width / 2, priceY, 'Loading $AOL data...', {
-      fontSize: '20px',
-      color: '#FFFFFF',
-      fontFamily: 'Arial',
-      letterSpacing: 1
-    }).setOrigin(0.5);
+    // 3-Token Live Ticker - below community links
+    const tokenY = footerY + 30;
+    const tokenSymbols = ['AOL', 'VALOR', 'BURGER'];
+    const tokenSpacing = 400;
+    const startX = width / 2 - tokenSpacing;
 
-    // Start price updates
-    this.updateAOLPrice();
+    tokenSymbols.forEach((symbol, i) => {
+      const text = this.add.text(startX + i * tokenSpacing, tokenY, `${symbol}: loading...`, {
+        fontSize: '18px',
+        color: '#FFFFFF',
+        fontFamily: 'Arial',
+        letterSpacing: 0.5
+      }).setOrigin(0.5);
+      this.tokenTexts.push(text);
+    });
+
+    // Start token price updates
+    this.updateTokenPrices();
     this.priceUpdateTimer = this.time.addEvent({
       delay: 60000, // Update every 60 seconds
       loop: true,
-      callback: () => this.updateAOLPrice()
+      callback: () => this.updateTokenPrices()
     });
 
     // America.Fun Logo - bottom right, bigger (+20%)
@@ -352,33 +359,43 @@ export class StartScene extends Phaser.Scene {
   }
 
   /**
-   * Update $AOL price display from Dexscreener API
+   * Update all token prices from Dexscreener API
    */
-  private async updateAOLPrice(): Promise<void> {
-    if (!this.priceText) return;
+  private async updateTokenPrices(): Promise<void> {
+    if (this.tokenTexts.length === 0) return;
 
     try {
-      const data = await MarketDataManager.getAOLData();
+      const tokenData = await MarketDataManager.fetchAll();
 
-      if (!data) {
-        // Failed to fetch data - keep showing loading or show error
-        this.priceText.setText('$AOL data unavailable');
-        this.priceText.setColor('#888888');
+      if (tokenData.length === 0) {
+        // No data fetched - show error for all tokens
+        this.tokenTexts.forEach((text, i) => {
+          const symbols = ['AOL', 'VALOR', 'BURGER'];
+          text.setText(`${symbols[i]}: unavailable`);
+          text.setColor('#888888');
+        });
         return;
       }
 
-      // Update text with formatted price display
-      const displayText = MarketDataManager.formatPriceDisplay(data);
-      const color = MarketDataManager.getColorForChange(data.change);
+      // Update each token display
+      tokenData.forEach((data, i) => {
+        if (i < this.tokenTexts.length) {
+          const displayText = MarketDataManager.formatTokenDisplay(data);
+          const color = MarketDataManager.getColorForChange(data.change);
 
-      this.priceText.setText(displayText);
-      this.priceText.setColor(color);
+          this.tokenTexts[i].setText(displayText);
+          this.tokenTexts[i].setColor(color);
+        }
+      });
 
-      console.log('💰 Updated $AOL price:', displayText);
+      console.log('💰 Updated token prices:', tokenData.length, 'tokens');
     } catch (error) {
-      console.error('❌ Error updating $AOL price:', error);
-      this.priceText.setText('$AOL data unavailable');
-      this.priceText.setColor('#888888');
+      console.error('❌ Error updating token prices:', error);
+      this.tokenTexts.forEach((text, i) => {
+        const symbols = ['AOL', 'VALOR', 'BURGER'];
+        text.setText(`${symbols[i]}: error`);
+        text.setColor('#888888');
+      });
     }
   }
 
