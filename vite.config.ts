@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 import { resolve } from 'path';
 
 export default defineConfig({
-  base: '/eagle-of-fun/',
+  base: '/',
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
@@ -14,6 +14,7 @@ export default defineConfig({
   },
   server: {
     port: 3000,
-    open: true
+    open: true,
+    base: '/eagle-of-fun/'
   }
 });
