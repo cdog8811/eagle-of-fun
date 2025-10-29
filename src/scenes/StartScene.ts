@@ -18,6 +18,9 @@ export class StartScene extends Phaser.Scene {
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
 
+    // Clear token containers on restart
+    this.tokenContainers = [];
+
     // Clean white background
     this.cameras.main.setBackgroundColor('#FFFFFF');
 
