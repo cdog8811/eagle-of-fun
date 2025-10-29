@@ -125,8 +125,8 @@ export class StartScene extends Phaser.Scene {
       letterSpacing: 1
     }).setOrigin(0, 0.5);
 
-    // Community text links - centered, 10px higher
-    const communityY = footerY + 15; // 10px higher than before (was +25)
+    // Community text links - centered
+    const communityY = footerY; // Same height as footerY (was +15)
     const communityLinkSpacing = 180;
 
     this.createCommunityTextLink(width / 2 - communityLinkSpacing, communityY, 'Telegram (EN)', 'https://t.me/official_america_dot_fun');
