@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { GameConfig } from '../config/GameConfig';
 import { getUpgradeSystem, type UpgradeDef, type PlayerStats } from '../systems/upgradeSystem';
+import { getXPSystem } from '../systems/xpSystem';
 
 /**
  * UpgradeScene - Upgrade Hangar (v3.10 - Score-based)
@@ -10,6 +11,7 @@ import { getUpgradeSystem, type UpgradeDef, type PlayerStats } from '../systems/
  */
 export default class UpgradeScene extends Phaser.Scene {
   private upgradeSystem = getUpgradeSystem();
+  private xpSystem = getXPSystem();
 
   private currentScore: number = 0; // Score-based instead of XP
   private playerStats!: PlayerStats;
@@ -727,8 +729,12 @@ export default class UpgradeScene extends Phaser.Scene {
     });
 
     // Confirm action
-    confirmBtnContainer.once('pointerdown', () => {
+    confirmBtnContainer.on('pointerdown', () => {
       console.log('🗑️ Confirming reset...');
+
+      // Disable button to prevent double-click
+      confirmBtnContainer.disableInteractive();
+
       this.upgradeSystem.resetAll();
 
       // v3.10: Reset score to 0 (no XP system anymore)
@@ -742,6 +748,17 @@ export default class UpgradeScene extends Phaser.Scene {
       }
 
       this.refreshUI();
+
+      // Remove all event listeners before destroying
+      confirmBtnContainer.off('pointerdown');
+      confirmBtnContainer.off('pointerover');
+      confirmBtnContainer.off('pointerout');
+      cancelBtnContainer.off('pointerdown');
+      cancelBtnContainer.off('pointerover');
+      cancelBtnContainer.off('pointerout');
+      checkboxHitArea.off('pointerdown');
+
+      // Destroy dialog elements
       overlay.destroy();
       box.destroy();
       confirmText.destroy();
