@@ -52,18 +52,18 @@ Ready to fly?`;
       console.log('IntroScene: AudioContext state:', soundManager.context.state);
     }
 
-    // Display Ogle-Pixel image on the LEFT, vertically centered
-    this.ogleImage = this.add.image(width * 0.25, height / 2, 'ogle-pixel');
+    // Display Ogle-Pixel image on the RIGHT, vertically centered
+    this.ogleImage = this.add.image(width * 0.75, height / 2, 'ogle-pixel');
     this.ogleImage.setScale(1.0); // v4.2: Full size to match Cdog
 
-    // Create text on the RIGHT, vertically centered, left-aligned
-    this.dialogText = this.add.text(width * 0.52, height / 2, '', {
+    // Create text on the LEFT, vertically centered, left-aligned
+    this.dialogText = this.add.text(width * 0.08, height / 2, '', {
       fontSize: '28px',
       color: '#000000',
       fontFamily: 'Courier New, monospace',
       lineSpacing: 10,
       align: 'left',
-      wordWrap: { width: 800 }
+      wordWrap: { width: 750 }
     }).setOrigin(0, 0.5); // Left-aligned, vertically centered
 
     // Create prompt text at bottom center (hidden initially)

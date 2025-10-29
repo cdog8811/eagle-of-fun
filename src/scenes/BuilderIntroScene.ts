@@ -4,7 +4,7 @@ import Phaser from 'phaser';
  * BuilderIntroScene - Cdog Introduction
  *
  * Shows Cdog (the builder) introducing himself before the Ogle scene.
- * Layout: Cdog image on RIGHT, text on LEFT with typewriter effect
+ * Layout: Cdog image on LEFT, text on RIGHT with typewriter effect
  * SPACE skips to OgleScene (IntroScene)
  */
 export class BuilderIntroScene extends Phaser.Scene {
@@ -57,8 +57,8 @@ Let's make memes, not excuses. 🦅`;
       console.log('BuilderIntroScene: AudioContext state:', soundManager.context.state);
     }
 
-    // Display Cdog-Pixel image on the RIGHT, vertically centered
-    this.cdogImage = this.add.image(width * 0.75, height / 2, 'cdog-pixel');
+    // Display Cdog-Pixel image on the LEFT, vertically centered
+    this.cdogImage = this.add.image(width * 0.25, height / 2, 'cdog-pixel');
     this.cdogImage.setScale(1.0); // v4.2: Full size to match Ogle
     this.cdogImage.setAlpha(0);
 
@@ -70,8 +70,8 @@ Let's make memes, not excuses. 🦅`;
       ease: 'Cubic.easeOut'
     });
 
-    // Create text on the LEFT, vertically centered, left-aligned
-    this.dialogText = this.add.text(width * 0.08, height / 2, '', {
+    // Create text on the RIGHT, vertically centered, left-aligned
+    this.dialogText = this.add.text(width * 0.52, height / 2, '', {
       fontSize: '28px',
       color: '#000000',
       fontFamily: 'Courier New, monospace',
