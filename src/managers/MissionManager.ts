@@ -1,5 +1,6 @@
 import { Mission, MissionTier, MissionTiers, MissionPool } from '../config/MissionsConfig';
 import { getXPSystem } from '../systems/xpSystem';
+import { getI18n } from '../systems/i18n';
 
 export interface PlayerProgress {
   currentTier: number;
@@ -10,6 +11,7 @@ export interface PlayerProgress {
 export class MissionManager {
   private static instance: MissionManager;
   private xpSystem = getXPSystem();
+  private i18n = getI18n();
   private playerProgress: PlayerProgress;
   private currentMissions: Mission[] = [];
   private dailyMissions: Mission[] = [];
@@ -145,14 +147,17 @@ export class MissionManager {
     mission.completed = true;
     this.playerProgress.completedMissions.push(mission.id);
 
+    // Translate mission title for logs and metadata
+    const translatedTitle = mission.title.startsWith('mission.') ? this.i18n.t(mission.title) : mission.title;
+
     // v3.7: Award Meta-XP through new XP system
     this.xpSystem.addXP({
       delta: mission.reward.xp,
       source: 'mission',
-      meta: { missionId: mission.id, missionName: mission.title }
+      meta: { missionId: mission.id, missionName: translatedTitle }
     });
 
-    console.log(`Mission completed: ${mission.title} - Rewarded ${mission.reward.xp} Meta-XP`);
+    console.log(`Mission completed: ${translatedTitle} - Rewarded ${mission.reward.xp} Meta-XP`);
 
     // Unlock rewards
     if (mission.reward.unlocks) {

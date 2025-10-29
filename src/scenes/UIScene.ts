@@ -348,7 +348,10 @@ export default class UIScene extends Phaser.Scene {
       // Update title (emoji + title) - texts[0]
       if (texts[0]) {
         const emoji = mission.emoji || '🎯';
-        let title = mission.title || mission.description || 'Mission';
+        let titleKey = mission.title || mission.description || 'Mission';
+
+        // Translate mission title (it's a key like 'mission.dailyBonk.title')
+        let title = titleKey.startsWith('mission.') ? this.i18n.t(titleKey) : titleKey;
 
         // Ensure title is a string, not an object
         if (typeof title !== 'string') {
