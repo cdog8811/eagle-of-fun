@@ -1,8 +1,8 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
 
-export default defineConfig({
-  base: '/',
+export default defineConfig(({ command }) => ({
+  base: command === 'serve' ? '/eagle-of-fun/' : '/',
   build: {
     outDir: 'dist',
     assetsDir: 'assets',
@@ -14,7 +14,6 @@ export default defineConfig({
   },
   server: {
     port: 3000,
-    open: true,
-    base: '/eagle-of-fun/'
+    open: true
   }
-});
+}));
