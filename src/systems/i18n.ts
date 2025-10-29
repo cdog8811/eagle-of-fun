@@ -52,6 +52,12 @@ const translations = {
     'gameover.upgradeButton': 'UPGRADE HANGAR',
     'gameover.playAgainButton': 'PLAY AGAIN',
     'gameover.menuButton': 'MAIN MENU',
+    'gameover.meme2000': '🦅 CERTIFIED DEGEN PILOT 🦅',
+    'gameover.meme1000': '🔥 FREEDOM SECURED! 🔥',
+    'gameover.meme500': '💪 Not bad, Patriot!',
+    'gameover.meme200': '📈 WAGMI',
+    'gameover.meme100': '👀 Keep stacking!',
+    'gameover.meme0': '😅 You got Jeeted, bro.',
 
     // Leaderboard Scene
     'leaderboard.title': 'HALL OF DEGENS',
@@ -190,6 +196,12 @@ const translations = {
     'gameover.upgradeButton': '升级机库',
     'gameover.playAgainButton': '再玩一次',
     'gameover.menuButton': '主菜单',
+    'gameover.meme2000': '🦅 认证的飞行员 🦅',
+    'gameover.meme1000': '🔥 自由已保障！🔥',
+    'gameover.meme500': '💪 不错，爱国者！',
+    'gameover.meme200': '📈 我们都会成功',
+    'gameover.meme100': '👀 继续积累！',
+    'gameover.meme0': '😅 你被收割了，兄弟。',
 
     // Leaderboard Scene
     'leaderboard.title': '荣誉殿堂',

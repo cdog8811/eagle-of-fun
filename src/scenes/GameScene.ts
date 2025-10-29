@@ -436,7 +436,7 @@ export class GameScene extends Phaser.Scene {
     const hudStyle = {
       fontSize: '24px',
       color: '#D32F2F',
-      fontFamily: 'Arial',
+      fontFamily: this.i18n.getFontFamily(),
       fontStyle: 'bold',
       letterSpacing: 0
     };

@@ -81,7 +81,7 @@ export class GameOverScene extends Phaser.Scene {
     const memeText = this.add.text(width / 2, currentY, memeMessage, {
       fontSize: '28px',
       color: '#E63946',
-      fontFamily: 'Arial',
+      fontFamily: this.i18n.getFontFamily(),
       fontStyle: 'bold',
       align: 'center'
     }).setOrigin(0.5);
@@ -431,12 +431,12 @@ $AOL #EagleOfFun #AmericaFun #ForTheCulture`;
   }
 
   private getMemeMessage(score: number): string {
-    if (score >= 2000) return '🦅 CERTIFIED DEGEN PILOT 🦅';
-    if (score >= 1000) return '🔥 FREEDOM SECURED! 🔥';
-    if (score >= 500) return '💪 Not bad, Patriot!';
-    if (score >= 200) return '📈 WAGMI';
-    if (score >= 100) return '👀 Keep stacking!';
-    return '😅 You got Jeeted, bro.';
+    if (score >= 2000) return this.i18n.t('gameover.meme2000');
+    if (score >= 1000) return this.i18n.t('gameover.meme1000');
+    if (score >= 500) return this.i18n.t('gameover.meme500');
+    if (score >= 200) return this.i18n.t('gameover.meme200');
+    if (score >= 100) return this.i18n.t('gameover.meme100');
+    return this.i18n.t('gameover.meme0');
   }
 
   shutdown(): void {

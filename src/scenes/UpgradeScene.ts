@@ -869,7 +869,7 @@ class UpgradeCard {
     // Title with red underline
     const titleText = scene.add.text(20, 20, def.name.toUpperCase(), {
       fontSize: '26px',
-      fontFamily: 'Arial',
+      fontFamily: this.i18n.getFontFamily(),
       color: '#000000',
       fontStyle: 'bold',
       letterSpacing: 2
@@ -882,7 +882,7 @@ class UpgradeCard {
     // Description
     const descText = scene.add.text(20, 65, def.desc, {
       fontSize: '16px',
-      fontFamily: 'Arial',
+      fontFamily: this.i18n.getFontFamily(),
       color: '#666666',
       wordWrap: { width: width - 40 }
     });
