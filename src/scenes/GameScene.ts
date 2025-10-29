@@ -418,11 +418,11 @@ export class GameScene extends Phaser.Scene {
     // ========== GAME HUD - TOP BAR (WHITE BACKGROUND - SAME HEIGHT AS BLUE BAR) ==========
     const hudY = 62; // Adjusted for thicker bar (55px height)
 
-    // Background bar for HUD - WHITE with transparency
+    // Background bar for HUD - WHITE solid
     const hudBg = this.add.graphics();
-    hudBg.fillStyle(0xFFFFFF, 0.35); // v4.2: More transparent so field is visible
+    hudBg.fillStyle(0xFFFFFF, 1); // Solid white background
     hudBg.fillRoundedRect(35, 35, width - 70, 55, 10);
-    hudBg.lineStyle(3, 0xCCCCCC, 0.5); // v4.2: More transparent border
+    hudBg.lineStyle(3, 0xCCCCCC, 1); // Solid border
     hudBg.strokeRoundedRect(35, 35, width - 70, 55, 10);
     hudBg.setDepth(999);
 
