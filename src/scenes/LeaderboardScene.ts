@@ -84,6 +84,19 @@ export class LeaderboardScene extends Phaser.Scene {
       this.scene.start('StartScene');
     });
 
+    // Share on X button - positioned center
+    const shareBtn = this.add.text(width / 2, height - 100, 'SHARE ON X', {
+      fontSize: '20px',
+      color: '#666666',
+      fontFamily: 'Arial',
+      letterSpacing: 2,
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
+    shareBtn.setInteractive({ useHandCursor: true });
+    shareBtn.on('pointerover', () => shareBtn.setColor('#E63946'));
+    shareBtn.on('pointerout', () => shareBtn.setColor('#666666'));
+    shareBtn.on('pointerdown', () => this.shareOnX(localHighScore));
+
     // Back instruction - repositioned to avoid overlap
     this.add.text(width / 2, height - 30, 'ESC = BACK', {
       fontSize: '20px',
@@ -321,6 +334,24 @@ export class LeaderboardScene extends Phaser.Scene {
       fontFamily: 'Arial',
       fontStyle: 'italic'
     }).setOrigin(0.5);
+  }
+
+  private shareOnX(score: number): void {
+    const text = `Built by a guy with 0 game-dev experience,
+still more fun than half the coins I bought 💀
+
+Scored ${score} points in Eagle of Fun 🦅
+
+For the culture. For the memes. For America.Fun 🇺🇸
+
+Play it. Laugh. Lose. Repeat.
+
+🦅 https://eagle-of-fun.vercel.app/
+
+$AOL #EagleOfFun #AmericaFun #ForTheCulture`;
+    const xUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}`;
+
+    window.open(xUrl, '_blank');
   }
 
   shutdown(): void {

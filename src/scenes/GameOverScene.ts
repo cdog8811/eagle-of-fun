@@ -379,11 +379,21 @@ export class GameOverScene extends Phaser.Scene {
   }
 
   private shareOnTwitter(score: number): void {
-    const text = `🦅 Just scored ${score} in Eagle of Fun! Avoided FUD & stacked $AOL like a real patriot 🇺🇸 Can you beat me? 👉 america.fun #EagleOfFun #AmericaIsForFun #WAGMI #AOL #BURGER #USD1`;
-    const url = 'https://america.fun';
-    const twitterUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`;
+    const text = `Built by a guy with 0 game-dev experience,
+still more fun than half the coins I bought 💀
 
-    window.open(twitterUrl, '_blank');
+Scored ${score} points in Eagle of Fun 🦅
+
+For the culture. For the memes. For America.Fun 🇺🇸
+
+Play it. Laugh. Lose. Repeat.
+
+🦅 https://eagle-of-fun.vercel.app/
+
+$AOL #EagleOfFun #AmericaFun #ForTheCulture`;
+    const xUrl = `https://x.com/intent/tweet?text=${encodeURIComponent(text)}`;
+
+    window.open(xUrl, '_blank');
   }
 
   private unlockVesperSkin(): void {
