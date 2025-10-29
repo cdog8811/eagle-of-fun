@@ -121,18 +121,18 @@ export class StartScene extends Phaser.Scene {
     const footerY = height - 40;
 
     // Credit text - bottom left
-    this.add.text(30, footerY, 'Made by Cdog for the america.fun Community', {
+    this.add.text(30, footerY, this.i18n.t('start.madeBy'), {
       fontSize: '16px',
       color: '#888888',
-      fontFamily: 'Arial',
+      fontFamily: this.i18n.getFontFamily(),
       letterSpacing: 1
     }).setOrigin(0, 0.5);
 
     // Version info - bottom left, below credits
-    this.add.text(30, footerY + 20, 'Eagle of Fun – Beta v1.0 (Community Build)', {
+    this.add.text(30, footerY + 20, this.i18n.t('start.version'), {
       fontSize: '14px',
       color: '#999999',
-      fontFamily: 'Arial',
+      fontFamily: this.i18n.getFontFamily(),
       letterSpacing: 1
     }).setOrigin(0, 0.5);
 
@@ -140,9 +140,9 @@ export class StartScene extends Phaser.Scene {
     const communityY = footerY; // Same height as footerY (was +15)
     const communityLinkSpacing = 180;
 
-    this.createCommunityTextLink(width / 2 - communityLinkSpacing, communityY, 'Telegram (EN)', 'https://t.me/official_america_dot_fun');
-    this.createCommunityTextLink(width / 2, communityY, 'Telegram (CN)', 'https://t.me/americafunchinese');
-    this.createCommunityTextLink(width / 2 + communityLinkSpacing, communityY, 'America.Fun', 'https://www.america.fun/');
+    this.createCommunityTextLink(width / 2 - communityLinkSpacing, communityY, this.i18n.t('start.telegramEN'), 'https://t.me/official_america_dot_fun');
+    this.createCommunityTextLink(width / 2, communityY, this.i18n.t('start.telegramCN'), 'https://t.me/americafunchinese');
+    this.createCommunityTextLink(width / 2 + communityLinkSpacing, communityY, this.i18n.t('start.website'), 'https://www.america.fun/');
 
     // 3-Token Live Ticker - at top with 40px spacing from top
     const tokenY = 40;
@@ -275,7 +275,7 @@ export class StartScene extends Phaser.Scene {
     const link = this.add.text(x, y, text, {
       fontSize: '18px',
       color: '#888888',
-      fontFamily: 'Arial',
+      fontFamily: this.i18n.getFontFamily(),
       letterSpacing: 1
     }).setOrigin(0.5);
 
