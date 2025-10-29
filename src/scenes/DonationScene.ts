@@ -5,7 +5,7 @@ export class DonationScene extends Phaser.Scene {
   private i18n = getI18n();
   private cdogImage?: Phaser.GameObjects.Image;
   private donationText?: Phaser.GameObjects.Text;
-  private solAddress: string = '8Cnaouzi4sCn4v69bgxRUtgmAZeEt93HgemtZENUVWP5';
+  private solAddress: string = 'BLD81pnH7p7TkZC9pste1CJuwdAseo46Q6ra7W6Ng6rW';
   private copyConfirmation?: Phaser.GameObjects.Text;
 
   constructor() {
