@@ -87,9 +87,9 @@ export class MarketDataManager {
    * Get color based on price change percentage
    */
   static getColorForChange(change: number): string {
-    if (change > 1) return '#00FF00';     // Green for > +1%
-    if (change < -1) return '#FF0000';    // Red for < -1%
-    return '#FFCC00';                     // Yellow for neutral
+    if (change > 1) return '#22C55E';     // Green for > +1% (softer, less harsh)
+    if (change < -1) return '#EF4444';    // Red for < -1% (softer red)
+    return '#F59E0B';                     // Amber for neutral (softer yellow)
   }
 
   /**
