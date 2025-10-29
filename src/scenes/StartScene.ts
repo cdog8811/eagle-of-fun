@@ -125,13 +125,13 @@ export class StartScene extends Phaser.Scene {
       letterSpacing: 1
     }).setOrigin(0, 0.5);
 
-    // Community text links - same height as logo, left side below version
-    const communityLinkSpacing = 150;
-    const communityStartX = 30;
+    // Community text links - centered, 10px higher
+    const communityY = footerY + 15; // 10px higher than before (was +25)
+    const communityLinkSpacing = 180;
 
-    this.createCommunityTextLink(communityStartX, footerY + 25, 'Telegram (EN)', 'https://t.me/official_america_dot_fun');
-    this.createCommunityTextLink(communityStartX + communityLinkSpacing, footerY + 25, 'Telegram (CN)', 'https://t.me/americafunchinese');
-    this.createCommunityTextLink(communityStartX + communityLinkSpacing * 2, footerY + 25, 'America.Fun', 'https://www.america.fun/');
+    this.createCommunityTextLink(width / 2 - communityLinkSpacing, communityY, 'Telegram (EN)', 'https://t.me/official_america_dot_fun');
+    this.createCommunityTextLink(width / 2, communityY, 'Telegram (CN)', 'https://t.me/americafunchinese');
+    this.createCommunityTextLink(width / 2 + communityLinkSpacing, communityY, 'America.Fun', 'https://www.america.fun/');
 
     // America.Fun Logo - bottom right, bigger (+20%)
     const logo = this.add.image(0, footerY + 10, 'america-logo');
