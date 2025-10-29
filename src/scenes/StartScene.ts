@@ -1,9 +1,12 @@
 import Phaser from 'phaser';
 import { GameConfig } from '../config/GameConfig';
+import { MarketDataManager } from '../systems/marketDataManager';
 
 export class StartScene extends Phaser.Scene {
   private fallingCoins: Phaser.GameObjects.Graphics[] = [];
   private musicStarted: boolean = false;
+  private priceText?: Phaser.GameObjects.Text;
+  private priceUpdateTimer?: Phaser.Time.TimerEvent;
 
   constructor() {
     super({ key: 'StartScene' });
@@ -132,6 +135,23 @@ export class StartScene extends Phaser.Scene {
     this.createCommunityTextLink(width / 2 - communityLinkSpacing, communityY, 'Telegram (EN)', 'https://t.me/official_america_dot_fun');
     this.createCommunityTextLink(width / 2, communityY, 'Telegram (CN)', 'https://t.me/americafunchinese');
     this.createCommunityTextLink(width / 2 + communityLinkSpacing, communityY, 'America.Fun', 'https://www.america.fun/');
+
+    // $AOL Live Price Display - below community links
+    const priceY = footerY + 30;
+    this.priceText = this.add.text(width / 2, priceY, 'Loading $AOL data...', {
+      fontSize: '20px',
+      color: '#FFFFFF',
+      fontFamily: 'Arial',
+      letterSpacing: 1
+    }).setOrigin(0.5);
+
+    // Start price updates
+    this.updateAOLPrice();
+    this.priceUpdateTimer = this.time.addEvent({
+      delay: 60000, // Update every 60 seconds
+      loop: true,
+      callback: () => this.updateAOLPrice()
+    });
 
     // America.Fun Logo - bottom right, bigger (+20%)
     const logo = this.add.image(0, footerY + 10, 'america-logo');
@@ -331,6 +351,37 @@ export class StartScene extends Phaser.Scene {
     }
   }
 
+  /**
+   * Update $AOL price display from Dexscreener API
+   */
+  private async updateAOLPrice(): Promise<void> {
+    if (!this.priceText) return;
+
+    try {
+      const data = await MarketDataManager.getAOLData();
+
+      if (!data) {
+        // Failed to fetch data - keep showing loading or show error
+        this.priceText.setText('$AOL data unavailable');
+        this.priceText.setColor('#888888');
+        return;
+      }
+
+      // Update text with formatted price display
+      const displayText = MarketDataManager.formatPriceDisplay(data);
+      const color = MarketDataManager.getColorForChange(data.change);
+
+      this.priceText.setText(displayText);
+      this.priceText.setColor(color);
+
+      console.log('💰 Updated $AOL price:', displayText);
+    } catch (error) {
+      console.error('❌ Error updating $AOL price:', error);
+      this.priceText.setText('$AOL data unavailable');
+      this.priceText.setColor('#888888');
+    }
+  }
+
   private showDeclarationPopup(): void {
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
@@ -385,5 +436,11 @@ export class StartScene extends Phaser.Scene {
 
     // Stop all sounds
     this.sound.stopAll();
+
+    // Stop price update timer
+    if (this.priceUpdateTimer) {
+      this.priceUpdateTimer.destroy();
+      this.priceUpdateTimer = undefined;
+    }
   }
 }
