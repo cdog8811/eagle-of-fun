@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { GameConfig } from '../config/GameConfig';
 import { getUpgradeSystem, type UpgradeDef, type PlayerStats } from '../systems/upgradeSystem';
 import { getXPSystem } from '../systems/xpSystem';
+import { getI18n } from '../systems/i18n';
 
 /**
  * UpgradeScene - Upgrade Hangar (v3.10 - Score-based)
@@ -12,6 +13,7 @@ import { getXPSystem } from '../systems/xpSystem';
 export default class UpgradeScene extends Phaser.Scene {
   private upgradeSystem = getUpgradeSystem();
   private xpSystem = getXPSystem();
+  private i18n = getI18n();
 
   private currentScore: number = 0; // Score-based instead of XP
   private playerStats!: PlayerStats;
@@ -136,9 +138,9 @@ export default class UpgradeScene extends Phaser.Scene {
     this.scoreDisplayBg.setScrollFactor(0);
 
     // Available Score (Center) - FIXED to screen, no emoji in text
-    this.scoreText = this.add.text(width / 2, y + 45, `AVAILABLE SCORE: ${this.currentScore}`, {
+    this.scoreText = this.add.text(width / 2, y + 45, `${this.i18n.t('upgrade.availableScore')}: ${this.currentScore}`, {
       fontSize: '42px',
-      fontFamily: 'Arial',
+      fontFamily: this.i18n.getFontFamily(),
       color: '#FFD700',
       fontStyle: 'bold',
       letterSpacing: 2
@@ -198,8 +200,8 @@ export default class UpgradeScene extends Phaser.Scene {
     const buttonY = height - 70;
 
     // v3.8: Modern minimal buttons (like StartScene)
-    this.createButton(width / 2 - 220, buttonY, 'PLAY AGAIN', () => this.onPlayAgain(), 0x000000);
-    this.createButton(width / 2 + 220, buttonY, 'RESET ALL', () => this.onReset(), 0x000000);
+    this.createButton(width / 2 - 220, buttonY, this.i18n.t('upgrade.playAgainButton'), () => this.onPlayAgain(), 0x000000);
+    this.createButton(width / 2 + 220, buttonY, this.i18n.t('upgrade.resetButton'), () => this.onReset(), 0x000000);
   }
 
   private createButton(x: number, y: number, text: string, callback: () => void, color: number): void {
@@ -216,7 +218,7 @@ export default class UpgradeScene extends Phaser.Scene {
     const buttonText = this.add.text(0, 0, text.toUpperCase(), {
       fontSize: '28px',
       color: '#FFFFFF',
-      fontFamily: 'Arial',
+      fontFamily: this.i18n.getFontFamily(),
       fontStyle: 'bold',
       letterSpacing: 3
     }).setOrigin(0.5);
@@ -581,10 +583,10 @@ export default class UpgradeScene extends Phaser.Scene {
     const confirmText = this.add.text(
       width / 2,
       height / 2 - 100,
-      'RESET ALL UPGRADES?',
+      this.i18n.t('upgrade.resetConfirm'),
       {
         fontSize: '32px',
-        fontFamily: 'Arial',
+        fontFamily: this.i18n.getFontFamily(),
         color: '#000000',
         fontStyle: 'bold',
         letterSpacing: 2
@@ -594,10 +596,10 @@ export default class UpgradeScene extends Phaser.Scene {
     const warningText = this.add.text(
       width / 2,
       height / 2 - 50,
-      'This will reset ALL upgrades!\nYour XP will be refunded.',
+      this.i18n.t('upgrade.resetWarning'),
       {
         fontSize: '20px',
-        fontFamily: 'Arial',
+        fontFamily: this.i18n.getFontFamily(),
         color: '#666666',
         align: 'center',
         lineSpacing: 5
@@ -620,10 +622,10 @@ export default class UpgradeScene extends Phaser.Scene {
     const checkboxLabel = this.add.text(
       checkboxX + checkboxSize + 15,
       checkboxY + checkboxSize / 2,
-      'Also reset my Level and XP',
+      this.i18n.t('upgrade.resetCheckbox'),
       {
         fontSize: '22px',
-        fontFamily: 'Arial',
+        fontFamily: this.i18n.getFontFamily(),
         color: '#000000',
         fontStyle: 'normal'
       }
@@ -666,9 +668,9 @@ export default class UpgradeScene extends Phaser.Scene {
     confirmBtnBg.fillStyle(0xE63946, 1);
     confirmBtnBg.fillRoundedRect(-85, -25, 170, 50, 6);
 
-    const confirmBtnText = this.add.text(0, 0, 'RESET', {
+    const confirmBtnText = this.add.text(0, 0, this.i18n.t('upgrade.resetButtonConfirm'), {
       fontSize: '24px',
-      fontFamily: 'Arial',
+      fontFamily: this.i18n.getFontFamily(),
       color: '#FFFFFF',
       fontStyle: 'bold',
       letterSpacing: 2
@@ -700,9 +702,9 @@ export default class UpgradeScene extends Phaser.Scene {
     cancelBtnBg.fillStyle(0x000000, 1);
     cancelBtnBg.fillRoundedRect(-85, -25, 170, 50, 6);
 
-    const cancelBtnText = this.add.text(0, 0, 'CANCEL', {
+    const cancelBtnText = this.add.text(0, 0, this.i18n.t('upgrade.cancelButton'), {
       fontSize: '24px',
-      fontFamily: 'Arial',
+      fontFamily: this.i18n.getFontFamily(),
       color: '#FFFFFF',
       fontStyle: 'bold',
       letterSpacing: 2
@@ -769,7 +771,7 @@ export default class UpgradeScene extends Phaser.Scene {
       confirmBtnContainer.destroy();
       cancelBtnContainer.destroy();
 
-      const message = resetXP ? '🗑️ All upgrades and Level reset!' : '🗑️ All upgrades reset!';
+      const message = resetXP ? this.i18n.t('upgrade.resetSuccessWithXP') : this.i18n.t('upgrade.resetSuccess');
       console.log(`✅ Reset complete - ${message}`);
 
       // Show notification
@@ -831,6 +833,7 @@ class UpgradeCard {
   private buyButtonText: Phaser.GameObjects.Text;
   private effectText: Phaser.GameObjects.Text;
   private bgGraphics: Phaser.GameObjects.Graphics;
+  private i18n = getI18n();
 
   private baseY: number;
   private cardWidth: number;
@@ -885,9 +888,9 @@ class UpgradeCard {
     });
 
     // Level display
-    this.levelText = scene.add.text(20, 105, `LEVEL: ${currentLevel} / ${def.maxLevel}`, {
+    this.levelText = scene.add.text(20, 105, `${this.i18n.t('upgrade.level')}: ${currentLevel} / ${def.maxLevel}`, {
       fontSize: '18px',
-      fontFamily: 'Arial',
+      fontFamily: this.i18n.getFontFamily(),
       color: '#000000',
       fontStyle: 'bold',
       letterSpacing: 1
@@ -896,16 +899,16 @@ class UpgradeCard {
     // Effect preview
     this.effectText = scene.add.text(20, 130, this.getEffectPreview(currentLevel), {
       fontSize: '15px',
-      fontFamily: 'Arial',
+      fontFamily: this.i18n.getFontFamily(),
       color: '#00AA00'
     });
 
     // Cost display
     const nextLevel = currentLevel + 1;
     const cost = (scene as any).upgradeSystem.getCost(def.id, nextLevel);
-    this.costText = scene.add.text(20, 160, `COST: ${cost} SCORE`, {
+    this.costText = scene.add.text(20, 160, `${this.i18n.t('upgrade.cost')}: ${cost} SCORE`, {
       fontSize: '18px',
-      fontFamily: 'Arial',
+      fontFamily: this.i18n.getFontFamily(),
       color: '#E63946',
       fontStyle: 'bold',
       letterSpacing: 1
@@ -927,9 +930,9 @@ class UpgradeCard {
 
     // Button text
     this.buyButtonText = scene.add.text(this.buttonX, this.buttonY,
-      currentLevel >= def.maxLevel ? 'MAX' : (canBuy.ok ? 'BUY' : 'LOCKED'), {
+      currentLevel >= def.maxLevel ? this.i18n.t('upgrade.maxLevel') : (canBuy.ok ? this.i18n.t('upgrade.buyButton') : 'LOCKED'), {
       fontSize: '20px',
-      fontFamily: 'Arial',
+      fontFamily: this.i18n.getFontFamily(),
       color: '#FFFFFF',
       fontStyle: 'bold',
       letterSpacing: 2
@@ -1011,12 +1014,12 @@ class UpgradeCard {
   }
 
   public updateLevel(newLevel: number, currentScore: number): void {
-    this.levelText.setText(`LEVEL: ${newLevel} / ${this.def.maxLevel}`);
+    this.levelText.setText(`${this.i18n.t('upgrade.level')}: ${newLevel} / ${this.def.maxLevel}`);
     this.effectText.setText(this.getEffectPreview(newLevel));
 
     const nextLevel = newLevel + 1;
     const cost = (this.container.scene as any).upgradeSystem.getCost(this.def.id, nextLevel);
-    this.costText.setText(`COST: ${cost} SCORE`);
+    this.costText.setText(`${this.i18n.t('upgrade.cost')}: ${cost} SCORE`);
 
     const canBuy = (this.container.scene as any).upgradeSystem.canBuyWithScore(this.def.id, currentScore);
     const buttonColor = canBuy.ok ? 0x000000 : 0x999999;
@@ -1037,7 +1040,7 @@ class UpgradeCard {
     this.buyButtonBg.fillRoundedRect(this.buttonX - this.buttonWidth / 2, this.buttonY - this.buttonHeight / 2, this.buttonWidth, this.buttonHeight, 6);
 
     this.buyButtonText.setText(
-      newLevel >= this.def.maxLevel ? 'MAX' : (canBuy.ok ? 'BUY' : 'LOCKED')
+      newLevel >= this.def.maxLevel ? this.i18n.t('upgrade.maxLevel') : (canBuy.ok ? this.i18n.t('upgrade.buyButton') : 'LOCKED')
     );
   }
 }

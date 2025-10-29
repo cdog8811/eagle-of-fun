@@ -1,9 +1,11 @@
 import Phaser from 'phaser';
 import { GameConfig } from '../config/GameConfig';
 import { LeaderboardService } from '../services/LeaderboardService';
+import { getI18n } from '../systems/i18n';
 
 export class GameOverScene extends Phaser.Scene {
   private nameInput: HTMLInputElement | null = null;
+  private i18n = getI18n();
 
   constructor() {
     super({ key: 'GameOverScene' });
@@ -32,10 +34,10 @@ export class GameOverScene extends Phaser.Scene {
     let currentY = 100;
 
     // Game Over title - wie StartScene
-    const title = this.add.text(width / 2, currentY, 'GAME OVER', {
+    const title = this.add.text(width / 2, currentY, this.i18n.t('gameover.title'), {
       fontSize: '72px',
       color: '#000000',
-      fontFamily: 'Arial',
+      fontFamily: this.i18n.getFontFamily(),
       fontStyle: 'bold',
       letterSpacing: 8
     }).setOrigin(0.5);
@@ -65,10 +67,10 @@ export class GameOverScene extends Phaser.Scene {
     currentY = jeeterY + 100 + spacing;
 
     // Score display - kleiner, wie StartScene
-    const scoreText = this.add.text(width / 2, currentY, `FINAL SCORE: ${score}`, {
+    const scoreText = this.add.text(width / 2, currentY, `${this.i18n.t('gameover.finalScore')}: ${score}`, {
       fontSize: '42px',
       color: '#000000',
-      fontFamily: 'Arial',
+      fontFamily: this.i18n.getFontFamily(),
       fontStyle: 'bold',
       letterSpacing: 3
     }).setOrigin(0.5);
@@ -86,10 +88,10 @@ export class GameOverScene extends Phaser.Scene {
     currentY += 35 + 35;
 
     if (isNewHighScore) {
-      const newHighScoreText = this.add.text(width / 2, currentY, 'NEW HIGH SCORE!', {
+      const newHighScoreText = this.add.text(width / 2, currentY, this.i18n.t('gameover.newRecord'), {
         fontSize: '32px',
         color: '#00AA00',
-        fontFamily: 'Arial',
+        fontFamily: this.i18n.getFontFamily(),
         fontStyle: 'bold',
         letterSpacing: 3
       }).setOrigin(0.5);
@@ -105,20 +107,20 @@ export class GameOverScene extends Phaser.Scene {
       });
       currentY += 40 + 35;
     } else {
-      this.add.text(width / 2, currentY, `HIGH SCORE: ${highScore}`, {
+      this.add.text(width / 2, currentY, `${this.i18n.t('gameover.highScore')}: ${highScore}`, {
         fontSize: '24px',
         color: '#666666',
-        fontFamily: 'Arial',
+        fontFamily: this.i18n.getFontFamily(),
         letterSpacing: 2
       }).setOrigin(0.5);
       currentY += 30 + 35;
     }
 
     // Name input prompt
-    this.add.text(width / 2, currentY, 'ENTER YOUR NAME', {
+    this.add.text(width / 2, currentY, this.i18n.t('gameover.enterName'), {
       fontSize: '24px',
       color: '#666666',
-      fontFamily: 'Arial',
+      fontFamily: this.i18n.getFontFamily(),
       letterSpacing: 2
     }).setOrigin(0.5);
     currentY += 30 + 25;
@@ -128,7 +130,7 @@ export class GameOverScene extends Phaser.Scene {
     currentY += 60 + 30;
 
     // Save Name Button
-    this.createButton(width / 2, currentY, 'SAVE NAME', () => {
+    this.createButton(width / 2, currentY, this.i18n.t('gameover.saveName'), () => {
       this.saveName();
     });
     currentY += 44 + 50;
@@ -136,7 +138,7 @@ export class GameOverScene extends Phaser.Scene {
     // Buttons container - responsive positioning
     const buttonGroupY = Math.max(currentY, height - 150);
 
-    this.createButton(width / 2 - 250, buttonGroupY, 'TRY AGAIN', () => {
+    this.createButton(width / 2 - 250, buttonGroupY, this.i18n.t('gameover.tryAgain'), () => {
       this.cleanupInput();
       this.sound.stopAll();
 
@@ -148,7 +150,7 @@ export class GameOverScene extends Phaser.Scene {
       }
     });
 
-    this.createButton(width / 2 + 250, buttonGroupY, 'HALL OF DEGENS', () => {
+    this.createButton(width / 2 + 250, buttonGroupY, this.i18n.t('gameover.hallOfDegens'), () => {
       this.cleanupInput();
       this.sound.stopAll();
       this.scene.start('LeaderboardScene');
@@ -163,10 +165,10 @@ export class GameOverScene extends Phaser.Scene {
     logo.setX(width - (logo.width * 0.36 / 2) - 30);
 
     // Share button - positioned left bottom
-    const shareBtn = this.add.text(width / 2 - 300, height - 60, 'SHARE ON X', {
+    const shareBtn = this.add.text(width / 2 - 300, height - 60, this.i18n.t('gameover.shareButton'), {
       fontSize: '20px',
       color: '#666666',
-      fontFamily: 'Arial',
+      fontFamily: this.i18n.getFontFamily(),
       letterSpacing: 2
     }).setOrigin(0.5);
     shareBtn.setInteractive({ useHandCursor: true });
@@ -175,10 +177,10 @@ export class GameOverScene extends Phaser.Scene {
     shareBtn.on('pointerdown', () => this.shareOnTwitter(score));
 
     // Back to menu text - positioned center bottom
-    const backText = this.add.text(width / 2 + 300, height - 60, 'ESC = MAIN MENU', {
+    const backText = this.add.text(width / 2 + 300, height - 60, this.i18n.t('gameover.backToMenu'), {
       fontSize: '20px',
       color: '#999999',
-      fontFamily: 'Arial',
+      fontFamily: this.i18n.getFontFamily(),
       letterSpacing: 2
     }).setOrigin(0.5);
 
@@ -269,11 +271,11 @@ export class GameOverScene extends Phaser.Scene {
     const confirmText = this.add.text(
       this.cameras.main.width / 2,
       this.cameras.main.height / 2,
-      'SAVING...',
+      this.i18n.t('gameover.saving'),
       {
         fontSize: '48px',
         color: '#888888',
-        fontFamily: 'Arial',
+        fontFamily: this.i18n.getFontFamily(),
         fontStyle: 'bold',
         letterSpacing: 2,
         align: 'center'
@@ -286,11 +288,11 @@ export class GameOverScene extends Phaser.Scene {
 
     if (response.success) {
       console.log('✅ Score submitted to online leaderboard:', response.entry);
-      confirmText.setText('SAVED!\n\nLoading Leaderboard...');
+      confirmText.setText(this.i18n.t('gameover.saved'));
       confirmText.setColor('#00AA00');
     } else {
       console.warn('⚠️ Failed to submit to online leaderboard:', response.error);
-      confirmText.setText('SAVED LOCALLY!\n\nLoading Leaderboard...');
+      confirmText.setText(this.i18n.t('gameover.savedLocally'));
       confirmText.setColor('#FBB13C');
 
       // Fallback: Save to localStorage
@@ -340,7 +342,7 @@ export class GameOverScene extends Phaser.Scene {
     const buttonText = this.add.text(0, 0, text, {
       fontSize: '28px',
       color: '#FFFFFF',
-      fontFamily: 'Arial',
+      fontFamily: this.i18n.getFontFamily(),
       fontStyle: 'bold',
       letterSpacing: 2
     }).setOrigin(0.5);
