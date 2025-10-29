@@ -97,59 +97,13 @@ export class LeaderboardScene extends Phaser.Scene {
     shareBtn.on('pointerout', () => shareBtn.setColor('#666666'));
     shareBtn.on('pointerdown', () => this.shareOnX(localHighScore));
 
-    // Community links - below Share button
+    // Community text links - centered, same style as StartScene
     const communityY = height - 105;
+    const communityLinkSpacing = 180;
 
-    // "Join the movement:" header
-    const headerText = this.add.text(width / 2, communityY - 25, 'Join the movement:', {
-      fontSize: '18px',
-      color: '#FFFFFF',
-      fontFamily: 'Arial',
-      alpha: 0.9
-    }).setOrigin(0.5);
-
-    // Fade-in animation
-    headerText.setAlpha(0);
-    this.tweens.add({
-      targets: headerText,
-      alpha: 0.9,
-      duration: 300,
-      ease: 'Power2'
-    });
-
-    // Community links container
-    const linksContainer = this.add.container(width / 2, communityY);
-
-    // Telegram EN
-    const telegramEN = this.createCommunityLink(-210, 0, '💬 Telegram (EN)', 'https://t.me/official_america_dot_fun');
-    // Divider
-    const divider1 = this.add.text(-40, 0, '|', {
-      fontSize: '18px',
-      color: '#FFFFFF',
-      alpha: 0.5
-    }).setOrigin(0.5);
-    // Telegram CN
-    const telegramCN = this.createCommunityLink(0, 0, '💬 Telegram (CN)', 'https://t.me/americafunchinese');
-    // Divider
-    const divider2 = this.add.text(165, 0, '|', {
-      fontSize: '18px',
-      color: '#FFFFFF',
-      alpha: 0.5
-    }).setOrigin(0.5);
-    // America.Fun
-    const americaFun = this.createCommunityLink(260, 0, '🌐 America.Fun', 'https://www.america.fun/');
-
-    linksContainer.add([telegramEN, divider1, telegramCN, divider2, americaFun]);
-
-    // Fade-in animation for links
-    linksContainer.setAlpha(0);
-    this.tweens.add({
-      targets: linksContainer,
-      alpha: 1,
-      duration: 300,
-      delay: 150,
-      ease: 'Power2'
-    });
+    this.createCommunityLink(width / 2 - communityLinkSpacing, communityY, 'Telegram (EN)', 'https://t.me/official_america_dot_fun');
+    this.createCommunityLink(width / 2, communityY, 'Telegram (CN)', 'https://t.me/americafunchinese');
+    this.createCommunityLink(width / 2 + communityLinkSpacing, communityY, 'America.Fun', 'https://www.america.fun/');
 
     // Back instruction - repositioned to avoid overlap
     this.add.text(width / 2, height - 30, 'ESC = BACK', {
@@ -390,43 +344,32 @@ export class LeaderboardScene extends Phaser.Scene {
     }).setOrigin(0.5);
   }
 
-  private createCommunityLink(x: number, y: number, text: string, url: string): Phaser.GameObjects.Text {
+  private createCommunityLink(x: number, y: number, text: string, url: string): void {
     const link = this.add.text(x, y, text, {
       fontSize: '18px',
-      color: '#FFFFFF',
+      color: '#888888',
       fontFamily: 'Arial',
-      alpha: 0.9
+      letterSpacing: 1
     }).setOrigin(0.5);
 
     link.setInteractive({ useHandCursor: true });
 
-    // Hover effects
+    // Hover effects - same as StartScene
     link.on('pointerover', () => {
-      link.setColor('#00FFFF'); // Cyan
+      link.setColor('#E63946'); // Red hover
       this.tweens.add({
         targets: link,
-        scale: 1.1,
+        scale: 1.05,
         duration: 200,
         ease: 'Back.easeOut'
-      });
-
-      // Pulse effect
-      this.tweens.add({
-        targets: link,
-        alpha: 1,
-        duration: 400,
-        yoyo: true,
-        repeat: -1
       });
     });
 
     link.on('pointerout', () => {
-      link.setColor('#FFFFFF');
-      this.tweens.killTweensOf(link);
+      link.setColor('#888888');
       this.tweens.add({
         targets: link,
         scale: 1,
-        alpha: 0.9,
         duration: 200
       });
     });
@@ -434,8 +377,6 @@ export class LeaderboardScene extends Phaser.Scene {
     link.on('pointerdown', () => {
       window.open(url, '_blank');
     });
-
-    return link;
   }
 
   private shareOnX(score: number): void {
