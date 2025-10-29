@@ -35,6 +35,13 @@ const translations = {
     'game.gameOver': 'GAME OVER',
     'game.finalScore': 'FINAL SCORE',
 
+    // UI
+    'ui.level': 'LEVEL {{level}}',
+    'ui.xp': 'XP',
+    'ui.noMission': '⏸️ No Mission',
+    'ui.missionDone': '✅ Done',
+    'ui.noWeapon': 'No Weapon',
+
     // GameOver Scene
     'gameover.title': 'GAME OVER',
     'gameover.finalScore': 'FINAL SCORE',
@@ -378,6 +385,13 @@ const translations = {
     'game.resume': '按 P 继续',
     'game.gameOver': '游戏结束',
     'game.finalScore': '最终得分',
+
+    // UI
+    'ui.level': '等级 {{level}}',
+    'ui.xp': '经验',
+    'ui.noMission': '⏸️ 无任务',
+    'ui.missionDone': '✅ 完成',
+    'ui.noWeapon': '无武器',
 
     // GameOver Scene
     'gameover.title': '游戏结束',

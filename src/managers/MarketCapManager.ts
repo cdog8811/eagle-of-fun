@@ -10,6 +10,7 @@
 
 import Phaser from 'phaser';
 import { NotificationManager, NotificationPriority } from './NotificationManager';
+import { getI18n } from '../systems/i18n';
 
 interface Milestone {
   level: number;
@@ -29,6 +30,7 @@ const AOL_TOKEN_ID = '2oQNkePakuPbHzrVVkQ875WHeewLHCd2cAwfwiLQbonk';
 export class MarketCapManager {
   private scene: Phaser.Scene;
   private notificationManager: NotificationManager;
+  private i18n = getI18n();
   private lastMcap: number = 0;
   private triggeredMilestones: Set<string> = new Set();
   private updateTimer?: Phaser.Time.TimerEvent;
@@ -211,11 +213,11 @@ export class MarketCapManager {
     const text = this.scene.add.text(
       width / 2,
       100,
-      `$AOL currently at $${mcapM}M MCAP – ${milestoneName} Active! 🐂`,
+      this.i18n.t('milestone.recap', { mcap: mcapM, name: milestoneName }),
       {
         fontSize: '24px',
         color: '#FFFFFF',
-        fontFamily: 'Arial',
+        fontFamily: this.i18n.getFontFamily(),
         fontStyle: 'bold',
         stroke: '#000000',
         strokeThickness: 4
@@ -249,7 +251,7 @@ export class MarketCapManager {
 
     // Show notification via NotificationManager
     this.notificationManager.showNotification({
-      title: `🇺🇸 $AOL hit $${mcapM}M MCAP – Freedom Rising!`,
+      title: this.i18n.t('milestone.freedomRising', { mcap: mcapM }),
       message: '',
       priority: NotificationPriority.HIGH,
       color: '#FFD700',
@@ -275,7 +277,7 @@ export class MarketCapManager {
   private bullMarketUnlocked(mcapM: string): void {
     // Show notification via NotificationManager
     this.notificationManager.showNotification({
-      title: `🚀 $AOL reached $${mcapM}M MCAP – Bull Market Unlocked!`,
+      title: this.i18n.t('milestone.bullMarket', { mcap: mcapM }),
       message: '',
       priority: NotificationPriority.HIGH,
       color: '#22C55E',
@@ -303,7 +305,7 @@ export class MarketCapManager {
   private communityPumpMode(mcapM: string): void {
     // Show notification via NotificationManager
     this.notificationManager.showNotification({
-      title: `🎉 $AOL is pumping! $${mcapM}M – Community Pump Mode!`,
+      title: this.i18n.t('milestone.communityPump', { mcap: mcapM }),
       message: '',
       priority: NotificationPriority.HIGH,
       color: '#F59E0B',
@@ -330,7 +332,7 @@ export class MarketCapManager {
 
     // Show notification via NotificationManager
     this.notificationManager.showNotification({
-      title: `🦅 $AOL surpassed $${mcapM}M – Valor Awakening!`,
+      title: this.i18n.t('milestone.valorAwakening', { mcap: mcapM }),
       message: '',
       priority: NotificationPriority.HIGH,
       color: '#FFD700',
@@ -364,7 +366,7 @@ export class MarketCapManager {
 
     // Show notification via NotificationManager
     this.notificationManager.showNotification({
-      title: `😴 $AOL fell below $${mcapM}M – Bear Whisper… Hold the Line!`,
+      title: this.i18n.t('milestone.bearWhisper', { mcap: mcapM }),
       message: '',
       priority: NotificationPriority.HIGH,
       color: '#888888',
@@ -407,7 +409,7 @@ export class MarketCapManager {
 
     // Show notification via NotificationManager
     this.notificationManager.showNotification({
-      title: `💀 RUG ALERT! $AOL under $${mcapM}M – Liquidity gone!`,
+      title: this.i18n.t('milestone.rugAlert', { mcap: mcapM }),
       message: '',
       priority: NotificationPriority.HIGH,
       color: '#EF4444',

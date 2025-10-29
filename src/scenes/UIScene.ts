@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { getXPSystem } from '../systems/xpSystem';
 import type { XPState } from '../systems/xpSystem';
+import { getI18n } from '../systems/i18n';
 
 /**
  * UIScene - Separate Scene für alle UI-Elemente
@@ -14,6 +15,7 @@ import type { XPState } from '../systems/xpSystem';
  */
 export default class UIScene extends Phaser.Scene {
   private xpSystem = getXPSystem();
+  private i18n = getI18n();
   // XP System
   private levelText?: Phaser.GameObjects.Text;
   private xpText?: Phaser.GameObjects.Text;
@@ -124,9 +126,9 @@ export default class UIScene extends Phaser.Scene {
     bg.strokeRoundedRect(x, y, 250, 70, this.UI_CORNER_RADIUS);
 
     // Level Text (Large, bold) - White
-    this.levelText = this.add.text(x + 20, y + 15, 'LEVEL 1', {
+    this.levelText = this.add.text(x + 20, y + 15, this.i18n.t('ui.level', { level: 1 }), {
       fontSize: '20px',
-      fontFamily: 'Arial',
+      fontFamily: this.i18n.getFontFamily(),
       color: '#FFFFFF',
       fontStyle: 'bold'
     });
@@ -146,9 +148,9 @@ export default class UIScene extends Phaser.Scene {
     this.updateXPBar();
 
     // XP Text - Gold
-    this.xpText = this.add.text(x + 125, y + 15, '0 / 1000 XP', {
+    this.xpText = this.add.text(x + 125, y + 15, `0 / 1000 ${this.i18n.t('ui.xp')}`, {
       fontSize: '14px',
-      fontFamily: 'Arial',
+      fontFamily: this.i18n.getFontFamily(),
       color: '#FFD700' // Gold
     });
   }
@@ -207,7 +209,7 @@ export default class UIScene extends Phaser.Scene {
       // Mission Title (emoji + title) - White
       const titleText = this.add.text(x + 15, y + 15, '🎯 Mission', {
         fontSize: '18px',
-        fontFamily: 'Arial',
+        fontFamily: this.i18n.getFontFamily(),
         color: '#FFFFFF',
         fontStyle: 'bold'
       });
@@ -215,14 +217,14 @@ export default class UIScene extends Phaser.Scene {
       // Progress Text (bigger, centered) - White
       const progressText = this.add.text(x + 15, y + 42, '0 / 0', {
         fontSize: '16px',
-        fontFamily: 'Arial',
+        fontFamily: this.i18n.getFontFamily(),
         color: '#FFFFFF'
       });
 
       // Reward Text (right side) - Gold
       const rewardText = this.add.text(x + missionWidth - 80, y + 42, '+0 XP', {
         fontSize: '16px',
-        fontFamily: 'Arial',
+        fontFamily: this.i18n.getFontFamily(),
         color: '#FFD700', // Gold
         fontStyle: 'bold'
       });
@@ -256,9 +258,9 @@ export default class UIScene extends Phaser.Scene {
     });
 
     // Weapon Name - White
-    this.weaponText = this.add.text(x + 60, y + 18, 'No Weapon', {
+    this.weaponText = this.add.text(x + 60, y + 18, this.i18n.t('ui.noWeapon'), {
       fontSize: '16px',
-      fontFamily: 'Arial',
+      fontFamily: this.i18n.getFontFamily(),
       color: '#FFFFFF',
       fontStyle: 'bold'
     });
@@ -274,7 +276,7 @@ export default class UIScene extends Phaser.Scene {
     // Energy Text (percentage) - inside bar
     this.weaponEnergyText = this.add.text(x + 130, y + 62, '100%', {
       fontSize: '14px',
-      fontFamily: 'Arial',
+      fontFamily: this.i18n.getFontFamily(),
       color: '#FFFFFF',
       fontStyle: 'bold'
     }).setOrigin(0.5, 0);
@@ -304,11 +306,11 @@ export default class UIScene extends Phaser.Scene {
 
     // Update text objects (they exist even if scene is not active)
     if (this.levelText) {
-      this.levelText.setText(`LEVEL ${level}`);
+      this.levelText.setText(this.i18n.t('ui.level', { level }));
     }
 
     if (this.xpText) {
-      this.xpText.setText(`${xp} / ${xpToNext} XP`);
+      this.xpText.setText(`${xp} / ${xpToNext} ${this.i18n.t('ui.xp')}`);
     }
 
     this.updateXPBar();
@@ -333,7 +335,7 @@ export default class UIScene extends Phaser.Scene {
       if (!mission) {
         // No mission in this slot
         const texts = container.list.filter(obj => obj.type === 'Text') as Phaser.GameObjects.Text[];
-        if (texts[0]) texts[0].setText('⏸️ No Mission');
+        if (texts[0]) texts[0].setText(this.i18n.t('ui.noMission'));
         if (texts[1]) texts[1].setText('');
         if (texts[2]) texts[2].setText('');
         continue;
@@ -365,7 +367,7 @@ export default class UIScene extends Phaser.Scene {
       // Update progress - texts[1]
       if (texts[1]) {
         if (mission.completed) {
-          texts[1].setText('✅ Done');
+          texts[1].setText(this.i18n.t('ui.missionDone'));
           texts[1].setColor('#FFD700'); // Gold for completed
         } else {
           const progress = mission.progress || 0;
@@ -386,7 +388,7 @@ export default class UIScene extends Phaser.Scene {
         } else if (mission.xpReward) {
           xpValue = mission.xpReward;
         }
-        texts[2].setText(`+${xpValue} XP`);
+        texts[2].setText(`+${xpValue} ${this.i18n.t('ui.xp')}`);
         texts[2].setColor('#FFD700'); // Gold for rewards
       }
     }
