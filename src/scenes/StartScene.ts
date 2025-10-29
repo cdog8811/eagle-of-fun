@@ -99,26 +99,18 @@ export class StartScene extends Phaser.Scene {
 
     // High score display - center
     const highScore = this.registry.get('highScore') || 0;
-    this.add.text(width / 2, height - 140, `BEST: ${highScore}`, {
+    this.add.text(width / 2, height - 90, `BEST: ${highScore}`, {
       fontSize: '24px',
       color: '#999999',
       fontFamily: 'Arial',
       letterSpacing: 2
     }).setOrigin(0.5);
 
-    // Community text links - below score, almost at bottom
-    const communityY = height - 100;
-    const communityLinkSpacing = 220;
-
-    this.createCommunityTextLink(width / 2 - communityLinkSpacing, communityY, '💬 Telegram (EN)', 'https://t.me/official_america_dot_fun');
-    this.createCommunityTextLink(width / 2, communityY, '💬 Telegram (CN)', 'https://t.me/americafunchinese');
-    this.createCommunityTextLink(width / 2 + communityLinkSpacing, communityY, '🌐 America.Fun', 'https://www.america.fun/');
-
     // Footer Container - Text links, Logo rechts, auf einer Linie
     const footerY = height - 40;
 
-    // Credit text - bottom left
-    this.add.text(30, footerY, 'Made by Cdog for the america.fun Community', {
+    // Credit text - bottom left, higher up
+    this.add.text(30, footerY - 20, 'Made by Cdog for the america.fun Community', {
       fontSize: '16px',
       color: '#888888',
       fontFamily: 'Arial',
@@ -126,12 +118,20 @@ export class StartScene extends Phaser.Scene {
     }).setOrigin(0, 0.5);
 
     // Version info - bottom left, below credits
-    this.add.text(30, footerY + 20, 'Eagle of Fun – Beta v1.0 (Community Build)', {
+    this.add.text(30, footerY, 'Eagle of Fun – Beta v1.0 (Community Build)', {
       fontSize: '14px',
       color: '#999999',
       fontFamily: 'Arial',
       letterSpacing: 1
     }).setOrigin(0, 0.5);
+
+    // Community text links - same height as logo, left side below version
+    const communityLinkSpacing = 150;
+    const communityStartX = 30;
+
+    this.createCommunityTextLink(communityStartX, footerY + 25, 'Telegram (EN)', 'https://t.me/official_america_dot_fun');
+    this.createCommunityTextLink(communityStartX + communityLinkSpacing, footerY + 25, 'Telegram (CN)', 'https://t.me/americafunchinese');
+    this.createCommunityTextLink(communityStartX + communityLinkSpacing * 2, footerY + 25, 'America.Fun', 'https://www.america.fun/');
 
     // America.Fun Logo - bottom right, bigger (+20%)
     const logo = this.add.image(0, footerY + 10, 'america-logo');
