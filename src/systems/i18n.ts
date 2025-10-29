@@ -64,15 +64,15 @@ const translations = {
     'leaderboard.yourScore': 'YOUR SCORE',
     'leaderboard.loading': 'Loading leaderboard...',
     'leaderboard.noScores': 'No scores yet. Be the first!',
-    'leaderboard.submitButton': 'SUBMIT SCORE',
-    'leaderboard.backButton': 'BACK',
+    'leaderboard.playAgain': 'PLAY AGAIN',
+    'leaderboard.mainMenu': 'MAIN MENU',
     'leaderboard.shareButton': 'SHARE ON X',
 
     // Upgrade Scene
     'upgrade.title': 'UPGRADE HANGAR',
     'upgrade.availableScore': 'Available Score',
     'upgrade.level': 'Level',
-    'upgrade.maxLevel': 'MAX LEVEL',
+    'upgrade.maxLevel': 'MAX',
     'upgrade.cost': 'Cost',
     'upgrade.buyButton': 'BUY',
     'upgrade.playAgainButton': 'PLAY AGAIN',
@@ -85,6 +85,30 @@ const translations = {
     'upgrade.resetSuccess': 'All upgrades reset!',
     'upgrade.resetSuccessWithXP': 'All upgrades and Level reset!',
 
+    // Upgrade Names
+    'upgrade.wingStrength': 'Wing Strength',
+    'upgrade.magnetRange': 'Magnet Range',
+    'upgrade.shieldDuration': 'Shield Duration',
+    'upgrade.blasterCooldown': 'Blaster Cooldown',
+    'upgrade.valorCooldown': 'Valor Cooldown',
+    'upgrade.extraHeart': 'Extra Heart',
+    'upgrade.coinValue': 'Coin Value',
+    'upgrade.glideEfficiency': 'Glide Efficiency',
+    'upgrade.buybackRadius': 'Buyback Radius',
+    'upgrade.burgerDuration': 'Burger Duration',
+
+    // Upgrade Descriptions
+    'upgrade.wingStrengthDesc': 'Stronger flaps for better control',
+    'upgrade.magnetRangeDesc': 'Pull coins from farther away',
+    'upgrade.shieldDurationDesc': 'America Hat protection lasts longer',
+    'upgrade.blasterCooldownDesc': 'Fire your blaster more frequently',
+    'upgrade.valorCooldownDesc': 'Use VALOR mode more often',
+    'upgrade.extraHeartDesc': 'Increase maximum health',
+    'upgrade.coinValueDesc': 'Earn more XP from coins',
+    'upgrade.glideEfficiencyDesc': 'Float more gracefully',
+    'upgrade.buybackRadiusDesc': 'Magnet effect has wider range',
+    'upgrade.burgerDurationDesc': 'Burger multiplier lasts longer',
+
     // How To Play Scene
     'howto.title': 'HOW TO PLAY',
     'howto.controls': 'CONTROLS',
@@ -94,14 +118,15 @@ const translations = {
     'howto.enemies': 'ENEMIES',
     'howto.enemiesText': 'Jeeters = 30pts • Paper Hands = 50pts • Gary = 80pts\nBear Boss = 500pts (appears at 5000 score)',
     'howto.powerups': 'POWER-UPS',
-    'howto.powerupsText': 'Shield • Magnet • Speed Boost • Freedom Strike\nCollect to gain temporary advantages!',
+    'howto.powerupsText': 'Bandana = Speed • Blaster = Weapon • Hat = Shield\nFeder = AOL Magnet • Rose Mod = XP Boost',
     'howto.microEvents': 'MICRO-EVENTS',
-    'howto.microEventsText': 'Random events like "Elon Tweeted!" or "Market Pump!"\nBonus coins and score multipliers!',
+    'howto.microEventsText': 'Elon Tweet = AOL Flood • SEC Down = Immunity\nMarket Pump = Score Multiplier • Watch for events!',
     'howto.progression': 'PROGRESSION',
-    'howto.progressionText': 'Earn XP → Level Up → Unlock Upgrades\nSpend score on permanent stat boosts!',
+    'howto.progressionText': 'Earn XP → Level Up → Hangar Upgrades\nUpgrade Hall after runs for permanent bonuses!',
     'howto.onlineLeaderboard': 'ONLINE LEADERBOARD',
-    'howto.onlineLeaderboardText': 'Compete globally! Submit your score to the\nHall of Degens and claim your spot!',
-    'howto.backButton': 'BACK',
+    'howto.onlineLeaderboardText': 'Compete globally in Hall of Degens!\nSubmit your high score and climb the ranks!',
+    'howto.proTip': 'PRO TIP: COLLECT BELLE MODS & UPGRADE IN THE HANGAR!',
+    'howto.backButton': 'BACK TO MENU',
 
     // Intro Scenes
     'intro.cdog.line1': 'Welcome, Degen.',
@@ -208,8 +233,8 @@ const translations = {
     'leaderboard.yourScore': '你的得分',
     'leaderboard.loading': '加载排行榜中...',
     'leaderboard.noScores': '暂无得分。成为第一个！',
-    'leaderboard.submitButton': '提交得分',
-    'leaderboard.backButton': '返回',
+    'leaderboard.playAgain': '再玩一次',
+    'leaderboard.mainMenu': '主菜单',
     'leaderboard.shareButton': '分享到 X',
 
     // Upgrade Scene
@@ -229,6 +254,30 @@ const translations = {
     'upgrade.resetSuccess': '所有升级已重置！',
     'upgrade.resetSuccessWithXP': '所有升级和等级已重置！',
 
+    // Upgrade Names
+    'upgrade.wingStrength': '翅膀力量',
+    'upgrade.magnetRange': '磁铁范围',
+    'upgrade.shieldDuration': '护盾持续',
+    'upgrade.blasterCooldown': '武器冷却',
+    'upgrade.valorCooldown': '勇气冷却',
+    'upgrade.extraHeart': '额外生命',
+    'upgrade.coinValue': '硬币价值',
+    'upgrade.glideEfficiency': '滑翔效率',
+    'upgrade.buybackRadius': '回购范围',
+    'upgrade.burgerDuration': '汉堡持续',
+
+    // Upgrade Descriptions
+    'upgrade.wingStrengthDesc': '更强的扇翅获得更好控制',
+    'upgrade.magnetRangeDesc': '从更远处拉取硬币',
+    'upgrade.shieldDurationDesc': '美国帽子保护持续更久',
+    'upgrade.blasterCooldownDesc': '更频繁地发射武器',
+    'upgrade.valorCooldownDesc': '更频繁使用勇气模式',
+    'upgrade.extraHeartDesc': '增加最大生命值',
+    'upgrade.coinValueDesc': '从硬币获得更多经验',
+    'upgrade.glideEfficiencyDesc': '更优雅地漂浮',
+    'upgrade.buybackRadiusDesc': '磁铁效果范围更广',
+    'upgrade.burgerDurationDesc': '汉堡倍增持续更久',
+
     // How To Play Scene
     'howto.title': '游戏玩法',
     'howto.controls': '控制',
@@ -238,14 +287,15 @@ const translations = {
     'howto.enemies': '敌人',
     'howto.enemiesText': 'Jeeters = 30分 • 纸手 = 50分 • Gary = 80分\n熊市Boss = 500分（5000分时出现）',
     'howto.powerups': '道具',
-    'howto.powerupsText': '护盾 • 磁铁 • 速度提升 • 自由打击\n收集以获得临时优势！',
+    'howto.powerupsText': '头巾 = 速度 • 武器 = 射击 • 帽子 = 护盾\n羽毛 = AOL 磁铁 • Rose 模组 = 经验提升',
     'howto.microEvents': '微事件',
-    'howto.microEventsText': '随机事件如"马斯克发推了！"或"市场拉升！"\n奖励币和分数倍数！',
+    'howto.microEventsText': '马斯克推文 = AOL 洪水 • SEC 关闭 = 免疫\n市场拉升 = 分数倍增 • 关注事件！',
     'howto.progression': '进度',
-    'howto.progressionText': '赚取经验 → 升级 → 解锁升级\n花费分数购买永久属性提升！',
+    'howto.progressionText': '赚取经验 → 升级 → 机库升级\n游戏后升级大厅以获得永久加成！',
     'howto.onlineLeaderboard': '在线排行榜',
-    'howto.onlineLeaderboardText': '全球竞争！提交你的分数到\n荣誉殿堂并占据你的位置！',
-    'howto.backButton': '返回',
+    'howto.onlineLeaderboardText': '全球竞争荣誉殿堂！\n提交你的最高分并攀登排名！',
+    'howto.proTip': '专业提示：收集 BELLE 模组并在机库升级！',
+    'howto.backButton': '返回菜单',
 
     // Intro Scenes
     'intro.cdog.line1': '欢迎，Degen。',

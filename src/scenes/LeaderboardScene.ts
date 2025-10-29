@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { GameConfig } from '../config/GameConfig';
 import { LeaderboardService, LeaderboardEntry as APILeaderboardEntry } from '../services/LeaderboardService';
+import { getI18n } from '../systems/i18n';
 
 interface LeaderboardEntry {
   rank: number;
@@ -12,6 +13,7 @@ interface LeaderboardEntry {
 
 export class LeaderboardScene extends Phaser.Scene {
   private loadingText?: Phaser.GameObjects.Text;
+  private i18n = getI18n();
 
   constructor() {
     super({ key: 'LeaderboardScene' });
@@ -41,10 +43,10 @@ export class LeaderboardScene extends Phaser.Scene {
     logo.setX(width - (logo.width * 0.36 / 2) - 30);
 
     // Title - professional, bigger
-    this.add.text(width / 2, 150, 'HALL OF DEGENS', {
+    this.add.text(width / 2, 150, this.i18n.t('leaderboard.title'), {
       fontSize: '96px',
       color: '#000000',
-      fontFamily: 'Arial',
+      fontFamily: this.i18n.getFontFamily(),
       fontStyle: 'bold',
       letterSpacing: 8
     }).setOrigin(0.5);
@@ -58,17 +60,17 @@ export class LeaderboardScene extends Phaser.Scene {
     const localHighScore = this.registry.get('highScore') || 0;
 
     // Show loading text
-    this.loadingText = this.add.text(width / 2, height / 2, 'Loading leaderboard...', {
+    this.loadingText = this.add.text(width / 2, height / 2, this.i18n.t('leaderboard.loading'), {
       fontSize: '32px',
       color: '#888888',
-      fontFamily: 'Arial'
+      fontFamily: this.i18n.getFontFamily()
     }).setOrigin(0.5);
 
     // Load leaderboard from API (v4.2: Online leaderboard)
     this.loadOnlineLeaderboard(width, localHighScore);
 
     // Buttons - professional, better positioned
-    this.createButton(width / 2 - 250, height - 100, 'PLAY AGAIN', () => {
+    this.createButton(width / 2 - 250, height - 100, this.i18n.t('leaderboard.playAgain'), () => {
       this.sound.stopAll();
 
       // Skip UpgradeScene if upgrade system is disabled
@@ -79,16 +81,16 @@ export class LeaderboardScene extends Phaser.Scene {
       }
     });
 
-    this.createButton(width / 2 + 250, height - 100, 'MAIN MENU', () => {
+    this.createButton(width / 2 + 250, height - 100, this.i18n.t('leaderboard.mainMenu'), () => {
       this.sound.stopAll();
       this.scene.start('StartScene');
     });
 
     // Share on X button - positioned center
-    const shareBtn = this.add.text(width / 2, height - 150, 'SHARE ON X', {
+    const shareBtn = this.add.text(width / 2, height - 150, this.i18n.t('leaderboard.shareButton'), {
       fontSize: '20px',
       color: '#666666',
-      fontFamily: 'Arial',
+      fontFamily: this.i18n.getFontFamily(),
       letterSpacing: 2,
       fontStyle: 'bold'
     }).setOrigin(0.5);

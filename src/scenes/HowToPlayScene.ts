@@ -1,7 +1,10 @@
 import Phaser from 'phaser';
 import { GameConfig } from '../config/GameConfig';
+import { getI18n } from '../systems/i18n';
 
 export class HowToPlayScene extends Phaser.Scene {
+  private i18n = getI18n();
+
   constructor() {
     super({ key: 'HowToPlayScene' });
   }
@@ -22,10 +25,10 @@ export class HowToPlayScene extends Phaser.Scene {
     logo.setX(width - (logo.width * 0.36 / 2) - 30);
 
     // Title - professional
-    const title = this.add.text(width / 2, 80, 'HOW TO PLAY', {
+    const title = this.add.text(width / 2, 80, this.i18n.t('howto.title'), {
       fontSize: '56px',
       color: '#000000',
-      fontFamily: 'Arial',
+      fontFamily: this.i18n.getFontFamily(),
       fontStyle: 'bold',
       letterSpacing: 4
     }).setOrigin(0.5);
@@ -39,38 +42,38 @@ export class HowToPlayScene extends Phaser.Scene {
     const instructions = [
       {
         number: '1',
-        title: 'CONTROLS',
-        text: 'SPACE = Flap Up • WASD/Arrows = Move in all directions\nP = Pause • Weapon auto-fires when unlocked'
+        title: this.i18n.t('howto.controls'),
+        text: this.i18n.t('howto.controlsText')
       },
       {
         number: '2',
-        title: 'COLLECTIBLES',
-        text: '$AOL Coin = 5pts • Belle Mod = 25pts (rare!)\nCollect for score, XP, and weapon energy!'
+        title: this.i18n.t('howto.collectibles'),
+        text: this.i18n.t('howto.collectiblesText')
       },
       {
         number: '3',
-        title: 'ENEMIES',
-        text: 'Jeeters = 30pts • Paper Hands = 50pts • Gary = 80pts\nBear Boss = 500pts (appears at 5000 score)'
+        title: this.i18n.t('howto.enemies'),
+        text: this.i18n.t('howto.enemiesText')
       },
       {
         number: '4',
-        title: 'POWER-UPS',
-        text: 'Bandana = Speed • Blaster = Weapon • Hat = Shield\nFeder = AOL Magnet • Rose Mod = XP Boost'
+        title: this.i18n.t('howto.powerups'),
+        text: this.i18n.t('howto.powerupsText')
       },
       {
         number: '5',
-        title: 'MICRO-EVENTS',
-        text: 'Elon Tweet = AOL Flood • SEC Down = Immunity\nMarket Pump = Score Multiplier • Watch for events!'
+        title: this.i18n.t('howto.microEvents'),
+        text: this.i18n.t('howto.microEventsText')
       },
       {
         number: '6',
-        title: 'PROGRESSION',
-        text: 'Earn XP → Level Up → Hangar Upgrades\nUpgrade Hall after runs for permanent bonuses!'
+        title: this.i18n.t('howto.progression'),
+        text: this.i18n.t('howto.progressionText')
       },
       {
         number: '7',
-        title: 'ONLINE LEADERBOARD',
-        text: 'Compete globally in Hall of Degens!\nSubmit your high score and climb the ranks!'
+        title: this.i18n.t('howto.onlineLeaderboard'),
+        text: this.i18n.t('howto.onlineLeaderboardText')
       }
     ];
 
@@ -81,16 +84,16 @@ export class HowToPlayScene extends Phaser.Scene {
     });
 
     // Pro tip - updated for v4.2
-    this.add.text(width / 2, height - 100, 'PRO TIP: COLLECT BELLE MODS & UPGRADE IN THE HANGAR!', {
+    this.add.text(width / 2, height - 100, this.i18n.t('howto.proTip'), {
       fontSize: '14px',
       color: '#E63946',
-      fontFamily: 'Arial',
+      fontFamily: this.i18n.getFontFamily(),
       fontStyle: 'bold',
       letterSpacing: 1
     }).setOrigin(0.5);
 
     // Back button
-    this.createButton(width / 2, height - 50, 'BACK TO MENU', () => {
+    this.createButton(width / 2, height - 50, this.i18n.t('howto.backButton'), () => {
       this.scene.start('StartScene');
     });
 
@@ -116,7 +119,7 @@ export class HowToPlayScene extends Phaser.Scene {
     const numberText = this.add.text(-450, 0, number, {
       fontSize: '18px',
       color: '#FFFFFF',
-      fontFamily: 'Arial',
+      fontFamily: this.i18n.getFontFamily(),
       fontStyle: 'bold'
     }).setOrigin(0.5);
 
@@ -124,7 +127,7 @@ export class HowToPlayScene extends Phaser.Scene {
     const titleText = this.add.text(-400, -15, title, {
       fontSize: '20px',
       color: '#000000',
-      fontFamily: 'Arial',
+      fontFamily: this.i18n.getFontFamily(),
       fontStyle: 'bold',
       letterSpacing: 2
     }).setOrigin(0, 0.5);
@@ -133,7 +136,7 @@ export class HowToPlayScene extends Phaser.Scene {
     const descText = this.add.text(-400, 15, text, {
       fontSize: '15px',
       color: '#666666',
-      fontFamily: 'Arial',
+      fontFamily: this.i18n.getFontFamily(),
       lineSpacing: 5
     }).setOrigin(0, 0.5);
 
@@ -151,7 +154,7 @@ export class HowToPlayScene extends Phaser.Scene {
     const buttonText = this.add.text(0, 0, text, {
       fontSize: '16px',
       color: '#FFFFFF',
-      fontFamily: 'Arial',
+      fontFamily: this.i18n.getFontFamily(),
       fontStyle: 'bold',
       letterSpacing: 1
     }).setOrigin(0.5);

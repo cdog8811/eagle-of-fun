@@ -866,8 +866,10 @@ class UpgradeCard {
     this.bgGraphics.lineStyle(3, 0x000000, 1);
     this.bgGraphics.strokeRoundedRect(0, 0, width, height, 8);
 
-    // Title with red underline
-    const titleText = scene.add.text(20, 20, def.name.toUpperCase(), {
+    // Title with red underline - translate upgrade name
+    const upgradeNameKey = `upgrade.${this.toCamelCase(def.id)}`;
+    const upgradeName = this.i18n.t(upgradeNameKey);
+    const titleText = scene.add.text(20, 20, upgradeName.toUpperCase(), {
       fontSize: '26px',
       fontFamily: this.i18n.getFontFamily(),
       color: '#000000',
@@ -879,8 +881,10 @@ class UpgradeCard {
     titleUnderline.fillStyle(0xE63946, 1);
     titleUnderline.fillRect(20, 52, 100, 3);
 
-    // Description
-    const descText = scene.add.text(20, 65, def.desc, {
+    // Description - translate upgrade description
+    const upgradeDescKey = `upgrade.${this.toCamelCase(def.id)}Desc`;
+    const upgradeDesc = this.i18n.t(upgradeDescKey);
+    const descText = scene.add.text(20, 65, upgradeDesc, {
       fontSize: '16px',
       fontFamily: this.i18n.getFontFamily(),
       color: '#666666',
@@ -1011,6 +1015,10 @@ class UpgradeCard {
 
   public setScrollOffset(scrollY: number): void {
     this.container.setY(this.baseY - scrollY);
+  }
+
+  private toCamelCase(str: string): string {
+    return str.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
   }
 
   public updateLevel(newLevel: number, currentScore: number): void {
