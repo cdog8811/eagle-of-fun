@@ -680,6 +680,18 @@ export default class UpgradeScene extends Phaser.Scene {
       useHandCursor: true
     });
 
+    // Hover effects for confirm button
+    confirmBtnContainer.on('pointerover', () => {
+      confirmBtnBg.clear();
+      confirmBtnBg.fillStyle(0xFF4757, 1); // Lighter red on hover
+      confirmBtnBg.fillRoundedRect(-85, -25, 170, 50, 6);
+    });
+    confirmBtnContainer.on('pointerout', () => {
+      confirmBtnBg.clear();
+      confirmBtnBg.fillStyle(0xE63946, 1);
+      confirmBtnBg.fillRoundedRect(-85, -25, 170, 50, 6);
+    });
+
     // Cancel button (v4.2: moved down for checkbox)
     const cancelBtnContainer = this.add.container(width / 2 + 100, height / 2 + 110).setDepth(1003);
     const cancelBtnBg = this.add.graphics();
@@ -700,6 +712,18 @@ export default class UpgradeScene extends Phaser.Scene {
       hitArea: new Phaser.Geom.Rectangle(-85, -25, 170, 50),
       hitAreaCallback: Phaser.Geom.Rectangle.Contains,
       useHandCursor: true
+    });
+
+    // Hover effects for cancel button
+    cancelBtnContainer.on('pointerover', () => {
+      cancelBtnBg.clear();
+      cancelBtnBg.fillStyle(0x333333, 1); // Lighter on hover
+      cancelBtnBg.fillRoundedRect(-85, -25, 170, 50, 6);
+    });
+    cancelBtnContainer.on('pointerout', () => {
+      cancelBtnBg.clear();
+      cancelBtnBg.fillStyle(0x000000, 1);
+      cancelBtnBg.fillRoundedRect(-85, -25, 170, 50, 6);
     });
 
     // Confirm action
