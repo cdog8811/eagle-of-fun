@@ -22,6 +22,7 @@ const translations = {
     'start.telegramEN': 'Telegram (EN)',
     'start.telegramCN': 'Telegram (CN)',
     'start.website': 'America.Fun',
+    'start.loading': 'loading...',
 
     // Game Scene
     'game.score': 'SCORE',
@@ -151,6 +152,7 @@ const translations = {
     'start.telegramEN': 'Telegram (英文)',
     'start.telegramCN': 'Telegram (中文)',
     'start.website': 'America.Fun',
+    'start.loading': '加载中...',
 
     // Game Scene
     'game.score': '得分',

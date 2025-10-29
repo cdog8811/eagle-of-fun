@@ -154,10 +154,10 @@ export class StartScene extends Phaser.Scene {
       const container = this.add.container(startX + i * tokenSpacing, tokenY);
 
       // Main text (black) - "$SYMBOL  $price  "
-      const mainText = this.add.text(0, 0, `${symbol}: loading...`, {
+      const mainText = this.add.text(0, 0, `${symbol}: ${this.i18n.t('start.loading')}`, {
         fontSize: '18px',
         color: '#000000',
-        fontFamily: 'Arial',
+        fontFamily: this.i18n.getFontFamily(),
         letterSpacing: 0.5
       }).setOrigin(0.5);
 
@@ -165,7 +165,7 @@ export class StartScene extends Phaser.Scene {
       const percentText = this.add.text(0, 0, '', {
         fontSize: '18px',
         color: '#FFFFFF',
-        fontFamily: 'Arial',
+        fontFamily: this.i18n.getFontFamily(),
         letterSpacing: 0.5
       }).setOrigin(0, 0.5);
 
@@ -173,7 +173,7 @@ export class StartScene extends Phaser.Scene {
       const mcText = this.add.text(0, 0, '', {
         fontSize: '18px',
         color: '#000000',
-        fontFamily: 'Arial',
+        fontFamily: this.i18n.getFontFamily(),
         letterSpacing: 0.5
       }).setOrigin(0, 0.5);
 
