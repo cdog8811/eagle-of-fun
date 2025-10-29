@@ -2374,7 +2374,7 @@ export class GameScene extends Phaser.Scene {
 
     // v4.2: Unified notification system - simple text, no panel
     this.notificationManager.showNotification({
-      title: 'BUYBACK ACTIVE',
+      title: this.i18n.t('notification.buybackActive'),
       message: '',
       icon: '🧲',
       color: '#FBB13C',
@@ -2430,7 +2430,7 @@ export class GameScene extends Phaser.Scene {
     // Visual feedback
     // v4.2: Use NotificationManager for simple, unified display
     this.notificationManager.showNotification({
-      title: 'AMERICA HAT ACTIVE',
+      title: this.i18n.t('notification.americaHatActive'),
       message: '',
       icon: '🇺🇸',
       color: '#FF0000',
@@ -2553,7 +2553,7 @@ export class GameScene extends Phaser.Scene {
 
     // v4.2: Use NotificationManager for simple, unified display
     this.notificationManager.showNotification({
-      title: 'FREEDOM STRIKE',
+      title: this.i18n.t('notification.freedomStrike'),
       message: '',
       icon: '⚡',
       color: '#FFFF00',
@@ -2640,7 +2640,7 @@ export class GameScene extends Phaser.Scene {
     // v4.2: Unified notification system - show points earned
     if (totalPoints > 0) {
       this.notificationManager.showNotification({
-        title: `+${totalPoints} POINTS - ${enemiesDestroyed} DESTROYED`,
+        title: `+${totalPoints} ${this.i18n.t('notification.pointsDestroyed').replace('{{count}}', enemiesDestroyed.toString())}`,
         message: '',
         icon: '⚡',
         color: '#FFD700',
@@ -2671,7 +2671,7 @@ export class GameScene extends Phaser.Scene {
 
     // v4.2: Use NotificationManager for simple, unified display
     this.notificationManager.showNotification({
-      title: 'BELLE MOD ACTIVE',
+      title: this.i18n.t('notification.belleModActive'),
       message: '',
       icon: '👁️',
       color: '#FFD700',
@@ -2777,7 +2777,7 @@ export class GameScene extends Phaser.Scene {
 
     // v4.2: Unified notification system - simple text, no panel
     this.notificationManager.showNotification({
-      title: 'BURGER MULTIPLIER ACTIVE',
+      title: this.i18n.t('notification.burgerActive'),
       message: '',
       icon: '🍔',
       color: '#FBB13C',
@@ -2852,7 +2852,7 @@ export class GameScene extends Phaser.Scene {
 
     // v4.2: Use NotificationManager for simple, unified display
     this.notificationManager.showNotification({
-      title: 'EAT THE DIP',
+      title: this.i18n.t('notification.eatTheDip'),
       message: '',
       icon: '🍔',
       color: '#FFD700',
@@ -2954,7 +2954,7 @@ export class GameScene extends Phaser.Scene {
   private showComboText(combo: number, bonusPoints: number): void {
     // v4.2: LOW priority - short display in second line
     this.notificationManager.showNotification({
-      title: `${combo}X COMBO +${bonusPoints}`,
+      title: `${combo}X ${this.i18n.t('notification.combo')} +${bonusPoints}`,
       message: '',
       icon: '🔥',
       color: '#FF6B00',
@@ -3439,7 +3439,7 @@ export class GameScene extends Phaser.Scene {
         {
           fontSize: '36px', // v3.9.2: Increased from 24px for better visibility
           color: '#FFD700',
-          fontFamily: 'Arial',
+          fontFamily: this.i18n.getFontFamily(),
           fontStyle: 'bold'
         },
         {
@@ -3887,7 +3887,7 @@ export class GameScene extends Phaser.Scene {
           {
             fontSize: '32px', // v3.9.2: Increased from 20px for better visibility
             color: coinColor,
-            fontFamily: 'Arial',
+            fontFamily: this.i18n.getFontFamily(),
             fontStyle: 'bold'
           },
           {
@@ -4033,11 +4033,11 @@ export class GameScene extends Phaser.Scene {
           this.showFloatingText(
             fakeCoin.x,
             fakeCoin.y,
-            '🛡️ PROTECTED',
+            this.i18n.t('floating.protected'),
             {
               fontSize: '28px',
               color: '#00FFFF',
-              fontFamily: 'Arial',
+              fontFamily: this.i18n.getFontFamily(),
               fontStyle: 'bold'
             },
             {
@@ -4056,11 +4056,11 @@ export class GameScene extends Phaser.Scene {
         this.showFloatingText(
           fakeCoin.x,
           fakeCoin.y,
-          '⚠️ FAKE!',
+          this.i18n.t('floating.fake'),
           {
             fontSize: '32px',
             color: '#FF0000',
-            fontFamily: 'Arial',
+            fontFamily: this.i18n.getFontFamily(),
             fontStyle: 'bold',
             stroke: '#000000',
             strokeThickness: 3
@@ -4654,11 +4654,11 @@ export class GameScene extends Phaser.Scene {
             this.showFloatingText(
               enemy.x,
               enemy.y - 20,
-              '🚫 BANNED',
+              this.i18n.t('floating.banned'),
               {
                 fontSize: '40px',
                 color: '#FF0000',
-                fontFamily: 'Arial',
+                fontFamily: this.i18n.getFontFamily(),
                 fontStyle: 'bold',
                 stroke: '#000000',
                 strokeThickness: 4
@@ -4679,7 +4679,7 @@ export class GameScene extends Phaser.Scene {
               {
                 fontSize: '32px',
                 color: '#FFD700',
-                fontFamily: 'Arial',
+                fontFamily: this.i18n.getFontFamily(),
                 fontStyle: 'bold'
               },
               {
@@ -4697,7 +4697,7 @@ export class GameScene extends Phaser.Scene {
               {
                 fontSize: '32px',
                 color: '#00FFFF',
-                fontFamily: 'Arial',
+                fontFamily: this.i18n.getFontFamily(),
                 fontStyle: 'bold'
               },
               {
@@ -4974,7 +4974,7 @@ export class GameScene extends Phaser.Scene {
 
     // v4.2: Use NotificationManager for simple, unified display
     this.notificationManager.showNotification({
-      title: 'BULL MARKET',
+      title: this.i18n.t('notification.bullMarket'),
       message: '',
       icon: '🐂',
       color: '#00FF00',
@@ -5198,7 +5198,7 @@ export class GameScene extends Phaser.Scene {
     // v4.2: NO PAUSE - Just show simple notification and create UI
     // Show notification using NotificationManager (matches other bonus items)
     this.notificationManager.showNotification({
-      title: 'NEW WEAPON UNLOCKED - BLASTER',
+      title: this.i18n.t('notification.blasterUnlocked'),
       message: '',
       icon: '⚡',
       color: '#FFD700', // Gold
@@ -5329,7 +5329,7 @@ export class GameScene extends Phaser.Scene {
 
     // v4.2: Use NotificationManager for Valor Stage 1 announcement
     this.notificationManager.showNotification({
-      title: 'VALOR MODE - STAGE 1',
+      title: this.i18n.t('notification.valorStage1'),
       message: '',
       icon: '🦅',
       color: '#FFD700'
@@ -5373,7 +5373,7 @@ export class GameScene extends Phaser.Scene {
     // Update HUD
     // v4.2: Use NotificationManager for Valor Stage 2 announcement
     this.notificationManager.showNotification({
-      title: 'VALOR ASCENSION - STAGE 2',
+      title: this.i18n.t('notification.valorStage2'),
       message: '',
       icon: '⚡',
       color: '#FFD700'
@@ -5719,7 +5719,7 @@ export class GameScene extends Phaser.Scene {
 
       // v4.2: Unified notification system
       this.notificationManager.showNotification({
-        title: '+1 LIFE',
+        title: this.i18n.t('notification.extraLife'),
         message: '',
         icon: '💖',
         color: '#FF1493',
@@ -5837,7 +5837,7 @@ export class GameScene extends Phaser.Scene {
 
     // v4.2: Use NotificationManager for simple, unified display
     this.notificationManager.showNotification({
-      title: 'CRYPTO ACTING ACTIVE',
+      title: this.i18n.t('notification.cryptoActingActive'),
       message: '',
       icon: '🕶️',
       color: '#00FFFF',
@@ -5913,7 +5913,7 @@ export class GameScene extends Phaser.Scene {
 
     // v4.2: Use NotificationManager for simple, unified display
     this.notificationManager.showNotification({
-      title: 'DANXX PROTOCOL ACTIVE',
+      title: this.i18n.t('notification.danxxActive'),
       message: '',
       icon: '🧱',
       color: '#00FF00',
@@ -6016,7 +6016,7 @@ export class GameScene extends Phaser.Scene {
 
     // v4.2: Use NotificationManager for simple, unified display
     this.notificationManager.showNotification({
-      title: 'ROSE MOD ACTIVE',
+      title: this.i18n.t('notification.roseModActive'),
       message: '',
       icon: '🌹',
       color: '#FF69B4',
@@ -6093,8 +6093,8 @@ export class GameScene extends Phaser.Scene {
     // v4.2: Show deactivation message using NotificationManager
     if (this.notificationManager) {
       this.notificationManager.showNotification({
-        title: 'MOD MODE ENDED',
-        message: 'Vibes Kept High',
+        title: this.i18n.t('notification.modEnded'),
+        message: this.i18n.t('notification.vibesKept'),
         icon: '🌹',
         color: '#FF69B4',
         priority: NotificationPriority.HIGH

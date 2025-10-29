@@ -7,6 +7,7 @@
  */
 
 import { Scene } from 'phaser';
+import { getI18n } from '../systems/i18n';
 
 export enum NotificationPriority {
   HIGH = 'high',    // Important: Weapons, Bonus Items - center, longer duration
@@ -28,6 +29,7 @@ export interface NotificationConfig {
 
 export class NotificationManager {
   private scene: Scene;
+  private i18n = getI18n();
   private highPriorityNotification: Phaser.GameObjects.Container | null = null;
   private lowPriorityNotification: Phaser.GameObjects.Container | null = null;
   private highPriorityTimer: Phaser.Time.TimerEvent | null = null;
@@ -77,7 +79,7 @@ export class NotificationManager {
     const titleText = this.scene.add.text(width / 2, yPosition, displayText, {
       fontSize: fontSize,
       color: titleColor,
-      fontFamily: 'Arial',
+      fontFamily: this.i18n.getFontFamily(), // Use i18n font for proper rendering
       fontStyle: 'bold',
       align: 'center',
       stroke: '#000000',
