@@ -1,12 +1,14 @@
 import Phaser from 'phaser';
 import { GameConfig } from '../config/GameConfig';
 import { MarketDataManager } from '../systems/marketDataManager';
+import { getI18n } from '../systems/i18n';
 
 export class StartScene extends Phaser.Scene {
   private fallingCoins: Phaser.GameObjects.Graphics[] = [];
   private musicStarted: boolean = false;
   private tokenContainers: Phaser.GameObjects.Container[] = [];
   private priceUpdateTimer?: Phaser.Time.TimerEvent;
+  private i18n = getI18n();
 
   constructor() {
     super({ key: 'StartScene' });
@@ -33,11 +35,14 @@ export class StartScene extends Phaser.Scene {
     // Minimal floating elements
     this.createMinimalElements();
 
+    // Language toggle button (top right)
+    this.createLanguageToggle(width);
+
     // Title - clean, professional, bigger and more centered
-    const title = this.add.text(width / 2, 200, 'EAGLE OF FUN', {
+    const title = this.add.text(width / 2, 200, this.i18n.t('start.title'), {
       fontSize: '96px',
       color: '#000000',
-      fontFamily: 'Arial',
+      fontFamily: this.i18n.getFontFamily(),
       fontStyle: 'bold',
       letterSpacing: 8
     }).setOrigin(0.5);
@@ -48,10 +53,10 @@ export class StartScene extends Phaser.Scene {
     underline.fillRect(width / 2 - 280, 270, 560, 6);
 
     // Tagline - sophisticated
-    this.add.text(width / 2, 310, 'STACK. SURVIVE. DOMINATE.', {
+    this.add.text(width / 2, 310, this.i18n.t('start.tagline'), {
       fontSize: '28px',
       color: '#666666',
-      fontFamily: 'Arial',
+      fontFamily: this.i18n.getFontFamily(),
       letterSpacing: 4
     }).setOrigin(0.5);
 
@@ -73,7 +78,7 @@ export class StartScene extends Phaser.Scene {
     const buttonY = 680;
     const buttonSpacing = 90;
 
-    this.createButton(width / 2, buttonY, '▶️ Start Flight', () => {
+    this.createButton(width / 2, buttonY, this.i18n.t('start.playButton'), () => {
       // v3.9.2: Ensure music starts on first interaction
       this.startMusicIfNeeded();
 
@@ -88,24 +93,24 @@ export class StartScene extends Phaser.Scene {
       });
     });
 
-    this.createButton(width / 2, buttonY + buttonSpacing, '🏆 Hall of Degens', () => {
+    this.createButton(width / 2, buttonY + buttonSpacing, this.i18n.t('start.leaderboardButton'), () => {
       // Stop menu music before going to Hall of Degens
       this.sound.stopByKey('menu-music');
       this.scene.start('LeaderboardScene');
     });
 
-    this.createButton(width / 2, buttonY + buttonSpacing * 2, 'ℹ️ How to Play', () => {
-      // Stop menu music before going to how to play
+    this.createButton(width / 2, buttonY + buttonSpacing * 2, this.i18n.t('start.howToPlayButton'), () => {
+      // Stop music before going to how to play
       this.sound.stopByKey('menu-music');
       this.scene.start('HowToPlayScene');
     });
 
     // High score display - center
     const highScore = this.registry.get('highScore') || 0;
-    this.add.text(width / 2, height - 110, `BEST: ${highScore}`, {
+    this.add.text(width / 2, height - 110, `${this.i18n.t('start.bestScore')}: ${highScore}`, {
       fontSize: '24px',
       color: '#999999',
-      fontFamily: 'Arial',
+      fontFamily: this.i18n.getFontFamily(),
       letterSpacing: 2
     }).setOrigin(0.5);
 
@@ -491,6 +496,52 @@ export class StartScene extends Phaser.Scene {
     bg.on('pointerdown', () => {
       bg.destroy();
       popup.destroy();
+    });
+  }
+
+  /**
+   * Create language toggle button
+   */
+  private createLanguageToggle(width: number): void {
+    const langButton = this.add.container(width - 80, 50);
+    const langBg = this.add.graphics();
+    langBg.fillStyle(0x000000, 1);
+    langBg.fillRoundedRect(-35, -20, 70, 40, 6);
+
+    const currentLang = this.i18n.getLanguage();
+    const langText = this.add.text(0, 0, currentLang === 'en' ? '🇺🇸 EN' : '🇨🇳 CN', {
+      fontSize: '16px',
+      color: '#FFFFFF',
+      fontFamily: 'Arial',
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
+
+    langButton.add([langBg, langText]);
+    langButton.setSize(70, 40);
+    langButton.setInteractive(
+      new Phaser.Geom.Rectangle(-35, -20, 70, 40),
+      Phaser.Geom.Rectangle.Contains
+    );
+
+    // Hover effect
+    langButton.on('pointerover', () => {
+      this.sound.play('hover-button', { volume: 0.3 });
+      langBg.clear();
+      langBg.fillStyle(0xE63946, 1);
+      langBg.fillRoundedRect(-35, -20, 70, 40, 6);
+    });
+
+    langButton.on('pointerout', () => {
+      langBg.clear();
+      langBg.fillStyle(0x000000, 1);
+      langBg.fillRoundedRect(-35, -20, 70, 40, 6);
+    });
+
+    // Toggle language and reload scene
+    langButton.on('pointerdown', () => {
+      this.sound.play('menu-button', { volume: 0.4 });
+      this.i18n.toggleLanguage();
+      this.scene.restart(); // Reload scene with new language
     });
   }
 
