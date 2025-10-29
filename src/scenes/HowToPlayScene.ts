@@ -35,42 +35,42 @@ export class HowToPlayScene extends Phaser.Scene {
     underline.lineStyle(4, 0xE63946, 1);
     underline.lineBetween(width / 2 - 200, 120, width / 2 + 200, 120);
 
-    // Instructions - v3.8 UPDATED (Current Mechanics)
+    // Instructions - v4.2 COMPLETE UPDATE (Current Game State)
     const instructions = [
       {
         number: '1',
         title: 'CONTROLS',
-        text: 'SPACE = Fly/Glide • P = Pause\nQ/W/E = Shoot (Forward/Up/Down when weapon unlocked)'
+        text: 'SPACE = Flap Up • WASD/Arrows = Move in all directions\nP = Pause • Weapon auto-fires when unlocked'
       },
       {
         number: '2',
-        title: 'COINS & SCORING',
-        text: '$BONK = 1pt • $AOL = 5pts • $BURGER = 3pts\nCollect coins to gain XP and charge weapon energy!'
+        title: 'COLLECTIBLES',
+        text: '$AOL Coin = 5pts • Belle Mod = 25pts (rare!)\nCollect for score, XP, and weapon energy!'
       },
       {
         number: '3',
-        title: 'WEAPONS & COMBAT',
-        text: 'Unlock weapons by leveling up (XP)\nShoot enemies with Q/W/E • Energy recharges from coins'
+        title: 'ENEMIES',
+        text: 'Jeeters = 30pts • Paper Hands = 50pts • Gary = 80pts\nBear Boss = 500pts (appears at 5000 score)'
       },
       {
         number: '4',
-        title: 'ENEMIES & BOSSES',
-        text: 'Destroy enemies with weapons or avoid them\nBoss appears at 5000 score - find the weakpoint!'
+        title: 'POWER-UPS',
+        text: 'Bandana = Speed • Blaster = Weapon • Hat = Shield\nFeder = AOL Magnet • Rose Mod = XP Boost'
       },
       {
         number: '5',
-        title: 'POWER-UPS',
-        text: '5x BURGER = Magnet Mode • Shield = 10s protection\nBandana = Speed boost • Collect for advantages!'
+        title: 'MICRO-EVENTS',
+        text: 'Elon Tweet = AOL Flood • SEC Down = Immunity\nMarket Pump = Score Multiplier • Watch for events!'
       },
       {
         number: '6',
         title: 'PROGRESSION',
-        text: 'Earn XP → Level Up → Upgrade Hall → Choose Upgrades\nComplete daily missions for bonus rewards!'
+        text: 'Earn XP → Level Up → Hangar Upgrades\nUpgrade Hall after runs for permanent bonuses!'
       },
       {
         number: '7',
-        title: 'MARKET PHASES',
-        text: 'Bull Run = More coins • Bear Market = Harder enemies\nCrash/Rally = Chaos mode • Adapt to survive!'
+        title: 'ONLINE LEADERBOARD',
+        text: 'Compete globally in Hall of Degens!\nSubmit your high score and climb the ranks!'
       }
     ];
 
@@ -80,8 +80,8 @@ export class HowToPlayScene extends Phaser.Scene {
       yPos += 85; // Slightly smaller spacing for 7 items
     });
 
-    // Pro tip - updated for v3.8
-    this.add.text(width / 2, height - 100, 'PRO TIP: UPGRADE IN THE HALL AFTER EACH RUN!', {
+    // Pro tip - updated for v4.2
+    this.add.text(width / 2, height - 100, 'PRO TIP: COLLECT BELLE MODS & UPGRADE IN THE HANGAR!', {
       fontSize: '14px',
       color: '#E63946',
       fontFamily: 'Arial',
@@ -186,7 +186,7 @@ export class HowToPlayScene extends Phaser.Scene {
   }
 
   shutdown(): void {
-    // v3.8 CRITICAL FIX: Remove keyboard event listeners to prevent memory leaks!
+    // v4.2: Remove keyboard event listeners to prevent memory leaks
     this.input.keyboard?.removeAllListeners();
     this.tweens.killAll();
     this.sound.stopAll();
