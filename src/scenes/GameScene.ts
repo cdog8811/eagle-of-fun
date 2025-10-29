@@ -341,7 +341,7 @@ export class GameScene extends Phaser.Scene {
     this.comboManager = new ComboManager(this, this.notificationManager);
 
     // v4.2: Initialize MarketCap Manager for $AOL milestone system
-    this.marketCapManager = new MarketCapManager(this);
+    this.marketCapManager = new MarketCapManager(this, this.notificationManager);
 
     // Stop any leftover menu music from UpgradeScene
     this.sound.stopByKey('menu-music');

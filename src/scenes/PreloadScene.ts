@@ -160,6 +160,9 @@ export class PreloadScene extends Phaser.Scene {
     // v4.2: Weapon pickup sound
     this.load.audio('weapon-drill', 'assets/audio/weapondrill.mp3');
 
+    // v4.2: MarketCap Milestone sound
+    this.load.audio('milestone-reached', 'assets/audio/milestoneerreicht.mp3');
+
     // Load progress
     this.load.on('progress', (value: number) => {
       this.progressBar.clear();

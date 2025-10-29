@@ -9,6 +9,7 @@
  */
 
 import Phaser from 'phaser';
+import { NotificationManager, NotificationPriority } from './NotificationManager';
 
 interface Milestone {
   level: number;
@@ -27,6 +28,7 @@ const AOL_TOKEN_ID = '2oQNkePakuPbHzrVVkQ875WHeewLHCd2cAwfwiLQbonk';
 
 export class MarketCapManager {
   private scene: Phaser.Scene;
+  private notificationManager: NotificationManager;
   private lastMcap: number = 0;
   private triggeredMilestones: Set<string> = new Set();
   private updateTimer?: Phaser.Time.TimerEvent;
@@ -41,8 +43,9 @@ export class MarketCapManager {
     { level: 1_000_000, name: "Rug Alert", down: true }
   ];
 
-  constructor(scene: Phaser.Scene) {
+  constructor(scene: Phaser.Scene, notificationManager: NotificationManager) {
     this.scene = scene;
+    this.notificationManager = notificationManager;
   }
 
   /**
@@ -244,65 +247,46 @@ export class MarketCapManager {
       .setOrigin(0)
       .setDepth(9998);
 
-    // Event text
-    const text = this.scene.add.text(
-      width / 2,
-      height / 2,
-      `🇺🇸 $AOL hit $${mcapM}M MCAP – Freedom Rising! ✨`,
-      {
-        fontSize: '32px',
-        color: '#FFFFFF',
-        fontFamily: 'Arial',
-        fontStyle: 'bold',
-        stroke: '#000000',
-        strokeThickness: 6
-      }
-    ).setOrigin(0.5).setDepth(9999);
+    // Show notification via NotificationManager
+    this.notificationManager.showNotification({
+      title: `🇺🇸 $AOL hit $${mcapM}M MCAP – Freedom Rising!`,
+      message: '',
+      priority: NotificationPriority.HIGH,
+      color: '#FFD700',
+      duration: 5000
+    });
 
-    // Fade out after 5 seconds
+    // Fade out background overlay after 5 seconds
     this.scene.time.delayedCall(5000, () => {
       this.scene.tweens.add({
-        targets: [overlay, text],
+        targets: overlay,
         alpha: 0,
         duration: 1000,
-        onComplete: () => {
-          overlay.destroy();
-          text.destroy();
-        }
+        onComplete: () => overlay.destroy()
       });
     });
 
-    // Play sound if available
-    if (this.scene.sound.get('phase-change')) {
-      this.scene.sound.play('phase-change', { volume: 0.5 });
+    // Play milestone sound
+    if (this.scene.sound.get('milestone-reached')) {
+      this.scene.sound.play('milestone-reached', { volume: 0.7 });
     }
   }
 
   private bullMarketUnlocked(mcapM: string): void {
-    const width = this.scene.cameras.main.width;
-    const height = this.scene.cameras.main.height;
-
-    // Event text
-    const text = this.scene.add.text(
-      width / 2,
-      height / 2,
-      `🚀 $AOL reached $${mcapM}M MCAP – Bull Market Unlocked!`,
-      {
-        fontSize: '36px',
-        color: '#22C55E',
-        fontFamily: 'Arial',
-        fontStyle: 'bold',
-        stroke: '#000000',
-        strokeThickness: 6
-      }
-    ).setOrigin(0.5).setDepth(9999);
+    // Show notification via NotificationManager
+    this.notificationManager.showNotification({
+      title: `🚀 $AOL reached $${mcapM}M MCAP – Bull Market Unlocked!`,
+      message: '',
+      priority: NotificationPriority.HIGH,
+      color: '#22C55E',
+      duration: 4000
+    });
 
     // Coin rain effect (spawn extra coins for 10 seconds)
-    const coinRainEvent = this.scene.time.addEvent({
+    this.scene.time.addEvent({
       delay: 500,
       repeat: 20,
       callback: () => {
-        // Emit custom event that GameScene can listen to
         this.scene.events.emit('milestone-coin-rain');
       }
     });
@@ -310,65 +294,28 @@ export class MarketCapManager {
     // XP boost notification
     this.scene.events.emit('milestone-xp-boost', 1.2, 60000); // +20% for 1 minute
 
-    // Fade out text after 4 seconds
-    this.scene.time.delayedCall(4000, () => {
-      this.scene.tweens.add({
-        targets: text,
-        alpha: 0,
-        duration: 1000,
-        onComplete: () => text.destroy()
-      });
-    });
-
-    // Play sound
-    if (this.scene.sound.get('burgercombo')) {
-      this.scene.sound.play('burgercombo', { volume: 0.6 });
+    // Play milestone sound
+    if (this.scene.sound.get('milestone-reached')) {
+      this.scene.sound.play('milestone-reached', { volume: 0.7 });
     }
   }
 
   private communityPumpMode(mcapM: string): void {
-    const width = this.scene.cameras.main.width;
-    const height = this.scene.cameras.main.height;
-
-    // Banner background
-    const banner = this.scene.add.rectangle(0, height / 2 - 50, width, 100, 0x000000, 0.8)
-      .setOrigin(0, 0)
-      .setDepth(9998);
-
-    // Event text
-    const text = this.scene.add.text(
-      width / 2,
-      height / 2,
-      `🎉 $AOL is pumping! $${mcapM}M – Community Pump Mode!`,
-      {
-        fontSize: '38px',
-        color: '#F59E0B',
-        fontFamily: 'Arial',
-        fontStyle: 'bold',
-        stroke: '#000000',
-        strokeThickness: 6
-      }
-    ).setOrigin(0.5).setDepth(9999);
+    // Show notification via NotificationManager
+    this.notificationManager.showNotification({
+      title: `🎉 $AOL is pumping! $${mcapM}M – Community Pump Mode!`,
+      message: '',
+      priority: NotificationPriority.HIGH,
+      color: '#F59E0B',
+      duration: 5000
+    });
 
     // Freeze all enemies for 5 seconds
     this.scene.events.emit('milestone-freeze-enemies', 5000);
 
-    // Fade out after 5 seconds
-    this.scene.time.delayedCall(5000, () => {
-      this.scene.tweens.add({
-        targets: [banner, text],
-        alpha: 0,
-        duration: 1000,
-        onComplete: () => {
-          banner.destroy();
-          text.destroy();
-        }
-      });
-    });
-
-    // Play sound
-    if (this.scene.sound.get('missioncleared')) {
-      this.scene.sound.play('missioncleared', { volume: 0.7 });
+    // Play milestone sound
+    if (this.scene.sound.get('milestone-reached')) {
+      this.scene.sound.play('milestone-reached', { volume: 0.7 });
     }
   }
 
@@ -381,47 +328,29 @@ export class MarketCapManager {
       .setOrigin(0)
       .setDepth(9998);
 
-    // Epic text
-    const text = this.scene.add.text(
-      width / 2,
-      height / 2,
-      `🦅 $AOL surpassed $${mcapM}M – Valor Awakening!`,
-      {
-        fontSize: '42px',
-        color: '#FFD700',
-        fontFamily: 'Arial',
-        fontStyle: 'bold',
-        stroke: '#000000',
-        strokeThickness: 8
-      }
-    ).setOrigin(0.5).setDepth(9999);
-
-    // Pulse effect on text
-    this.scene.tweens.add({
-      targets: text,
-      scale: 1.1,
-      duration: 500,
-      yoyo: true,
-      repeat: 5
+    // Show notification via NotificationManager
+    this.notificationManager.showNotification({
+      title: `🦅 $AOL surpassed $${mcapM}M – Valor Awakening!`,
+      message: '',
+      priority: NotificationPriority.HIGH,
+      color: '#FFD700',
+      duration: 5000
     });
 
-    // Play epic sound
-    if (this.scene.sound.get('valorawakens')) {
-      this.scene.sound.play('valorawakens', { volume: 0.8 });
-    }
-
-    // Fade out after 5 seconds
+    // Fade out aura after 5 seconds
     this.scene.time.delayedCall(5000, () => {
       this.scene.tweens.add({
-        targets: [aura, text],
+        targets: aura,
         alpha: 0,
         duration: 1000,
-        onComplete: () => {
-          aura.destroy();
-          text.destroy();
-        }
+        onComplete: () => aura.destroy()
       });
     });
+
+    // Play milestone sound (milestone sound instead of valorawakens)
+    if (this.scene.sound.get('milestone-reached')) {
+      this.scene.sound.play('milestone-reached', { volume: 0.7 });
+    }
   }
 
   private bearWhisper(mcapM: string): void {
@@ -433,33 +362,29 @@ export class MarketCapManager {
       .setOrigin(0)
       .setDepth(9998);
 
-    // Warning text
-    const text = this.scene.add.text(
-      width / 2,
-      height / 2,
-      `😴 $AOL fell below $${mcapM}M – Bear Whisper… Hold the Line!`,
-      {
-        fontSize: '30px',
-        color: '#888888',
-        fontFamily: 'Arial',
-        fontStyle: 'bold',
-        stroke: '#000000',
-        strokeThickness: 5
-      }
-    ).setOrigin(0.5).setDepth(9999);
+    // Show notification via NotificationManager
+    this.notificationManager.showNotification({
+      title: `😴 $AOL fell below $${mcapM}M – Bear Whisper… Hold the Line!`,
+      message: '',
+      priority: NotificationPriority.HIGH,
+      color: '#888888',
+      duration: 4000
+    });
 
-    // Fade out after 4 seconds
+    // Fade out overlay after 4 seconds
     this.scene.time.delayedCall(4000, () => {
       this.scene.tweens.add({
-        targets: [overlay, text],
+        targets: overlay,
         alpha: 0,
         duration: 1000,
-        onComplete: () => {
-          overlay.destroy();
-          text.destroy();
-        }
+        onComplete: () => overlay.destroy()
       });
     });
+
+    // Play milestone sound
+    if (this.scene.sound.get('milestone-reached')) {
+      this.scene.sound.play('milestone-reached', { volume: 0.7 });
+    }
   }
 
   private rugAlert(mcapM: string): void {
@@ -480,39 +405,30 @@ export class MarketCapManager {
       repeat: 5
     });
 
-    // Alert text
-    const text = this.scene.add.text(
-      width / 2,
-      height / 2,
-      `💀 RUG ALERT! $AOL under $${mcapM}M – Liquidity gone!`,
-      {
-        fontSize: '34px',
-        color: '#EF4444',
-        fontFamily: 'Arial',
-        fontStyle: 'bold',
-        stroke: '#000000',
-        strokeThickness: 6
-      }
-    ).setOrigin(0.5).setDepth(9999);
+    // Show notification via NotificationManager
+    this.notificationManager.showNotification({
+      title: `💀 RUG ALERT! $AOL under $${mcapM}M – Liquidity gone!`,
+      message: '',
+      priority: NotificationPriority.HIGH,
+      color: '#EF4444',
+      duration: 3000
+    });
 
     // Shake screen
     this.scene.cameras.main.shake(3000, 0.01);
 
-    // Play crash sound
-    if (this.scene.sound.get('crash')) {
-      this.scene.sound.play('crash', { volume: 0.5 });
+    // Play milestone sound
+    if (this.scene.sound.get('milestone-reached')) {
+      this.scene.sound.play('milestone-reached', { volume: 0.7 });
     }
 
-    // Fade out after 3 seconds
+    // Fade out overlay after 3 seconds
     this.scene.time.delayedCall(3000, () => {
       this.scene.tweens.add({
-        targets: [overlay, text],
+        targets: overlay,
         alpha: 0,
         duration: 1000,
-        onComplete: () => {
-          overlay.destroy();
-          text.destroy();
-        }
+        onComplete: () => overlay.destroy()
       });
     });
   }
