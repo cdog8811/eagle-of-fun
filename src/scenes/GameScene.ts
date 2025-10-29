@@ -42,6 +42,11 @@ export class GameScene extends Phaser.Scene {
   private scoreBlinkTween?: Phaser.Tweens.Tween;  // v3.9.2: Reusable tween to prevent memory leak
   private timerText!: Phaser.GameObjects.Text;
   private phaseText!: Phaser.GameObjects.Text;
+
+  // PERFORMANCE: Cache translated labels (set once in create(), used hundreds of times per second)
+  private scoreLabel!: string;
+  private timeLabel!: string;
+  private phaseLabel!: string;
   private burgerCountText?: Phaser.GameObjects.Text; // Actually shows AOL combo (legacy name)
   private burgerCounterText?: Phaser.GameObjects.Text; // Shows burger count in top bar
 
@@ -433,26 +438,33 @@ export class GameScene extends Phaser.Scene {
     hudBg.strokeRoundedRect(35, 35, width - 70, 55, 10);
     hudBg.setDepth(999);
 
+    // PERFORMANCE: Cache translated labels ONCE (used hundreds of times per second in setText)
+    this.scoreLabel = this.i18n.t('game.score');
+    this.timeLabel = this.i18n.t('game.time');
+    this.phaseLabel = this.i18n.t('game.phase');
+
+    // PERFORMANCE: Use Arial for HUD to avoid font rendering slowdown
+    // Chinese font only used when displaying Chinese characters
     const hudStyle = {
       fontSize: '24px',
       color: '#D32F2F',
-      fontFamily: this.i18n.getFontFamily(),
+      fontFamily: 'Arial',
       fontStyle: 'bold',
       letterSpacing: 0
     };
 
     // Timer - left side (proper spacing from edge)
-    this.timerText = this.add.text(65, hudY, `${this.i18n.t('game.time')}: 0s`, hudStyle);
+    this.timerText = this.add.text(65, hudY, `${this.timeLabel}: 0s`, hudStyle);
     this.timerText.setOrigin(0, 0.5);
     this.timerText.setDepth(1000);
 
     // Phase - left-center
-    this.phaseText = this.add.text(width * 0.25, hudY, `${this.i18n.t('game.phase')}: 1`, hudStyle);
+    this.phaseText = this.add.text(width * 0.25, hudY, `${this.phaseLabel}: 1`, hudStyle);
     this.phaseText.setOrigin(0.5, 0.5);
     this.phaseText.setDepth(1000);
 
     // Score - center
-    this.scoreText = this.add.text(width * 0.45, hudY, `${this.i18n.t('game.score')}: 0`, hudStyle);
+    this.scoreText = this.add.text(width * 0.45, hudY, `${this.scoreLabel}: 0`, hudStyle);
     this.scoreText.setOrigin(0.5, 0.5);
     this.scoreText.setDepth(1000);
 
@@ -867,7 +879,7 @@ export class GameScene extends Phaser.Scene {
       // Award bonus score
       const bonusScore = 1000;
       this.score += bonusScore;
-      this.scoreText.setText(`${this.i18n.t('game.score')}: ${this.score}`);
+      this.scoreText.setText(`${this.scoreLabel}: ${this.score}`);
 
       // Add extra life if player has less than max
       if (this.lives < this.maxLives) {
@@ -1291,7 +1303,7 @@ export class GameScene extends Phaser.Scene {
     // (removed duplicate sound play here)
 
     // Update HUD
-    this.phaseText.setText(`${this.i18n.t('game.phase')}: ${phaseId}`);
+    this.phaseText.setText(`${this.phaseLabel}: ${phaseId}`);
 
     // Update speeds
     const baseSpeed = 300;
@@ -2621,7 +2633,7 @@ export class GameScene extends Phaser.Scene {
     this.enemies = [];
 
     // Update score display
-    this.scoreText.setText(`${this.i18n.t('game.score')}: ${this.score}`);
+    this.scoreText.setText(`${this.scoreLabel}: ${this.score}`);
 
     console.log(`  ⚡ Destroyed ${enemiesDestroyed} enemies! Total points: ${totalPoints}`);
 
@@ -3082,7 +3094,7 @@ export class GameScene extends Phaser.Scene {
       if (this.gameTimeAccumulator >= 1000) {
         this.gameTime++;
         this.gameTimeAccumulator -= 1000; // Keep remainder for precision
-        this.timerText.setText(`${this.i18n.t('game.time')}: ${this.gameTime}s`);
+        this.timerText.setText(`${this.timeLabel}: ${this.gameTime}s`);
         this.checkPhaseProgression();
         this.checkMarketPhaseTransition();
       }
@@ -3279,7 +3291,7 @@ export class GameScene extends Phaser.Scene {
     if (isNaN(this.score)) {
       console.warn('Score was NaN, resetting to 0');
       this.score = 0;
-      this.scoreText.setText(`${this.i18n.t('game.score')}: ${this.score}`);
+      this.scoreText.setText(`${this.scoreLabel}: ${this.score}`);
     }
 
     // v3.8 PERFORMANCE: Cache screen dimensions (accessed 89 times!)
@@ -3410,7 +3422,7 @@ export class GameScene extends Phaser.Scene {
 
       // Award score
       this.score += finalScore;
-      this.scoreText.setText(`${this.i18n.t('game.score')}: ${this.score}`);
+      this.scoreText.setText(`${this.scoreLabel}: ${this.score}`);
 
       // Award XP
       this.xpSystem.addXP({
@@ -3725,7 +3737,7 @@ export class GameScene extends Phaser.Scene {
           }
 
           this.score += finalPoints;
-          this.scoreText.setText(`${this.i18n.t('game.score')}: ${this.score}`);
+          this.scoreText.setText(`${this.scoreLabel}: ${this.score}`);
 
           // v3.2: Track score for missions
           this.missionManager.onScoreUpdate(this.score);
@@ -4634,7 +4646,7 @@ export class GameScene extends Phaser.Scene {
           // Award points for killing enemy
           const killPoints = 50;
           this.score += killPoints;
-          this.scoreText.setText(`${this.i18n.t('game.score')}: ${this.score}`);
+          this.scoreText.setText(`${this.scoreLabel}: ${this.score}`);
 
           // v3.9.2: Show visual feedback based on mode
           if (this.belleModActive) {
@@ -6116,7 +6128,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.score += Math.floor(finalPoints);
-    this.scoreText.setText(`${this.i18n.t('game.score')}: ${this.score}`);
+    this.scoreText.setText(`${this.scoreLabel}: ${this.score}`);
   }
 
   // v3.2: Update mission UI - now sends to UIScene
