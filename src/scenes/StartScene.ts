@@ -215,12 +215,11 @@ export class StartScene extends Phaser.Scene {
     bg.fillStyle(0x000000, 1);
     bg.fillRoundedRect(-200, -35, 400, 70, 6);
 
-    // Remove emoji, clean text
-    const cleanText = text.replace(/[^\w\s]/gi, '').trim();
-    const buttonText = this.add.text(0, 0, cleanText.toUpperCase(), {
+    // Use text as-is (supports Chinese characters)
+    const buttonText = this.add.text(0, 0, text.toUpperCase(), {
       fontSize: '28px',
       color: '#FFFFFF',
-      fontFamily: 'Arial',
+      fontFamily: this.i18n.getFontFamily(),
       fontStyle: 'bold',
       letterSpacing: 3
     }).setOrigin(0.5);
