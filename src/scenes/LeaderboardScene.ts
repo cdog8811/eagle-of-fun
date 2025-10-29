@@ -104,14 +104,6 @@ export class LeaderboardScene extends Phaser.Scene {
     this.createCommunityLink(width / 2, footerY, 'Telegram (CN)', 'https://t.me/americafunchinese');
     this.createCommunityLink(width / 2 + communityLinkSpacing, footerY, 'America.Fun', 'https://www.america.fun/');
 
-    // Back instruction - repositioned to avoid overlap
-    this.add.text(width / 2, height - 60, 'ESC = BACK', {
-      fontSize: '20px',
-      color: '#999999',
-      fontFamily: 'Arial',
-      letterSpacing: 2
-    }).setOrigin(0.5);
-
     this.input.keyboard?.on('keydown-ESC', () => {
       this.sound.stopAll();
       this.scene.start('StartScene');
