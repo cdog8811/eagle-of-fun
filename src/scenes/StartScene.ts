@@ -107,7 +107,7 @@ export class StartScene extends Phaser.Scene {
     }).setOrigin(0.5);
 
     // Footer Container - Text links, Logo rechts, auf einer Linie
-    const footerY = height - 30;
+    const footerY = height - 40;
 
     // Credit text - bottom left
     this.add.text(30, footerY, 'Made by Cdog for the america.fun Community', {
@@ -117,8 +117,16 @@ export class StartScene extends Phaser.Scene {
       letterSpacing: 1
     }).setOrigin(0, 0.5);
 
+    // Version info - bottom left, below credits
+    this.add.text(30, footerY + 20, 'Eagle of Fun – Beta v1.0 (Community Build)', {
+      fontSize: '14px',
+      color: '#999999',
+      fontFamily: 'Arial',
+      letterSpacing: 1
+    }).setOrigin(0, 0.5);
+
     // America.Fun Logo - bottom right, bigger (+20%)
-    const logo = this.add.image(0, footerY, 'america-logo');
+    const logo = this.add.image(0, footerY + 10, 'america-logo');
     logo.setScale(0.36); // 0.3 * 1.2 = 0.36
     logo.setAlpha(0.9);
     // Position logo so its right edge is 30px from screen edge
