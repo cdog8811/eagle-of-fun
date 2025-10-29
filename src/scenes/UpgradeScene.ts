@@ -618,7 +618,7 @@ export default class UpgradeScene extends Phaser.Scene {
     const checkboxLabel = this.add.text(
       checkboxX + checkboxSize + 15,
       checkboxY + checkboxSize / 2,
-      'Also reset my Level to 0',
+      'Also reset my Level and XP',
       {
         fontSize: '22px',
         fontFamily: 'Arial',
@@ -713,8 +713,8 @@ export default class UpgradeScene extends Phaser.Scene {
 
       // v4.2: Also reset XP level if checkbox is checked
       if (resetXP) {
-        console.log('🔄 Resetting XP level to 0...');
-        this.xpSystem.resetAll();
+        console.log('🔄 Resetting XP level to 1 and XP to 0...');
+        this.xpSystem.resetForNewProfile();
       }
 
       this.refreshUI();
