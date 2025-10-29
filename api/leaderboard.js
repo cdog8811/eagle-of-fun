@@ -1,4 +1,4 @@
-import { sql } from '@vercel/postgres';
+const { sql } = require('@vercel/postgres');
 
 // CORS headers for frontend requests
 const corsHeaders = {
@@ -7,7 +7,7 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'Content-Type',
 };
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return res.status(200).json({ ok: true });
