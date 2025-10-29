@@ -6,6 +6,7 @@ import { BuilderIntroScene } from './scenes/BuilderIntroScene';
 import { IntroScene } from './scenes/IntroScene';
 import { GameScene } from './scenes/GameScene';
 import { GameOverScene } from './scenes/GameOverScene';
+import { DonationScene } from './scenes/DonationScene';
 import { LeaderboardScene } from './scenes/LeaderboardScene';
 import { HowToPlayScene } from './scenes/HowToPlayScene';
 import { CreditsScene } from './scenes/CreditsScene';
@@ -58,6 +59,7 @@ const config: Phaser.Types.Core.GameConfig = {
     GameScene,
     UIScene,
     GameOverScene,
+    DonationScene,
     UpgradeScene,
     LeaderboardScene,
     HowToPlayScene,

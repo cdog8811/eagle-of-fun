@@ -311,10 +311,13 @@ export class GameOverScene extends Phaser.Scene {
     // Cleanup input
     this.cleanupInput();
 
-    // Navigate to leaderboard after 1.5 seconds
-    this.time.delayedCall(1500, () => {
+    // Navigate to DonationScene after 2 seconds (v4.2: Show donation scene before leaderboard)
+    this.time.delayedCall(2000, () => {
       this.sound.stopAll();
-      this.scene.start('LeaderboardScene');
+      this.cameras.main.fadeOut(1000, 0, 0, 0);
+      this.cameras.main.once('camerafadeoutcomplete', () => {
+        this.scene.start('DonationScene');
+      });
     });
   }
 
