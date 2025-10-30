@@ -349,6 +349,29 @@ const translations = {
     'mission.dailyBear.title': 'Bear Hunter',
     'mission.dailyBear.desc': '🐻 Kill 3 Bears',
 
+    // Phase Names
+    'phase.softLaunch': 'Soft Launch 🚀',
+    'phase.paperPanic': 'Paper Panic 👋',
+    'phase.candleCrash': 'Candle Crash 📉',
+    'phase.regulationRun': 'Regulation Run 🧑‍💼',
+    'phase.bearMarket': 'Bear Market Finale 🐻',
+    'phase.wagmi': 'WAGMI Mode 🦅',
+
+    // Market Phase Names
+    'marketPhaseName.bullRun': 'Bull Run',
+    'marketPhaseName.correction': 'Correction',
+    'marketPhaseName.bearTrap': 'Bear Trap',
+    'marketPhaseName.sideways': 'Sideways Phase',
+    'marketPhaseName.valorComeback': 'Valor Comeback',
+    'marketPhaseName.endlessWagmi': 'Endless WAGMI',
+
+    // Power-up Names
+    'powerup.bandana': 'BANDANA MODE ACTIVE',
+    'powerup.bandanaTimer': 'BANDANA',
+    'powerup.shield': 'SHIELD',
+    'powerup.magnet': 'MAGNET',
+    'powerup.weapon': 'WEAPON',
+
     // Common
     'common.yes': 'YES',
     'common.no': 'NO',
@@ -699,6 +722,29 @@ const translations = {
 
     'mission.dailyBear.title': '熊猎人',
     'mission.dailyBear.desc': '🐻 击杀 3 只熊',
+
+    // Phase Names
+    'phase.softLaunch': '软启动 🚀',
+    'phase.paperPanic': '纸手恐慌 👋',
+    'phase.candleCrash': '红烛崩盘 📉',
+    'phase.regulationRun': '监管风暴 🧑‍💼',
+    'phase.bearMarket': '熊市终局 🐻',
+    'phase.wagmi': 'WAGMI 模式 🦅',
+
+    // Market Phase Names
+    'marketPhaseName.bullRun': '牛市',
+    'marketPhaseName.correction': '调整',
+    'marketPhaseName.bearTrap': '熊市陷阱',
+    'marketPhaseName.sideways': '横盘阶段',
+    'marketPhaseName.valorComeback': '勇气反击',
+    'marketPhaseName.endlessWagmi': '无尽WAGMI',
+
+    // Power-up Names
+    'powerup.bandana': '头巾模式激活',
+    'powerup.bandanaTimer': '头巾',
+    'powerup.shield': '护盾',
+    'powerup.magnet': '磁铁',
+    'powerup.weapon': '武器',
 
     // Common
     'common.yes': '是',

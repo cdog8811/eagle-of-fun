@@ -22,7 +22,7 @@ export interface MarketPhase {
 
 export const MARKET_PHASES: { [key: string]: MarketPhase } = {
   BULL_RUN: {
-    name: 'Bull Run',
+    name: i18n.t('marketPhaseName.bullRun'),
     theme: 'Euphoria',
     minTime: 0,
     maxTime: 60,
@@ -37,7 +37,7 @@ export const MARKET_PHASES: { [key: string]: MarketPhase } = {
   },
 
   CORRECTION: {
-    name: 'Correction',
+    name: i18n.t('marketPhaseName.correction'),
     theme: 'Reality sets in',
     minTime: 60,
     maxTime: 120,
@@ -52,7 +52,7 @@ export const MARKET_PHASES: { [key: string]: MarketPhase } = {
   },
 
   BEAR_TRAP: {
-    name: 'Bear Trap',
+    name: i18n.t('marketPhaseName.bearTrap'),
     theme: 'Panic',
     minTime: 120,
     maxTime: 180,
@@ -68,7 +68,7 @@ export const MARKET_PHASES: { [key: string]: MarketPhase } = {
   },
 
   SIDEWAYS: {
-    name: 'Sideways Phase',
+    name: i18n.t('marketPhaseName.sideways'),
     theme: 'Market breathes',
     minTime: 180,
     maxTime: 240,
@@ -83,7 +83,7 @@ export const MARKET_PHASES: { [key: string]: MarketPhase } = {
   },
 
   VALOR_COMEBACK: {
-    name: 'Valor Comeback',
+    name: i18n.t('marketPhaseName.valorComeback'),
     theme: 'Heroic',
     minTime: 240,
     maxTime: 600,
@@ -98,7 +98,7 @@ export const MARKET_PHASES: { [key: string]: MarketPhase } = {
   },
 
   ENDLESS_WAGMI: {
-    name: 'Endless WAGMI',
+    name: i18n.t('marketPhaseName.endlessWagmi'),
     theme: 'Chaos',
     minTime: 600,
     maxTime: 999999,

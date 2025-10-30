@@ -6,6 +6,10 @@
  * Each phase introduces new enemy types and increases difficulty.
  */
 
+import { getI18n } from '../systems/i18n';
+
+const i18n = getI18n();
+
 export interface PhaseConfig {
   id: number;
   name: string;
@@ -29,7 +33,7 @@ export const PHASES: PhaseConfig[] = [
   // ========================================
   {
     id: 1,
-    name: 'Soft Launch 🚀',
+    name: i18n.t('phase.softLaunch'),
     duration: 60, // 1 minute
     enemies: [
       'jeeter',      // Basic horizontal
@@ -48,7 +52,7 @@ export const PHASES: PhaseConfig[] = [
   // ========================================
   {
     id: 2,
-    name: 'Paper Panic 👋',
+    name: i18n.t('phase.paperPanic'),
     duration: 60,
     enemies: [
       'jeeter',
@@ -69,7 +73,7 @@ export const PHASES: PhaseConfig[] = [
   // ========================================
   {
     id: 3,
-    name: 'Candle Crash 📉',
+    name: i18n.t('phase.candleCrash'),
     duration: 60,
     enemies: [
       'redCandles',
@@ -90,7 +94,7 @@ export const PHASES: PhaseConfig[] = [
   // ========================================
   {
     id: 4,
-    name: 'Regulation Run 🧑‍💼',
+    name: i18n.t('phase.regulationRun'),
     duration: 60,
     enemies: [
       'gary',              // SEC lawsuits
@@ -111,7 +115,7 @@ export const PHASES: PhaseConfig[] = [
   // ========================================
   {
     id: 5,
-    name: 'Bear Market Finale 🐻',
+    name: i18n.t('phase.bearMarket'),
     duration: 60,
     enemies: [
       'rektWizard',   // Chaos swaps
@@ -134,7 +138,7 @@ export const PHASES: PhaseConfig[] = [
   // ========================================
   {
     id: 6,
-    name: 'WAGMI Mode 🦅',
+    name: i18n.t('phase.wagmi'),
     duration: -1, // Endless
     enemies: [
       // All enemies rotate

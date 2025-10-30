@@ -10,6 +10,9 @@
 
 import { PHASES } from './PhaseConfig';
 import { ENEMIES } from './EnemiesConfig';
+import { getI18n } from '../systems/i18n';
+
+const i18n = getI18n();
 
 export const GameConfig = {
   // === FEATURE FLAGS ===
@@ -41,7 +44,7 @@ export const GameConfig = {
   legacyPhases: [
     {
       id: 1,
-      name: 'Soft Launch 🚀',
+      name: i18n.t('phase.softLaunch'),
       duration: 60, // seconds
       enemies: ['jeeter', 'droneling'], // v3.8: Added droneling (swarm intro)
       difficulty: 'easy',
@@ -52,7 +55,7 @@ export const GameConfig = {
     },
     {
       id: 2,
-      name: 'Paper Panic 👋',
+      name: i18n.t('phase.paperPanic'),
       duration: 60,
       enemies: ['jeeter', 'paperHands', 'droneling', 'firecracker', 'splitter'], // v3.9: Added splitter
       difficulty: 'medium',
@@ -63,7 +66,7 @@ export const GameConfig = {
     },
     {
       id: 3,
-      name: 'Candle Crash 📉',
+      name: i18n.t('phase.candleCrash'),
       duration: 60,
       enemies: ['jeeter', 'paperHands', 'redCandles', 'fourMeme', 'hawkeye', 'droneling', 'firecracker', 'sbf', 'splitter', 'healer'], // v3.9: Added healer
       difficulty: 'hard',
@@ -74,7 +77,7 @@ export const GameConfig = {
     },
     {
       id: 4,
-      name: 'Regulation Run 🧑‍💼',
+      name: i18n.t('phase.regulationRun'),
       duration: 60,
       enemies: ['jeeter', 'paperHands', 'redCandles', 'gary', 'fourMeme', 'pumpFun', 'hawkeye', 'custodian', 'firecracker', 'sbf', 'dokwon', 'kamikaze', 'shieldBearer'], // v3.9: Added kamikaze, shieldBearer
       difficulty: 'very_hard',
@@ -85,7 +88,7 @@ export const GameConfig = {
     },
     {
       id: 5,
-      name: 'Bear Market Finale 🐻',
+      name: i18n.t('phase.bearMarket'),
       duration: 60,
       enemies: ['paperHands', 'redCandles', 'gary', 'fourMeme', 'pumpFun', 'bearBoss', 'hawkeye', 'custodian', 'firecracker', 'sbf', 'dokwon', 'czBoss', 'splitter', 'healer', 'kamikaze', 'shieldBearer'], // v3.9: All new enemies
       difficulty: 'extreme',
@@ -96,7 +99,7 @@ export const GameConfig = {
     },
     {
       id: 6,
-      name: 'WAGMI Mode 🦅',
+      name: i18n.t('phase.wagmi'),
       duration: -1, // Endless
       enemies: ['paperHands', 'redCandles', 'gary', 'fourMeme', 'pumpFun', 'bearBoss', 'hawkeye', 'custodian', 'firecracker', 'sbf', 'dokwon', 'czBoss', 'splitter', 'healer', 'kamikaze', 'shieldBearer'], // v3.9: All enemies
       difficulty: 'variable',

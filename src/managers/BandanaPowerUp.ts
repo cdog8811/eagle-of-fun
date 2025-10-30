@@ -4,9 +4,11 @@
 // ============================
 
 import Phaser from 'phaser';
+import { getI18n } from '../systems/i18n';
 
 export class BandanaPowerUp {
   private scene: Phaser.Scene;
+  private i18n = getI18n();
 
   // State
   private bandanaActive: boolean = false;
@@ -117,7 +119,7 @@ export class BandanaPowerUp {
     const gameScene = this.scene as any;
     if (gameScene.notificationManager) {
       gameScene.notificationManager.showNotification({
-        title: 'BANDANA MODE ACTIVE',
+        title: this.i18n.t('powerup.bandana'),
         message: '',
         icon: '🥷',
         color: '#FF0000'
@@ -218,10 +220,10 @@ export class BandanaPowerUp {
     }).setOrigin(0.5);
 
     // Timer text (2 lines like others)
-    const timerText = this.scene.add.text(90, -10, 'BANDANA\n5.0s', {
+    const timerText = this.scene.add.text(90, -10, this.i18n.t('powerup.bandanaTimer') + '\n5.0s', {
       fontSize: '18px',
       color: '#FFFFFF',
-      fontFamily: 'Arial',
+      fontFamily: this.i18n.getFontFamily(),
       fontStyle: 'bold',
       align: 'center'
     }).setOrigin(0, 0.5);
@@ -238,7 +240,7 @@ export class BandanaPowerUp {
       const remaining = this.bandanaTimer.getRemaining() / 1000;
       const timerText = (this.hudOverlay as any).timerText as Phaser.GameObjects.Text;
       if (timerText) {
-        timerText.setText(`BANDANA\n${remaining.toFixed(1)}s`);
+        timerText.setText(`${this.i18n.t('powerup.bandanaTimer')}\n${remaining.toFixed(1)}s`);
 
         // Blink warning when < 3 seconds
         if (remaining <= 3) {
