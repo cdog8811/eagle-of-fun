@@ -37,6 +37,7 @@ const translations = {
 
     // UI
     'ui.level': 'LEVEL {{level}}',
+    'ui.levelLabel': 'Level',
     'ui.xp': 'XP',
     'ui.noMission': '⏸️ No Mission',
     'ui.missionDone': '✅ Done',
@@ -77,6 +78,8 @@ const translations = {
 
     // Upgrade Scene
     'upgrade.title': 'UPGRADE HANGAR',
+    'upgrade.subtitle': 'SPEND XP TO ENHANCE YOUR EAGLE',
+    'upgrade.availableXP': 'Available XP',
     'upgrade.availableScore': 'Available Score',
     'upgrade.level': 'Level',
     'upgrade.maxLevel': 'MAX',
@@ -125,7 +128,7 @@ const translations = {
     'howto.enemies': 'ENEMIES',
     'howto.enemiesText': 'Jeeters = 30pts • Paper Hands = 50pts • Gary = 80pts\nBear Boss = 500pts (appears at 5000 score)',
     'howto.powerups': 'POWER-UPS',
-    'howto.powerupsText': 'Bandana = Speed • Blaster = Weapon • Hat = Shield\nFeder = AOL Magnet • Rose Mod = XP Boost',
+    'howto.powerupsText': 'Bandana = Speed • Blaster = Weapon • Hat = Shield • Valor = Eagle Power\nRose 🌹 = FUD Immunity • CryptoActing = Early Entry • Danxx = Market Stabilizer • Vesper 🦌 = Extra Life',
     'howto.microEvents': 'MICRO-EVENTS',
     'howto.microEventsText': 'Elon Tweet = AOL Flood • SEC Down = Immunity\nMarket Pump = Score Multiplier • Watch for events!',
     'howto.progression': 'PROGRESSION',
@@ -133,6 +136,7 @@ const translations = {
     'howto.onlineLeaderboard': 'ONLINE LEADERBOARD',
     'howto.onlineLeaderboardText': 'Compete globally in Hall of Degens!\nSubmit your high score and climb the ranks!',
     'howto.proTip': 'PRO TIP: COLLECT BELLE MODS & UPGRADE IN THE HANGAR!',
+    'howto.disclaimer': 'Eagle of Fun is a fan-made meme game inspired by the America.Fun community and crypto culture.\nAll characters, logos, and references are parodies made for entertainment only.\nNo affiliation with any company, token, or project. Built by a supporter for fun — not for profit.',
     'howto.backButton': 'BACK TO MENU',
 
     // Intro Scenes - Cdog
@@ -149,8 +153,8 @@ const translations = {
     'intro.cdog.line11': "Yeah, it's buggy. It's messy.",
     'intro.cdog.line12': "But it's real, and made with love for this community.",
     'intro.cdog.line13': "Let's make memes, not excuses. 🦅",
-    'intro.skip': 'Press SPACE to skip',
-    'intro.continue': 'Press SPACE to continue',
+    'intro.skip': 'Press SPACE or CLICK to skip',
+    'intro.continue': 'Press SPACE or CLICK to continue',
 
     // Intro Scenes - Ogle
     'intro.ogle.line1': 'Ogle: Hi, Degen.',
@@ -355,6 +359,13 @@ const translations = {
     'phase.candleCrash': 'Candle Crash 📉',
     'phase.regulationRun': 'Regulation Run 🧑‍💼',
     'phase.bearMarket': 'Bear Market Finale 🐻',
+
+    // Phase Descriptions
+    'phase.softLaunch.desc': 'Get started, collect burgers! Easy enemies only.',
+    'phase.paperPanic.desc': 'Watch out for fake coins!',
+    'phase.candleCrash.desc': 'Red candles everywhere!',
+    'phase.regulationRun.desc': 'Government crackdown!',
+    'phase.bearMarket.desc': 'Survive the bears!',
     'phase.wagmi': 'WAGMI Mode 🦅',
 
     // Market Phase Names
@@ -365,12 +376,32 @@ const translations = {
     'marketPhaseName.valorComeback': 'Valor Comeback',
     'marketPhaseName.endlessWagmi': 'Endless WAGMI',
 
+    // Market Phase Themes
+    'marketPhaseTheme.euphoria': 'Euphoria',
+    'marketPhaseTheme.realitySetsIn': 'Reality sets in',
+    'marketPhaseTheme.panic': 'Panic',
+    'marketPhaseTheme.marketBreathes': 'Market breathes',
+    'marketPhaseTheme.heroic': 'Heroic',
+    'marketPhaseTheme.chaos': 'Chaos',
+
     // Power-up Names
     'powerup.bandana': 'BANDANA MODE ACTIVE',
     'powerup.bandanaTimer': 'BANDANA',
     'powerup.shield': 'SHIELD',
+    'powerup.belle': 'BELLE',
     'powerup.magnet': 'MAGNET',
+    'powerup.valor': 'VALOR',
     'powerup.weapon': 'WEAPON',
+    'powerup.vesper0x': 'EXTRA LIFE',
+
+    // Weapons
+    'weapon.basicBlaster': 'Basic Blaster',
+    'weapon.rapidCannon': 'Rapid Cannon',
+    'weapon.powerLaser': 'Power Laser',
+    'weapon.eagleSpread': 'Eagle Spread',
+    'weapon.railAol': 'Rail AOL',
+    'weapon.burgerMortar': 'Burger Mortar',
+    'weapon.laserEyes': 'LASER EYES 👀⚡',
 
     // Common
     'common.yes': 'YES',
@@ -411,6 +442,7 @@ const translations = {
 
     // UI
     'ui.level': '等级 {{level}}',
+    'ui.levelLabel': '等级',
     'ui.xp': '经验',
     'ui.noMission': '⏸️ 无任务',
     'ui.missionDone': '✅ 完成',
@@ -451,6 +483,8 @@ const translations = {
 
     // Upgrade Scene
     'upgrade.title': '升级机库',
+    'upgrade.subtitle': '花费 XP 强化你的鹰',
+    'upgrade.availableXP': '可用 XP',
     'upgrade.availableScore': '可用分数',
     'upgrade.level': '等级',
     'upgrade.maxLevel': '满级',
@@ -499,7 +533,7 @@ const translations = {
     'howto.enemies': '敌人',
     'howto.enemiesText': 'Jeeters = 30分 • 纸手 = 50分 • Gary = 80分\n熊市Boss = 500分（5000分时出现）',
     'howto.powerups': '道具',
-    'howto.powerupsText': '头巾 = 速度 • 武器 = 射击 • 帽子 = 护盾\n羽毛 = AOL 磁铁 • Rose 模组 = 经验提升',
+    'howto.powerupsText': '头巾 = 速度 • 武器 = 射击 • 帽子 = 护盾 • Valor = 鹰之力\nRose 🌹 = FUD免疫 • CryptoActing = 早期进入 • Danxx = 市场稳定器 • Vesper 🦌 = 额外生命',
     'howto.microEvents': '微事件',
     'howto.microEventsText': '马斯克推文 = AOL 洪水 • SEC 关闭 = 免疫\n市场拉升 = 分数倍增 • 关注事件！',
     'howto.progression': '进度',
@@ -507,6 +541,7 @@ const translations = {
     'howto.onlineLeaderboard': '在线排行榜',
     'howto.onlineLeaderboardText': '全球竞争荣誉殿堂！\n提交你的最高分并攀登排名！',
     'howto.proTip': '专业提示：收集 BELLE 模组并在机库升级！',
+    'howto.disclaimer': 'Eagle of Fun 是一款粉丝制作的模因游戏，灵感来自 America.Fun 社区和加密文化。\n所有角色、标志和引用都是为娱乐目的而制作的恶搞。\n与任何公司、代币或项目无关。由支持者为乐趣而建 — 非营利。',
     'howto.backButton': '返回菜单',
 
     // Intro Scenes - Cdog
@@ -523,8 +558,8 @@ const translations = {
     'intro.cdog.line11': '是的，它有bug。它很乱。',
     'intro.cdog.line12': '但它是真实的，为这个社区用心制作。',
     'intro.cdog.line13': '让我们做模因，不找借口。🦅',
-    'intro.skip': '按空格跳过',
-    'intro.continue': '按空格继续',
+    'intro.skip': '按空格或点击跳过',
+    'intro.continue': '按空格或点击继续',
 
     // Intro Scenes - Ogle
     'intro.ogle.line1': 'Ogle：嗨，Degen。',
@@ -729,6 +764,13 @@ const translations = {
     'phase.candleCrash': '红烛崩盘 📉',
     'phase.regulationRun': '监管风暴 🧑‍💼',
     'phase.bearMarket': '熊市终局 🐻',
+
+    // Phase Descriptions
+    'phase.softLaunch.desc': '开始游戏，收集汉堡！只有简单的敌人。',
+    'phase.paperPanic.desc': '小心假币！',
+    'phase.candleCrash.desc': '到处都是红蜡烛！',
+    'phase.regulationRun.desc': '政府打击！',
+    'phase.bearMarket.desc': '活下来！',
     'phase.wagmi': 'WAGMI 模式 🦅',
 
     // Market Phase Names
@@ -739,12 +781,32 @@ const translations = {
     'marketPhaseName.valorComeback': '勇气反击',
     'marketPhaseName.endlessWagmi': '无尽WAGMI',
 
+    // Market Phase Themes
+    'marketPhaseTheme.euphoria': '狂喜',
+    'marketPhaseTheme.realitySetsIn': '现实降临',
+    'marketPhaseTheme.panic': '恐慌',
+    'marketPhaseTheme.marketBreathes': '市场喘息',
+    'marketPhaseTheme.heroic': '英雄归来',
+    'marketPhaseTheme.chaos': '混乱',
+
     // Power-up Names
     'powerup.bandana': '头巾模式激活',
     'powerup.bandanaTimer': '头巾',
     'powerup.shield': '护盾',
+    'powerup.belle': 'BELLE',
     'powerup.magnet': '磁铁',
+    'powerup.valor': 'VALOR',
     'powerup.weapon': '武器',
+    'powerup.vesper0x': '额外生命',
+
+    // Weapons
+    'weapon.basicBlaster': '基础冲击波',
+    'weapon.rapidCannon': '快速加农炮',
+    'weapon.powerLaser': '能量激光',
+    'weapon.eagleSpread': '鹰式散射',
+    'weapon.railAol': 'AOL 穿透炮',
+    'weapon.burgerMortar': '汉堡迫击炮',
+    'weapon.laserEyes': '激光眼 👀⚡',
 
     // Common
     'common.yes': '是',

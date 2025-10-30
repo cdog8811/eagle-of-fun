@@ -110,6 +110,7 @@ export class PreloadScene extends Phaser.Scene {
     this.load.audio('blastershot', 'assets/audio/blaster-shot.mp3'); // v3.7: Weapon fire sound
     this.load.audio('enemyhit', 'assets/audio/attack-fire-384913.mp3'); // v3.7: Enemy hit sound
     this.load.audio('level-up', 'assets/audio/new-level.mp3');
+    this.load.audio('bosswin', 'assets/audio/bosswin.mp3'); // Boss victory sound
 
     // Scene Music
     this.load.audio('game-over-music', 'assets/audio/Game Over, America.Fun.mp3');
@@ -157,8 +158,9 @@ export class PreloadScene extends Phaser.Scene {
     this.load.audio('valor-drop', 'assets/audio/valor drop.mp3');
     this.load.audio('burger-friday', 'assets/audio/xp2.mp3');
 
-    // v4.2: Weapon pickup sound
+    // v4.2: Weapon pickup sounds
     this.load.audio('weapon-drill', 'assets/audio/weapondrill.mp3');
+    this.load.audio('power-up-grab', 'assets/audio/power_up_grab-88510.mp3');
 
     // v4.2: MarketCap Milestone sound
     this.load.audio('milestone-reached', 'assets/audio/milestoneerreicht.mp3');

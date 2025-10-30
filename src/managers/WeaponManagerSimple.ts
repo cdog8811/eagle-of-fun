@@ -5,6 +5,7 @@
 
 import Phaser from 'phaser';
 import { getUpgradeSystem } from '../systems/upgradeSystem';
+import { getI18n } from '../systems/i18n';
 
 export interface Projectile {
   sprite: Phaser.GameObjects.Graphics;
@@ -31,16 +32,17 @@ export class WeaponManagerSimple {
   private lastFireTime: number = 0;
   private projectiles: Projectile[] = [];
   private upgradeSystem = getUpgradeSystem(); // v3.8: Access to upgrade system
+  private i18n = getI18n();
 
   // Weapon stats per level (v3.8: Balanced damage for HP system)
   private weaponStats = {
-    1: { fireRate: 500, damage: 15, energyCost: 10, color: 0x0088FF, speed: 900, name: 'Basic Blaster' },
-    2: { fireRate: 400, damage: 20, energyCost: 8, color: 0xFF6600, speed: 1100, name: 'Rapid Cannon' },
-    3: { fireRate: 300, damage: 25, energyCost: 5, color: 0xFF0000, speed: 1300, name: 'Power Laser' },
-    4: { fireRate: 450, damage: 12, energyCost: 12, color: 0xFFAA00, speed: 850, name: 'Eagle Spread', special: 'spread' }, // 3x12 = 36 total
-    5: { fireRate: 550, damage: 40, energyCost: 15, color: 0x00FFFF, speed: 1400, name: 'Rail AOL', special: 'pierce' }, // Pierces 3
-    6: { fireRate: 650, damage: 30, energyCost: 18, color: 0xFF6B35, speed: 600, name: 'Burger Mortar', special: 'mortar' }, // + splash
-    7: { fireRate: 700, damage: 50, energyCost: 20, color: 0xFF0000, speed: 2000, name: 'LASER EYES 👀⚡', special: 'laserEyes' } // v3.9: Crypto meme weapon!
+    1: { fireRate: 500, damage: 15, energyCost: 10, color: 0x0088FF, speed: 900, nameKey: 'weapon.basicBlaster' },
+    2: { fireRate: 400, damage: 20, energyCost: 8, color: 0xFF6600, speed: 1100, nameKey: 'weapon.rapidCannon' },
+    3: { fireRate: 300, damage: 25, energyCost: 5, color: 0xFF0000, speed: 1300, nameKey: 'weapon.powerLaser' },
+    4: { fireRate: 450, damage: 12, energyCost: 12, color: 0xFFAA00, speed: 850, nameKey: 'weapon.eagleSpread', special: 'spread' }, // 3x12 = 36 total
+    5: { fireRate: 550, damage: 40, energyCost: 15, color: 0x00FFFF, speed: 1400, nameKey: 'weapon.railAol', special: 'pierce' }, // Pierces 3
+    6: { fireRate: 650, damage: 30, energyCost: 18, color: 0xFF6B35, speed: 600, nameKey: 'weapon.burgerMortar', special: 'mortar' }, // + splash
+    7: { fireRate: 700, damage: 50, energyCost: 20, color: 0xFF0000, speed: 2000, nameKey: 'weapon.laserEyes', special: 'laserEyes' } // v3.9: Crypto meme weapon!
   };
 
   constructor(scene: Phaser.Scene) {
@@ -62,7 +64,8 @@ export class WeaponManagerSimple {
     if (this.weaponLevel < 7) { // v3.9: Increased to 7 for LASER EYES!
       this.weaponLevel++;
       const stats = this.weaponStats[this.weaponLevel as keyof typeof this.weaponStats];
-      console.log(`⬆️ Weapon upgraded to Level ${this.weaponLevel}: ${stats.name}!`);
+      const name = this.i18n.t(stats.nameKey);
+      console.log(`⬆️ Weapon upgraded to Level ${this.weaponLevel}: ${name}!`);
     }
   }
 
@@ -71,8 +74,9 @@ export class WeaponManagerSimple {
   }
 
   public getWeaponName(): string {
-    if (!this.weaponUnlocked) return 'No Weapon';
-    return this.weaponStats[this.weaponLevel as keyof typeof this.weaponStats].name;
+    if (!this.weaponUnlocked) return this.i18n.t('ui.noWeapon');
+    const stats = this.weaponStats[this.weaponLevel as keyof typeof this.weaponStats];
+    return this.i18n.t(stats.nameKey);
   }
 
   public addEnergyFromCoin(): void {

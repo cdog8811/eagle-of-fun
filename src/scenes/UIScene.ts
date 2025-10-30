@@ -1,29 +1,33 @@
 import Phaser from 'phaser';
-import { getXPSystem } from '../systems/xpSystem';
-import type { XPState } from '../systems/xpSystem';
+import { getXPEngine } from '../systems/XPEngine';
+import type { XPState } from '../systems/XPEngine';
 import { getI18n } from '../systems/i18n';
 
 /**
- * UIScene - Separate Scene für alle UI-Elemente
+ * UIScene v4.2 - Professional UI with polling-based XP updates
  *
- * Zeigt an:
- * - XP-Leiste (Top Right)
- * - Missionen (Bottom Right)
- * - Waffenanzeige (Bottom Left)
- *
- * Design: Modern, clean, transparent, gut lesbar
+ * Performance Strategy:
+ * - Polls XP state every 200ms (5 FPS - smooth enough for UI)
+ * - Cached i18n labels (no translation lookups)
+ * - Minimal Graphics updates
  */
 export default class UIScene extends Phaser.Scene {
-  private xpSystem = getXPSystem();
+  private xpEngine = getXPEngine();
   private i18n = getI18n();
-  // XP System
+
+  // XP Display
   private levelText?: Phaser.GameObjects.Text;
   private xpText?: Phaser.GameObjects.Text;
   private xpBarBg?: Phaser.GameObjects.Graphics;
   private xpBarFill?: Phaser.GameObjects.Graphics;
-  private currentLevel: number = 1;
-  private currentXP: number = 0;
-  private xpToNextLevel: number = 1000;
+
+  // Cached i18n labels (set once in create())
+  private levelLabel: string = 'Level';
+  private xpLabel: string = 'XP';
+
+  // Polling timer for XP updates
+  private lastXPPoll: number = 0;
+  private xpPollInterval: number = 200; // 200ms = 5 updates per second
 
   // Mission System
   private missionContainers: Phaser.GameObjects.Container[] = [];
@@ -54,29 +58,52 @@ export default class UIScene extends Phaser.Scene {
     super({ key: 'UIScene', active: false });
   }
 
+  update(time: number, delta: number): void {
+    // Poll XP state every 200ms instead of every frame
+    if (time - this.lastXPPoll >= this.xpPollInterval) {
+      this.lastXPPoll = time;
+      this.updateXPDisplay();
+    }
+  }
+
+  /**
+   * Update XP display from engine state
+   * Called only 5x per second - very performant
+   */
+  private updateXPDisplay(): void {
+    const state = this.xpEngine.getState();
+
+    // Update text with CACHED labels
+    if (this.levelText) {
+      this.levelText.setText(`${this.levelLabel} ${state.level}`);
+    }
+    if (this.xpText) {
+      this.xpText.setText(`${state.currentXP} / ${state.xpToNextLevel} ${this.xpLabel}`);
+    }
+
+    // Update progress bar
+    this.updateXPBar(state);
+  }
+
   create(): void {
     console.log('🎨 UIScene created');
+
+    // v4.2: Cache i18n labels ONCE like GameScene does with scoreLabel
+    const levelLabelResult = this.i18n.t('ui.levelLabel');
+    const xpLabelResult = this.i18n.t('ui.xp');
+
+    // Ensure they are strings, not objects
+    this.levelLabel = typeof levelLabelResult === 'string' ? levelLabelResult : 'Level';
+    this.xpLabel = typeof xpLabelResult === 'string' ? xpLabelResult : 'XP';
 
     this.createXPDisplay();
     this.createMissionDisplay();
     this.createWeaponDisplay();
 
-    // Subscribe to XP changes
-    this.xpSystem.onXPChange((xpState: XPState) => {
-      // v3.9.2: Removed console.log - called hundreds of times per second!
-      this.updateXP(xpState.level, xpState.xp, xpState.xpToNext);
-    });
-
-    // Subscribe to level ups
-    this.xpSystem.onLevelUp((newLevel: number) => {
+    // v4.2: Subscribe to level up events from XPEngine
+    this.xpEngine.on('levelUp', (newLevel: number) => {
       this.showLevelUpAnimation();
     });
-
-    // Initialize with current XP
-    const xpState = this.xpSystem.getState();
-    console.log('🎮 UIScene - Initial XP state:', xpState);
-    console.log('📦 localStorage eof_xp_state:', localStorage.getItem('eof_xp_state'));
-    this.updateXP(xpState.level, xpState.xp, xpState.xpToNext);
 
     // Get initial missions from GameScene
     // Note: GameScene will also send missions via updateMissions() after launch
@@ -93,10 +120,7 @@ export default class UIScene extends Phaser.Scene {
     this.events.on('wake', () => {
       console.log('🔄 UIScene woke up - refreshing displays');
 
-      // Refresh XP display
-      const currentXP = this.xpSystem.getState();
-      console.log('🔄 Current XP on wake:', currentXP);
-      this.updateXP(currentXP.level, currentXP.xp, currentXP.xpToNext);
+      // XP display updates via polling in update()
 
       // Refresh missions - get from GameScene
       const gameScene = this.scene.get('GameScene') as any;
@@ -125,8 +149,11 @@ export default class UIScene extends Phaser.Scene {
     bg.lineStyle(this.UI_BORDER_WIDTH, this.GOLD, 1); // Gold border
     bg.strokeRoundedRect(x, y, 250, 70, this.UI_CORNER_RADIUS);
 
+    // Get initial state
+    const initialState = this.xpEngine.getState();
+
     // Level Text (Large, bold) - White
-    this.levelText = this.add.text(x + 20, y + 15, this.i18n.t('ui.level', { level: 1 }), {
+    this.levelText = this.add.text(x + 20, y + 15, `${this.levelLabel} ${initialState.level}`, {
       fontSize: '20px',
       fontFamily: this.i18n.getFontFamily(),
       color: '#FFFFFF',
@@ -145,42 +172,35 @@ export default class UIScene extends Phaser.Scene {
 
     // XP Bar Fill - Red/White stripes effect
     this.xpBarFill = this.add.graphics();
-    this.updateXPBar();
+    this.updateXPBar(initialState);
 
-    // XP Text - Gold
-    this.xpText = this.add.text(x + 125, y + 15, `0 / 1000 ${this.i18n.t('ui.xp')}`, {
+    // XP Text - Gold (using cached label to avoid [object Object])
+    this.xpText = this.add.text(x + 125, y + 15, `${initialState.currentXP} / ${initialState.xpToNextLevel} ${this.xpLabel}`, {
       fontSize: '14px',
       fontFamily: this.i18n.getFontFamily(),
       color: '#FFD700' // Gold
     });
   }
 
-  private updateXPBar(): void {
+  private updateXPBar(state: XPState): void {
     if (!this.xpBarFill) return;
 
+    // Calculate progress percentage
+    const progress = state.currentXP / state.xpToNextLevel;
     const width = this.cameras.main.width;
     const x = width - this.EDGE_PADDING - 250;
-    const y = this.EDGE_PADDING + 120;
     const barX = x + 20;
-    const barY = y + 45;
+    const barY = 45 + this.EDGE_PADDING + 120; // Match createXPDisplay position
     const barWidth = 210;
     const barHeight = 12;
-
-    const progress = this.currentXP / this.xpToNextLevel;
     const fillWidth = barWidth * progress;
 
+    // Clear and redraw fill
     this.xpBarFill.clear();
 
-    // Patriotic gradient: Red to White to Blue
-    if (fillWidth > 0) {
-      // Red fill with white stars effect
-      this.xpBarFill.fillStyle(0xDC143C, 1); // Crimson red
-      this.xpBarFill.fillRoundedRect(barX, barY, fillWidth, barHeight, 6);
-
-      // Add white highlight on top
-      this.xpBarFill.fillStyle(0xFFFFFF, 0.3);
-      this.xpBarFill.fillRoundedRect(barX, barY, fillWidth, barHeight / 3, 6);
-    }
+    // Draw progress bar with patriotic red color
+    this.xpBarFill.fillStyle(0xDC143C, 1); // Crimson red (US Flag red)
+    this.xpBarFill.fillRoundedRect(barX, barY, fillWidth, barHeight, 6);
   }
 
   // ========== MISSION DISPLAY (BOTTOM RIGHT) ==========
@@ -293,28 +313,7 @@ export default class UIScene extends Phaser.Scene {
 
   // ========== PUBLIC UPDATE METHODS ==========
 
-  /**
-   * Update XP Display
-   */
-  public updateXP(level: number, xp: number, xpToNext: number): void {
-    // v3.9.2: Removed console.logs - called hundreds of times per second!
-
-    // Always update internal state, even if scene not active
-    this.currentLevel = level;
-    this.currentXP = xp;
-    this.xpToNextLevel = xpToNext;
-
-    // Update text objects (they exist even if scene is not active)
-    if (this.levelText) {
-      this.levelText.setText(this.i18n.t('ui.level', { level }));
-    }
-
-    if (this.xpText) {
-      this.xpText.setText(`${xp} / ${xpToNext} ${this.i18n.t('ui.xp')}`);
-    }
-
-    this.updateXPBar();
-  }
+  // v4.2: updateXP() removed - replaced by updateXPDisplay() with polling
 
   /**
    * Update Mission Display
@@ -348,22 +347,24 @@ export default class UIScene extends Phaser.Scene {
       // Update title (emoji + title) - texts[0]
       if (texts[0]) {
         const emoji = mission.emoji || '🎯';
-        let titleKey = mission.title || mission.description || 'Mission';
 
-        // Translate mission title (it's a key like 'mission.dailyBonk.title')
-        let title = titleKey.startsWith('mission.') ? this.i18n.t(titleKey) : titleKey;
+        // Use description instead of title for display
+        let descKey = mission.description || mission.title || 'Mission';
 
-        // Ensure title is a string, not an object
-        if (typeof title !== 'string') {
-          title = String(title);
+        // Translate mission description (it's a key like 'mission.dailyBonk.desc')
+        let description = descKey.startsWith('mission.') ? this.i18n.t(descKey) : descKey;
+
+        // Ensure description is a string, not an object
+        if (typeof description !== 'string') {
+          description = String(description);
         }
 
-        // Truncate if too long (max 20 chars)
-        if (title.length > 20) {
-          title = title.substring(0, 17) + '...';
+        // Truncate if too long (max 25 chars to show full description)
+        if (description.length > 25) {
+          description = description.substring(0, 22) + '...';
         }
 
-        texts[0].setText(`${emoji} ${title}`);
+        texts[0].setText(`${description}`);
         texts[0].setColor('#FFFFFF');
       }
 

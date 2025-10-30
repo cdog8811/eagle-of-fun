@@ -255,7 +255,7 @@ export class LootScene extends Phaser.Scene {
     });
 
     button.on('pointerdown', () => {
-      this.sound.play('select', { volume: 0.5 });
+      this.sound.play('ui-confirm', { volume: 0.5 });
       this.cameras.main.fadeOut(500, 0, 0, 0);
       this.time.delayedCall(500, () => {
         this.scene.start('GameOverScene', { score: this.score, showLoot: false });

@@ -17,7 +17,7 @@ const i18n = getI18n();
 export const GameConfig = {
   // === FEATURE FLAGS ===
   ENABLE_UPGRADE_SYSTEM: true,   // Re-enabled to test performance
-  ENABLE_XP_SYSTEM: false,       // Keep disabled - XP causes slowdown
+  ENABLE_XP_SYSTEM: true,        // v4.2: Fixed - direct updates like score, NO system, NO callbacks
   DEBUG_COLLISIONS: false,       // Disable debug logs for production
 
   // Game dimensions - high resolution for professional quality

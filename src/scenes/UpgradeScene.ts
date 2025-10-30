@@ -1,27 +1,27 @@
 import Phaser from 'phaser';
 import { GameConfig } from '../config/GameConfig';
 import { getUpgradeSystem, type UpgradeDef, type PlayerStats } from '../systems/upgradeSystem';
-import { getXPSystem } from '../systems/xpSystem';
+import { getXPEngine } from '../systems/XPEngine';
 import { getI18n } from '../systems/i18n';
 
 /**
- * UpgradeScene - Upgrade Hangar (v3.10 - Score-based)
+ * UpgradeScene - Upgrade Hangar (v4.2 - XP-based)
  *
- * Displayed after GameOver, allows spending SCORE on upgrades (no XP!)
+ * Displayed after GameOver, allows spending XP on upgrades
  * Flow: GameOver → UpgradeScene → [PLAY AGAIN] → Intro/GameScene
  */
 export default class UpgradeScene extends Phaser.Scene {
   private upgradeSystem = getUpgradeSystem();
-  private xpSystem = getXPSystem();
+  private xpEngine = getXPEngine();
   private i18n = getI18n();
 
-  private currentScore: number = 0; // Score-based instead of XP
+  private currentXP: number = 0; // XP-based upgrades
   private playerStats!: PlayerStats;
 
   // UI Elements
-  private scoreDisplayBg?: Phaser.GameObjects.Graphics;
-  private scoreText?: Phaser.GameObjects.Text;
-  private availableScoreText?: Phaser.GameObjects.Text;
+  private xpDisplayBg?: Phaser.GameObjects.Graphics;
+  private xpText?: Phaser.GameObjects.Text;
+  private availableXPText?: Phaser.GameObjects.Text;
 
   private upgradeCards: UpgradeCard[] = [];
   private scrollY: number = 0;
@@ -33,11 +33,12 @@ export default class UpgradeScene extends Phaser.Scene {
   }
 
   create(): void {
-    console.log('🛠 UPGRADE HANGAR LOADED - v3.10 (Score-based)');
+    console.log('🛠 UPGRADE HANGAR LOADED - v4.2 (XP-based)');
 
-    // Get current score from registry (set by GameOverScene)
-    this.currentScore = this.registry.get('currentScore') || 0;
-    console.log('💰 Available Score for upgrades:', this.currentScore);
+    // Get current XP from XPEngine
+    const xpState = this.xpEngine.getState();
+    this.currentXP = xpState.totalXP;
+    console.log('💰 Available XP for upgrades:', this.currentXP);
 
     this.playerStats = this.upgradeSystem.getPlayerStats();
 
@@ -55,7 +56,7 @@ export default class UpgradeScene extends Phaser.Scene {
     this.createMinimalElements();
 
     // v3.8: Title - clean, professional (FIXED to screen)
-    const title = this.add.text(width / 2, 60, 'UPGRADE HANGAR', {
+    const title = this.add.text(width / 2, 60, this.i18n.t('upgrade.title'), {
       fontSize: '72px',
       color: '#000000',
       fontFamily: 'Arial',
@@ -70,15 +71,15 @@ export default class UpgradeScene extends Phaser.Scene {
     underline.setScrollFactor(0);
 
     // Subtitle (FIXED to screen)
-    this.add.text(width / 2, 140, 'SPEND XP TO ENHANCE YOUR EAGLE', {
+    this.add.text(width / 2, 140, this.i18n.t('upgrade.subtitle'), {
       fontSize: '22px',
       color: '#666666',
       fontFamily: 'Arial',
       letterSpacing: 3
     }).setOrigin(0.5).setScrollFactor(0);
 
-    // Score Display (Top) - FIXED to screen
-    this.createScoreDisplay();
+    // XP Display (Top) - FIXED to screen
+    this.createXPDisplay();
 
     // Upgrade Cards (Scrollable Grid)
     this.createUpgradeCards();
@@ -124,24 +125,31 @@ export default class UpgradeScene extends Phaser.Scene {
     }
   }
 
-  private createScoreDisplay(): void {
+  private createXPDisplay(): void {
     const { width } = this.cameras.main;
     const x = width / 2 - 350;
     const y = 190;
     const boxWidth = 700;
     const boxHeight = 90;
 
-    // v4.2: Black score display box (no emojis in text, larger for readability)
-    this.scoreDisplayBg = this.add.graphics();
-    this.scoreDisplayBg.fillStyle(0x000000, 1);
-    this.scoreDisplayBg.fillRoundedRect(x, y, boxWidth, boxHeight, 10);
-    this.scoreDisplayBg.setScrollFactor(0);
+    // v4.2: White box with red border (matching page design)
+    this.xpDisplayBg = this.add.graphics();
 
-    // Available Score (Center) - FIXED to screen, no emoji in text
-    this.scoreText = this.add.text(width / 2, y + 45, `${this.i18n.t('upgrade.availableScore')}: ${this.currentScore}`, {
+    // White background
+    this.xpDisplayBg.fillStyle(0xFFFFFF, 1);
+    this.xpDisplayBg.fillRoundedRect(x, y, boxWidth, boxHeight, 10);
+
+    // Red border (US Flag red)
+    this.xpDisplayBg.lineStyle(4, 0xE63946, 1);
+    this.xpDisplayBg.strokeRoundedRect(x, y, boxWidth, boxHeight, 10);
+
+    this.xpDisplayBg.setScrollFactor(0);
+
+    // Available XP (Center) - Black text for contrast on white background
+    this.xpText = this.add.text(width / 2, y + 45, `${this.i18n.t('upgrade.availableXP')}: ${this.currentXP}`, {
       fontSize: '42px',
       fontFamily: this.i18n.getFontFamily(),
-      color: '#FFD700',
+      color: '#000000',
       fontStyle: 'bold',
       letterSpacing: 2
     }).setOrigin(0.5, 0.5).setScrollFactor(0);
@@ -175,7 +183,7 @@ export default class UpgradeScene extends Phaser.Scene {
         cardHeight,
         def,
         currentLevel,
-        this.currentScore,
+        this.currentXP,
         () => this.onUpgradeBuy(def)
       );
 
@@ -296,7 +304,7 @@ export default class UpgradeScene extends Phaser.Scene {
     }
 
     console.log(`💰 Attempting to buy upgrade: ${def.id}`);
-    console.log(`   Current Score: ${this.currentScore}`);
+    console.log(`   Current XP: ${this.currentXP}`);
 
     // Get current level and cost
     const currentLevel = this.upgradeSystem.getState().levels[def.id] || 0;
@@ -312,8 +320,8 @@ export default class UpgradeScene extends Phaser.Scene {
     }
 
     // Check if can afford
-    if (this.currentScore < cost) {
-      this.showNotification(`Not enough Score! Need ${cost - this.currentScore} more`, 0xFF0000);
+    if (this.currentXP < cost) {
+      this.showNotification(`Not enough XP! Need ${cost - this.currentXP} more`, 0xFF0000);
       if (this.sound.get('enemyhit')) {
         this.sound.play('enemyhit', { volume: 0.3 });
       }
@@ -325,17 +333,15 @@ export default class UpgradeScene extends Phaser.Scene {
 
     // Show confirmation dialog
     this.showBuyConfirmation(def, cost, () => {
-      // Try to buy with score
-      const result = this.upgradeSystem.buyWithScore(def.id, this.currentScore);
+      // Try to buy with XP (using score system internally)
+      const result = this.upgradeSystem.buyWithScore(def.id, this.currentXP);
 
       if (result.success) {
-        console.log(`✅ Upgrade purchased: ${def.id} (cost: ${cost} score)`);
+        console.log(`✅ Upgrade purchased: ${def.id} (cost: ${cost} XP)`);
 
-        // Update current score
-        this.currentScore = result.newScore;
-
-        // Save updated score to registry
-        this.registry.set('currentScore', this.currentScore);
+        // Update current XP and sync with XPEngine
+        this.currentXP = result.newScore;
+        this.xpEngine.spendXP(cost);
 
         // Visual feedback - flash green
         this.showNotification(`✅ ${def.name} upgraded to Level ${currentLevel + 1}!`, 0x00FF00);
@@ -346,7 +352,6 @@ export default class UpgradeScene extends Phaser.Scene {
         }
 
         // Refresh UI with new state
-        this.xpState = this.xpSystem.getState();
         this.refreshUI();
       } else {
         console.warn('❌ Upgrade purchase failed');
@@ -360,21 +365,15 @@ export default class UpgradeScene extends Phaser.Scene {
 
   private refreshUI(): void {
     // Update XP display
-    if (this.levelText) {
-      this.levelText.setText(`LEVEL ${this.xpState.level}`);
-    }
     if (this.xpText) {
-      this.xpText.setText(`${this.xpState.xp} / ${this.xpState.xpToNext} XP`);
-    }
-    if (this.totalXPText) {
-      this.totalXPText.setText(`Total: ${this.xpState.totalXP} XP`);
+      this.xpText.setText(`${this.i18n.t('upgrade.availableXP')}: ${this.currentXP}`);
     }
 
     // Update all upgrade cards
     const upgradeState = this.upgradeSystem.getState();
     this.upgradeCards.forEach(card => {
       const currentLevel = upgradeState.levels[card.def.id] || 0;
-      card.updateLevel(currentLevel, this.currentScore);
+      card.updateLevel(currentLevel, this.currentXP);
     });
   }
 
@@ -739,14 +738,14 @@ export default class UpgradeScene extends Phaser.Scene {
 
       this.upgradeSystem.resetAll();
 
-      // v3.10: Reset score to 0 (no XP system anymore)
-      this.currentScore = 0;
-      this.registry.set('currentScore', 0);
-
-      // v4.2: Also reset XP level if checkbox is checked
+      // v4.2: Reset XP if checkbox is checked
       if (resetXP) {
         console.log('🔄 Resetting XP level to 1 and XP to 0...');
-        this.xpSystem.resetForNewProfile();
+        this.xpEngine.resetForNewProfile();
+        this.currentXP = 0;
+      } else {
+        // Just refresh currentXP from engine
+        this.currentXP = this.xpEngine.getState().totalXP;
       }
 
       this.refreshUI();
@@ -851,7 +850,7 @@ class UpgradeCard {
     height: number,
     def: UpgradeDef,
     currentLevel: number,
-    currentScore: number,
+    currentXP: number,
     onBuy: () => void
   ) {
     this.def = def;
@@ -910,7 +909,7 @@ class UpgradeCard {
     // Cost display
     const nextLevel = currentLevel + 1;
     const cost = (scene as any).upgradeSystem.getCost(def.id, nextLevel);
-    this.costText = scene.add.text(20, 160, `${this.i18n.t('upgrade.cost')}: ${cost} SCORE`, {
+    this.costText = scene.add.text(20, 160, `${this.i18n.t('upgrade.cost')}: ${cost} XP`, {
       fontSize: '18px',
       fontFamily: this.i18n.getFontFamily(),
       color: '#E63946',
@@ -918,8 +917,8 @@ class UpgradeCard {
       letterSpacing: 1
     });
 
-    // v3.10: Modern buy button - Score-based
-    const canBuy = (scene as any).upgradeSystem.canBuyWithScore(def.id, currentScore);
+    // v4.2: Modern buy button - XP-based
+    const canBuy = (scene as any).upgradeSystem.canBuyWithScore(def.id, currentXP);
     const buttonColor = canBuy.ok ? 0x000000 : 0x999999;
     this.buttonX = width - 100;
     this.buttonY = height - 35;
@@ -1021,15 +1020,15 @@ class UpgradeCard {
     return str.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
   }
 
-  public updateLevel(newLevel: number, currentScore: number): void {
+  public updateLevel(newLevel: number, currentXP: number): void {
     this.levelText.setText(`${this.i18n.t('upgrade.level')}: ${newLevel} / ${this.def.maxLevel}`);
     this.effectText.setText(this.getEffectPreview(newLevel));
 
     const nextLevel = newLevel + 1;
     const cost = (this.container.scene as any).upgradeSystem.getCost(this.def.id, nextLevel);
-    this.costText.setText(`${this.i18n.t('upgrade.cost')}: ${cost} SCORE`);
+    this.costText.setText(`${this.i18n.t('upgrade.cost')}: ${cost} XP`);
 
-    const canBuy = (this.container.scene as any).upgradeSystem.canBuyWithScore(this.def.id, currentScore);
+    const canBuy = (this.container.scene as any).upgradeSystem.canBuyWithScore(this.def.id, currentXP);
     const buttonColor = canBuy.ok ? 0x000000 : 0x999999;
 
     // v3.9.2 CRITICAL FIX: Remove ALL event listeners before updating

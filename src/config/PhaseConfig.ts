@@ -43,7 +43,7 @@ export const PHASES: PhaseConfig[] = [
     speedMultiplier: 1.2,
     spawnRate: 5000, // 5 seconds between spawns
     background: '#FFFFFF',
-    description: 'Get started, collect burgers! Easy enemies only.'
+    description: i18n.t('phase.softLaunch.desc')
   },
 
   // ========================================
@@ -64,7 +64,7 @@ export const PHASES: PhaseConfig[] = [
     speedMultiplier: 1.4,
     spawnRate: 4500, // 4.5 seconds
     background: '#F0F8FF', // Alice Blue
-    description: 'Watch out for fake coins and rugpulls! Traps everywhere.'
+    description: i18n.t('phase.paperPanic.desc')
   },
 
   // ========================================
@@ -85,7 +85,7 @@ export const PHASES: PhaseConfig[] = [
     speedMultiplier: 1.6,
     spawnRate: 4000, // 4 seconds
     background: '#FFF5E6', // Seashell
-    description: 'Chaos phase! Fast enemies and barriers everywhere.'
+    description: i18n.t('phase.candleCrash.desc')
   },
 
   // ========================================
@@ -106,7 +106,7 @@ export const PHASES: PhaseConfig[] = [
     speedMultiplier: 1.8,
     spawnRate: 3500, // 3.5 seconds
     background: '#FFF0E6', // Linen
-    description: 'Lawsuit storm! SEC and whales manipulate the market.'
+    description: i18n.t('phase.regulationRun.desc')
   },
 
   // ========================================
@@ -129,7 +129,7 @@ export const PHASES: PhaseConfig[] = [
     speedMultiplier: 2.0,
     spawnRate: 2500, // 2.5 seconds (fast!)
     background: '#FFE6E6', // Misty Rose
-    description: 'Chaos + Boss fights! Only the strong survive.'
+    description: i18n.t('phase.bearMarket.desc')
   },
 
   // ========================================

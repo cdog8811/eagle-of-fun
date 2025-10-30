@@ -78,15 +78,15 @@ function getDefaultUpgradesState(): UpgradesState {
 }
 
 // Upgrade definitions
-// v4.2: DRAMATICALLY increased costs (5x) for long-term progression
+// v4.2: Reduced costs by ~40% for better progression feel
 const UPGRADE_DEFS: UpgradeDef[] = [
   {
     id: 'wing_strength',
     name: 'Wing Strength',
     desc: 'Stronger flaps for better control',
     maxLevel: 10,
-    baseCost: 2500,     // v4.2: 250 → 500 → 2500 (10x original)
-    costGrowth: 1.6,    // v4.2: 1.35 → 1.45 → 1.6
+    baseCost: 1500,     // Reduced from 2500
+    costGrowth: 1.5,    // Reduced from 1.6
     apply: (level, stats) => ({
       ...stats,
       flapBoost: stats.flapBoost + (level * 0.02) // +2% per level
@@ -97,8 +97,8 @@ const UPGRADE_DEFS: UpgradeDef[] = [
     name: 'Magnet Range',
     desc: 'Pull coins from farther away',
     maxLevel: 8,
-    baseCost: 4000,     // v4.2: 400 → 800 → 4000 (10x original)
-    costGrowth: 1.6,    // v4.2: 1.35 → 1.45 → 1.6
+    baseCost: 2400,     // Reduced from 4000
+    costGrowth: 1.5,    // Reduced from 1.6
     apply: (level, stats) => ({
       ...stats,
       magnetRadius: stats.magnetRadius + (level * 25) // +25px per level
@@ -109,8 +109,8 @@ const UPGRADE_DEFS: UpgradeDef[] = [
     name: 'Shield Duration',
     desc: 'America Hat protection lasts longer',
     maxLevel: 5,
-    baseCost: 5000,     // v4.2: 500 → 1000 → 5000 (10x original)
-    costGrowth: 1.65,   // v4.2: 1.4 → 1.5 → 1.65
+    baseCost: 3000,     // Reduced from 5000
+    costGrowth: 1.55,   // Reduced from 1.65
     apply: (level, stats) => ({
       ...stats,
       shieldExtraSeconds: stats.shieldExtraSeconds + level // +1s per level
@@ -121,8 +121,8 @@ const UPGRADE_DEFS: UpgradeDef[] = [
     name: 'Blaster Cooldown',
     desc: 'Fire your blaster more frequently',
     maxLevel: 7,
-    baseCost: 6000,     // v4.2: 600 → 1200 → 6000 (10x original)
-    costGrowth: 1.65,   // v4.2: 1.4 → 1.5 → 1.65
+    baseCost: 3600,     // Reduced from 6000
+    costGrowth: 1.55,   // Reduced from 1.65
     apply: (level, stats) => ({
       ...stats,
       // v3.9.2 CRITICAL FIX: Use defaultStats.blasterCDMul (1.0) not stats.blasterCDMul!
@@ -136,8 +136,8 @@ const UPGRADE_DEFS: UpgradeDef[] = [
     name: 'Valor Cooldown',
     desc: 'Use VALOR mode more often',
     maxLevel: 5,
-    baseCost: 10000,    // v4.2: 1000 → 2000 → 10000 (10x original)
-    costGrowth: 1.7,    // v4.2: 1.45 → 1.6 → 1.7
+    baseCost: 6000,     // Reduced from 10000
+    costGrowth: 1.6,    // Reduced from 1.7
     apply: (level, stats) => ({
       ...stats,
       valorCDMinus: stats.valorCDMinus + (level * 6) // -6s per level
@@ -149,8 +149,8 @@ const UPGRADE_DEFS: UpgradeDef[] = [
     name: 'Extra Heart',
     desc: 'Increase maximum health',
     maxLevel: 2,
-    baseCost: 15000,    // v4.2: 1500 → 3000 → 15000 (10x original)
-    costGrowth: 2.0,    // v4.2: 1.6 → 1.8 → 2.0
+    baseCost: 9000,     // Reduced from 15000
+    costGrowth: 1.8,    // Reduced from 2.0
     apply: (level, stats) => ({
       ...stats,
       maxHeartsBonus: stats.maxHeartsBonus + level // +1 heart per level
@@ -162,8 +162,8 @@ const UPGRADE_DEFS: UpgradeDef[] = [
     name: 'Coin Value',
     desc: 'Earn more XP from coins',
     maxLevel: 5,
-    baseCost: 7500,     // v4.2: 800 → 1500 → 7500 (9.4x original)
-    costGrowth: 1.6,    // v4.2: 1.35 → 1.45 → 1.6
+    baseCost: 4500,     // Reduced from 7500
+    costGrowth: 1.5,    // Reduced from 1.6
     apply: (level, stats) => ({
       ...stats,
       coinGainMul: stats.coinGainMul + (level * 0.05) // +5% per level
@@ -174,8 +174,8 @@ const UPGRADE_DEFS: UpgradeDef[] = [
     name: 'Glide Efficiency',
     desc: 'Float more gracefully',
     maxLevel: 5,
-    baseCost: 5000,     // v4.2: 500 → 1000 → 5000 (10x original)
-    costGrowth: 1.6,    // v4.2: 1.35 → 1.45 → 1.6
+    baseCost: 3000,     // Reduced from 5000
+    costGrowth: 1.5,    // Reduced from 1.6
     apply: (level, stats) => ({
       ...stats,
       // v3.9.2 CRITICAL FIX: Use defaultStats.glideGravityMul (1.0) not stats.glideGravityMul!
@@ -189,8 +189,8 @@ const UPGRADE_DEFS: UpgradeDef[] = [
     name: 'Buyback Radius',
     desc: 'Magnet effect has wider range',
     maxLevel: 6,
-    baseCost: 6000,     // v4.2: 600 → 1200 → 6000 (10x original)
-    costGrowth: 1.6,    // v4.2: 1.35 → 1.45 → 1.6
+    baseCost: 3600,     // Reduced from 6000
+    costGrowth: 1.5,    // Reduced from 1.6
     apply: (level, stats) => ({
       ...stats,
       buybackRadiusBonus: stats.buybackRadiusBonus + (level * 30) // +30px per level
@@ -201,8 +201,8 @@ const UPGRADE_DEFS: UpgradeDef[] = [
     name: 'Burger Duration',
     desc: 'Burger multiplier lasts longer',
     maxLevel: 4,
-    baseCost: 7000,     // v4.2: 700 → 1400 → 7000 (10x original)
-    costGrowth: 1.6,    // v4.2: 1.35 → 1.45 → 1.6
+    baseCost: 4200,     // Reduced from 7000
+    costGrowth: 1.5,    // Reduced from 1.6
     apply: (level, stats) => ({
       ...stats,
       burgerDurationBonus: stats.burgerDurationBonus + (level * 0.75) // +0.75s per level

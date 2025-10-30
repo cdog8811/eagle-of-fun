@@ -83,13 +83,39 @@ export class HowToPlayScene extends Phaser.Scene {
       yPos += 85; // Slightly smaller spacing for 7 items
     });
 
-    // Pro tip - updated for v4.2
-    this.add.text(width / 2, height - 100, this.i18n.t('howto.proTip'), {
+    // Pro tip - updated for v4.2 (20px higher)
+    this.add.text(width / 2, height - 200, this.i18n.t('howto.proTip'), {
       fontSize: '14px',
       color: '#E63946',
       fontFamily: this.i18n.getFontFamily(),
       fontStyle: 'bold',
       letterSpacing: 1
+    }).setOrigin(0.5);
+
+    // Copyright & Disclaimer Section (10px higher)
+    const copyrightY = height - 160;
+
+    // Version & Copyright
+    this.add.text(width / 2, copyrightY, 'Eagle of Fun v1.0 (Beta)', {
+      fontSize: '16px',
+      color: '#000000',
+      fontFamily: 'Arial',
+      fontStyle: 'bold'
+    }).setOrigin(0.5);
+
+    this.add.text(width / 2, copyrightY + 20, '© 2025 Carsten Beier', {
+      fontSize: '14px',
+      color: '#666666',
+      fontFamily: 'Arial'
+    }).setOrigin(0.5);
+
+    // Disclaimer (more spacing)
+    this.add.text(width / 2, copyrightY + 52, this.i18n.t('howto.disclaimer'), {
+      fontSize: '14px',
+      color: '#999999',
+      fontFamily: 'Arial',
+      align: 'center',
+      wordWrap: { width: 900 }
     }).setOrigin(0.5);
 
     // Back button

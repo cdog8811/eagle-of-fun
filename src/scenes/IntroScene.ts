@@ -46,6 +46,12 @@ ${this.i18n.t('intro.ogle.line14')}`;
     const width = this.cameras.main.width;
     const height = this.cameras.main.height;
 
+    // Reset all state variables when scene restarts (Try Again)
+    this.currentCharIndex = 0;
+    this.isComplete = false;
+    this.spacePressed = false;
+    this.textSkipped = false;
+
     // Initialize dialog text
     this.fullDialog = this.getFullDialog();
 
@@ -97,6 +103,11 @@ ${this.i18n.t('intro.ogle.line14')}`;
 
     // Listen for SPACE key - two-step skip
     this.input.keyboard?.on('keydown-SPACE', () => {
+      this.handleSpacePress();
+    });
+
+    // Listen for click/touch anywhere on screen - same as SPACE
+    this.input.on('pointerdown', () => {
       this.handleSpacePress();
     });
   }
@@ -280,6 +291,7 @@ ${this.i18n.t('intro.ogle.line14')}`;
    */
   shutdown(): void {
     this.input.keyboard?.off('keydown-SPACE');
+    this.input.off('pointerdown');
     this.tweens.killAll();
     this.sound.stopAll();
   }

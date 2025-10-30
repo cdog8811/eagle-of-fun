@@ -8,7 +8,8 @@ import { MARKET_PHASES, MICRO_EVENTS, determinePhase, MarketPhase, MicroEvent } 
 import { WeaponManagerSimple } from '../managers/WeaponManagerSimple';
 import { BossManagerV38 } from '../managers/BossManagerV38';
 import { BandanaPowerUp } from '../managers/BandanaPowerUp';
-import { getXPSystem, getXPForCoin } from '../systems/xpSystem';
+import { getXPEngine } from '../systems/XPEngine';
+import { getXPForCoin } from '../systems/xpSystem';
 import { getUpgradeSystem } from '../systems/upgradeSystem';
 import { getI18n } from '../systems/i18n';
 import { calculateHPMultiplier, calculateSpawnRateMultiplier, calculateEliteChance } from '../config/Difficulty';
@@ -24,7 +25,7 @@ import { MarketCapManager } from '../managers/MarketCapManager';
 
 export class GameScene extends Phaser.Scene {
   // XP & Upgrade Systems
-  private xpSystem = getXPSystem();
+  private xpEngine = getXPEngine();
   private upgradeSystem = getUpgradeSystem();
   private i18n = getI18n();
   private eagle!: Eagle;
@@ -191,6 +192,12 @@ export class GameScene extends Phaser.Scene {
   private shieldTimerText?: Phaser.GameObjects.Text;
   private belleIcon?: Phaser.GameObjects.Text;
   private belleTimerText?: Phaser.GameObjects.Text;
+  private roseIcon?: Phaser.GameObjects.Text;
+  private roseTimerText?: Phaser.GameObjects.Text;
+  private cryptoActingIcon?: Phaser.GameObjects.Text;
+  private cryptoActingTimerText?: Phaser.GameObjects.Text;
+  private danxxIcon?: Phaser.GameObjects.Text;
+  private danxxTimerText?: Phaser.GameObjects.Text;
   private bullMarketIcon?: Phaser.GameObjects.Text;
   private bullMarketTimerText?: Phaser.GameObjects.Text;
 
@@ -410,6 +417,9 @@ export class GameScene extends Phaser.Scene {
     if (this.scene.isActive('UIScene')) {
       console.log('🔄 UIScene already running - waking it up');
       this.scene.wake('UIScene');
+    } else if (this.scene.isSleeping('UIScene')) {
+      console.log('🔄 UIScene sleeping - waking it up');
+      this.scene.wake('UIScene');
     } else {
       console.log('🚀 Launching UIScene for the first time');
       this.scene.launch('UIScene');
@@ -580,7 +590,7 @@ export class GameScene extends Phaser.Scene {
     this.magnetIcon.setVisible(false);
     this.magnetIcon.setDepth(1000);
 
-    this.magnetTimerText = this.add.text(width / 2 - 280, powerupIconY, 'BUYBACK\n10s', {
+    this.magnetTimerText = this.add.text(width / 2 - 280, powerupIconY, `${this.i18n.t('powerup.magnet')}\n10s`, {
       fontSize: '17px',
       color: '#FFFFFF',
       fontFamily: 'Arial',
@@ -610,7 +620,7 @@ export class GameScene extends Phaser.Scene {
     shieldIcon.setDepth(1000);
     this.shieldIcon = shieldIcon;
 
-    this.shieldTimerText = this.add.text(width / 2 - 80, powerupIconY, 'SHIELD\n8s', {
+    this.shieldTimerText = this.add.text(width / 2 - 80, powerupIconY, `${this.i18n.t('powerup.shield')}\n8s`, {
       fontSize: '17px',
       color: '#FFFFFF',
       fontFamily: 'Arial',
@@ -637,7 +647,7 @@ export class GameScene extends Phaser.Scene {
     this.belleIcon.setVisible(false);
     this.belleIcon.setDepth(1000);
 
-    this.belleTimerText = this.add.text(width / 2 + 100, powerupIconY, 'BELLE\n15s', {
+    this.belleTimerText = this.add.text(width / 2 + 100, powerupIconY, `${this.i18n.t('powerup.belle')}\n15s`, {
       fontSize: '17px',
       color: '#FFFFFF',
       fontFamily: 'Arial',
@@ -648,23 +658,104 @@ export class GameScene extends Phaser.Scene {
     this.belleTimerText.setVisible(false);
     this.belleTimerText.setDepth(1000);
 
+    // Rose Mod Mode - LARGER with background
+    const roseBg = this.add.graphics();
+    roseBg.fillStyle(0x002868, 0.8);
+    roseBg.fillRoundedRect(width / 2 + 190, powerupIconY - 35, 160, 70, 8);
+    roseBg.lineStyle(2, 0xFFD700, 1);
+    roseBg.strokeRoundedRect(width / 2 + 190, powerupIconY - 35, 160, 70, 8);
+    roseBg.setVisible(false);
+    roseBg.setDepth(999);
+    (this as any).roseBg = roseBg;
+
+    this.roseIcon = this.add.text(width / 2 + 225, powerupIconY, '🌹', {
+      fontSize: '48px'
+    }).setOrigin(0.5);
+    this.roseIcon.setVisible(false);
+    this.roseIcon.setDepth(1000);
+
+    this.roseTimerText = this.add.text(width / 2 + 280, powerupIconY, 'ROSE\n15s', {
+      fontSize: '17px',
+      color: '#FFFFFF',
+      fontFamily: 'Arial',
+      fontStyle: 'bold',
+      align: 'left',
+      lineSpacing: 2
+    }).setOrigin(0, 0.5);
+    this.roseTimerText.setVisible(false);
+    this.roseTimerText.setDepth(1000);
+
+    // CryptoActing - Early Entry buff
+    const cryptoActingBg = this.add.graphics();
+    cryptoActingBg.fillStyle(0x002868, 0.8);
+    cryptoActingBg.fillRoundedRect(width / 2 + 370, powerupIconY - 35, 160, 70, 8);
+    cryptoActingBg.lineStyle(2, 0xFFD700, 1);
+    cryptoActingBg.strokeRoundedRect(width / 2 + 370, powerupIconY - 35, 160, 70, 8);
+    cryptoActingBg.setVisible(false);
+    cryptoActingBg.setDepth(999);
+    (this as any).cryptoActingBg = cryptoActingBg;
+
+    this.cryptoActingIcon = this.add.text(width / 2 + 405, powerupIconY, '🕶️', {
+      fontSize: '48px'
+    }).setOrigin(0.5);
+    this.cryptoActingIcon.setVisible(false);
+    this.cryptoActingIcon.setDepth(1000);
+
+    this.cryptoActingTimerText = this.add.text(width / 2 + 460, powerupIconY, 'ENTRY\n15s', {
+      fontSize: '17px',
+      color: '#FFFFFF',
+      fontFamily: 'Arial',
+      fontStyle: 'bold',
+      align: 'left',
+      lineSpacing: 2
+    }).setOrigin(0, 0.5);
+    this.cryptoActingTimerText.setVisible(false);
+    this.cryptoActingTimerText.setDepth(1000);
+
+    // Danxx Protocol - Market Stabilizer
+    const danxxBg = this.add.graphics();
+    danxxBg.fillStyle(0x002868, 0.8);
+    danxxBg.fillRoundedRect(width / 2 + 550, powerupIconY - 35, 160, 70, 8);
+    danxxBg.lineStyle(2, 0xFFD700, 1);
+    danxxBg.strokeRoundedRect(width / 2 + 550, powerupIconY - 35, 160, 70, 8);
+    danxxBg.setVisible(false);
+    danxxBg.setDepth(999);
+    (this as any).danxxBg = danxxBg;
+
+    this.danxxIcon = this.add.text(width / 2 + 585, powerupIconY, '🧱', {
+      fontSize: '48px'
+    }).setOrigin(0.5);
+    this.danxxIcon.setVisible(false);
+    this.danxxIcon.setDepth(1000);
+
+    this.danxxTimerText = this.add.text(width / 2 + 640, powerupIconY, 'DANXX\n20s', {
+      fontSize: '17px',
+      color: '#FFFFFF',
+      fontFamily: 'Arial',
+      fontStyle: 'bold',
+      align: 'left',
+      lineSpacing: 2
+    }).setOrigin(0, 0.5);
+    this.danxxTimerText.setVisible(false);
+    this.danxxTimerText.setDepth(1000);
+
     // Bull Market Mode - LARGER with background
     const bullBg = this.add.graphics();
     bullBg.fillStyle(0x002868, 0.8);
-    bullBg.fillRoundedRect(width / 2 + 190, powerupIconY - 35, 160, 70, 8);
+    bullBg.fillRoundedRect(width / 2 + 730, powerupIconY - 35, 160, 70, 8);
     bullBg.lineStyle(2, 0xFFD700, 1);
-    bullBg.strokeRoundedRect(width / 2 + 190, powerupIconY - 35, 160, 70, 8);
+    bullBg.strokeRoundedRect(width / 2 + 730, powerupIconY - 35, 160, 70, 8);
     bullBg.setVisible(false);
     bullBg.setDepth(999);
     (this as any).bullBg = bullBg;
 
-    this.bullMarketIcon = this.add.text(width / 2 + 225, powerupIconY, '🐂', {
+    this.bullMarketIcon = this.add.text(width / 2 + 765, powerupIconY, '🐂', {
       fontSize: '48px'
     }).setOrigin(0.5);
     this.bullMarketIcon.setVisible(false);
     this.bullMarketIcon.setDepth(1000);
 
-    this.bullMarketTimerText = this.add.text(width / 2 + 280, powerupIconY, 'BULL\n10s', {
+    this.bullMarketTimerText = this.add.text(width / 2 + 820, powerupIconY, 'BULL\n10s', {
       fontSize: '17px',
       color: '#FFFFFF',
       fontFamily: 'Arial',
@@ -685,13 +776,13 @@ export class GameScene extends Phaser.Scene {
     valorBg.setDepth(999);
     (this as any).valorBg = valorBg;
 
-    this.valorModeIcon = this.add.text(width / 2 + 410, powerupIconY, '⚡', {
+    this.valorModeIcon = this.add.text(width / 2 + 410, powerupIconY, '🦅', {
       fontSize: '48px'
     }).setOrigin(0.5);
     this.valorModeIcon.setVisible(false);
     this.valorModeIcon.setDepth(1000);
 
-    this.valorModeTimerText = this.add.text(width / 2 + 450, powerupIconY, 'VALOR\n15s', {
+    this.valorModeTimerText = this.add.text(width / 2 + 450, powerupIconY, `${this.i18n.t('powerup.valor')}\n15s`, {
       fontSize: '17px',
       color: '#FFFFFF',
       fontFamily: 'Arial',
@@ -870,11 +961,7 @@ export class GameScene extends Phaser.Scene {
       console.log(`Boss defeated event received: ${bossDef.name}`);
 
       // Award XP
-      this.xpSystem.addXP({
-        delta: bossDef.rewards.xp,
-        source: 'bossKill',
-        meta: { bossId: bossDef.id }
-      });
+      this.xpEngine.addXP(bossDef.rewards.xp);
 
       // Award bonus score
       const bonusScore = 1000;
@@ -2599,12 +2686,12 @@ export class GameScene extends Phaser.Scene {
       this.score += pointsAwarded;
       totalPoints += pointsAwarded;
 
-      // v3.7: Award XP for enemy kill
-      this.xpSystem.addXP({
-        delta: 4,
-        source: 'enemyKill',
-        meta: { enemyType: 'freedom_strike' }
-      });
+      // v4.2: Award XP scaled by enemy type (instead of flat 4)
+      const enemyType = enemy.getData('type') || 'basicEnemy';
+      const baseXP = getEnemyXPReward(enemyType);
+      // Freedom Strike gives 50% XP (mass destruction bonus but reduced per-enemy)
+      const freedomStrikeXP = Math.floor(baseXP * 0.5);
+      this.xpEngine.addXP(freedomStrikeXP);
 
       // Show floating points text for each enemy
       const pointsText = this.add.text(enemy.x, enemy.y, `+${pointsAwarded}`, {
@@ -3004,7 +3091,7 @@ export class GameScene extends Phaser.Scene {
     // Update Magnet/Buyback timer
     if (this.magnetActive && this.magnetTimer && this.magnetTimerText) {
       const remaining = Math.ceil((this.magnetTimer.delay - this.magnetTimer.elapsed) / 1000);
-      this.magnetTimerText.setText(`BUYBACK\n${remaining}s`);
+      this.magnetTimerText.setText(`${this.i18n.t('powerup.magnet')}\n${remaining}s`);
 
       // Blink warning when < 3 seconds - more prominent
       if (remaining <= 3) {
@@ -3017,7 +3104,7 @@ export class GameScene extends Phaser.Scene {
     // Update Shield timer
     if (this.shieldActive && this.shieldTimer && this.shieldTimerText) {
       const remaining = Math.ceil((this.shieldTimer.delay - this.shieldTimer.elapsed) / 1000);
-      this.shieldTimerText.setText(`SHIELD\n${remaining}s`);
+      this.shieldTimerText.setText(`${this.i18n.t('powerup.shield')}\n${remaining}s`);
 
       // Blink warning when < 3 seconds - more prominent
       if (remaining <= 3) {
@@ -3030,13 +3117,52 @@ export class GameScene extends Phaser.Scene {
     // Update Belle MOD timer
     if (this.belleModActive && this.belleModTimer && this.belleTimerText) {
       const remaining = Math.ceil((this.belleModTimer.delay - this.belleModTimer.elapsed) / 1000);
-      this.belleTimerText.setText(`BELLE\n${remaining}s`);
+      this.belleTimerText.setText(`${this.i18n.t('powerup.belle')}\n${remaining}s`);
 
       // Blink warning when < 3 seconds - more prominent
       if (remaining <= 3) {
         this.belleTimerText.setColor(remaining % 2 === 0 ? '#FF0000' : '#FFFFFF');
         this.belleIcon?.setAlpha(remaining % 2 === 0 ? 0.4 : 1);
         this.belleIcon?.setScale(remaining % 2 === 0 ? 1.2 : 1); // Pulse effect
+      }
+    }
+
+    // Update Rose Mod Mode timer
+    if (this.roseModModeActive && this.roseModModeTimer && this.roseTimerText) {
+      const remaining = Math.ceil((this.roseModModeTimer.delay - this.roseModModeTimer.elapsed) / 1000);
+      this.roseTimerText.setText(`ROSE\n${remaining}s`);
+
+      // Blink warning when < 3 seconds
+      if (remaining <= 3) {
+        this.roseTimerText.setColor(remaining % 2 === 0 ? '#FF0000' : '#FFFFFF');
+        this.roseIcon?.setAlpha(remaining % 2 === 0 ? 0.4 : 1);
+        this.roseIcon?.setScale(remaining % 2 === 0 ? 1.2 : 1);
+      }
+    }
+
+    // Update CryptoActing timer
+    if (this.cryptoActingActive && this.cryptoActingTimer && this.cryptoActingTimerText) {
+      const remaining = Math.ceil((this.cryptoActingTimer.delay - this.cryptoActingTimer.elapsed) / 1000);
+      this.cryptoActingTimerText.setText(`ENTRY\n${remaining}s`);
+
+      // Blink warning when < 3 seconds
+      if (remaining <= 3) {
+        this.cryptoActingTimerText.setColor(remaining % 2 === 0 ? '#FF0000' : '#FFFFFF');
+        this.cryptoActingIcon?.setAlpha(remaining % 2 === 0 ? 0.4 : 1);
+        this.cryptoActingIcon?.setScale(remaining % 2 === 0 ? 1.2 : 1);
+      }
+    }
+
+    // Update Danxx Protocol timer
+    if (this.danxxProtocolActive && this.danxxProtocolTimer && this.danxxTimerText) {
+      const remaining = Math.ceil((this.danxxProtocolTimer.delay - this.danxxProtocolTimer.elapsed) / 1000);
+      this.danxxTimerText.setText(`DANXX\n${remaining}s`);
+
+      // Blink warning when < 3 seconds
+      if (remaining <= 3) {
+        this.danxxTimerText.setColor(remaining % 2 === 0 ? '#FF0000' : '#FFFFFF');
+        this.danxxIcon?.setAlpha(remaining % 2 === 0 ? 0.4 : 1);
+        this.danxxIcon?.setScale(remaining % 2 === 0 ? 1.2 : 1);
       }
     }
 
@@ -3345,10 +3471,8 @@ export class GameScene extends Phaser.Scene {
     // v3.7: Update ticker positions for continuous flow around perimeter
     this.updateTickerPositions(delta);
 
-    // v3.7: Update weapon UI energy bar
-    if (this.weaponManager.hasWeapon()) {
-      this.updateWeaponUI();
-    }
+    // v3.7: Update weapon UI (energy bar or "No Weapon" message)
+    this.updateWeaponUI();
 
     // v3.7: Check projectile collisions with enemies
     const hits = this.weaponManager.checkCollisions(this.enemies);
@@ -3425,11 +3549,7 @@ export class GameScene extends Phaser.Scene {
       this.scoreText.setText(`${this.scoreLabel}: ${this.score}`);
 
       // Award XP
-      this.xpSystem.addXP({
-        delta: finalXP,
-        source: 'enemyKill',
-        meta: { enemyType, baseXP, multiplier: xpMultiplier }
-      });
+      this.xpEngine.addXP(finalXP);
 
       // v3.8 OPTIMIZED: Show floating score using object pool!
       this.showFloatingText(
@@ -3526,8 +3646,8 @@ export class GameScene extends Phaser.Scene {
       hit.fakeCoin.setData('collected', true);
 
       // Play hit sound
-      if (this.sound.get('coin')) {
-        this.sound.play('coin', { volume: 0.5 });
+      if (this.sound.get('coin-collect')) {
+        this.sound.play('coin-collect', { volume: 0.5 });
       }
 
       // v3.8 PERFORMANCE: Removed feedback text and particle effects for 60 FPS
@@ -3743,15 +3863,10 @@ export class GameScene extends Phaser.Scene {
           this.missionManager.onScoreUpdate(this.score);
           // v3.9.2 PERFORMANCE: Removed updateMissionUI() - will be called once at end of coin collection
 
-          // v3.7: Award XP for coin collection
+          // v4.2: Award XP to XPEngine - ultra fast, pure logic
           const coinXP = getXPForCoin(type);
-          // v3.9.2 CRITICAL: Use cached playerStats instead of calling getPlayerStats() for EVERY coin!
           const xpWithBonus = Math.floor(coinXP * playerStats.coinGainMul);
-          this.xpSystem.addXP({
-            delta: xpWithBonus,
-            source: 'coin',
-            meta: { coinType: type, baseXP: coinXP, multiplier: playerStats.coinGainMul }
-          });
+          this.xpEngine.addXP(xpWithBonus);
 
           // v3.9.2 CRITICAL: Restart existing tween instead of creating new one
           // BEFORE: this.tweens.add() = new tween every coin = 3000+ tweens!
@@ -4813,9 +4928,8 @@ export class GameScene extends Phaser.Scene {
     this.belleModTimer?.remove();
     this.bullMarketTimer?.remove();
 
-    // v3.9.2 CRITICAL: Flush XP system to save pending XP to localStorage
-    // This ensures player doesn't lose XP from coins collected in the last second
-    this.xpSystem.flush();
+    // v4.2: Save XP to localStorage on game over
+    this.xpEngine.save();
 
     // Update high score
     const currentHighScore = this.registry.get('highScore') || 0;
@@ -4832,8 +4946,8 @@ export class GameScene extends Phaser.Scene {
 
     // Transition to game over scene
     this.time.delayedCall(500, () => {
-      // v4.2: Stop UIScene to prevent UI elements showing in menu screens
-      this.scene.stop('UIScene');
+      // v4.2: Sleep UIScene instead of stop - so it can be woken up on restart
+      this.scene.sleep('UIScene');
       this.scene.start('GameOverScene');
     });
   }
@@ -5118,7 +5232,7 @@ export class GameScene extends Phaser.Scene {
     // Auto-upgrade weapon based on player XP level
     if (!this.weaponManager.hasWeapon()) return;
 
-    const playerLevel = this.xpSystem.getState().level;
+    const playerLevel = this.xpEngine.getState().level;
     const currentWeaponLevel = this.weaponManager.getWeaponLevel();
 
     // Weapon progression by player level:
@@ -5176,9 +5290,14 @@ export class GameScene extends Phaser.Scene {
     this.weaponManager.unlockWeapon();
     this.checkWeaponAutoUpgrade();
 
-    // v4.2: Play weapon drill sound with high volume
-    if (this.sound.get('weapon-drill')) {
+    // v4.2: Play weapon pickup sounds - both sounds together
+    try {
+      // Power-up grab sound first
+      this.sound.play('power-up-grab', { volume: 0.8 });
+      // Weapon drill sound immediately after
       this.sound.play('weapon-drill', { volume: 1.0 });
+    } catch (e) {
+      console.warn('Failed to play weapon pickup sounds:', e);
     }
 
     // v4.2: Visual feedback handled by NotificationManager in collectWeapon()
@@ -5265,6 +5384,11 @@ export class GameScene extends Phaser.Scene {
     this.valorModeActive = true;
     this.valorModeStage = 1;
     this.valorScoreMultiplier = 2; // Stage 1: ×2 score
+
+    // Show Valor Mode UI
+    this.valorModeIcon?.setVisible(true);
+    this.valorModeTimerText?.setVisible(true);
+    (this as any).valorBg?.setVisible(true);
 
     // Switch to gold eagle sprite
     if (this.eagle && this.eagle.active) {
@@ -5736,67 +5860,14 @@ export class GameScene extends Phaser.Scene {
       this.lives++;
       this.updateHeartDisplay();
 
-      // Visual feedback with Vesper0x branding - Modern design
-      const width = this.cameras.main.width;
-      const height = this.cameras.main.height;
-
-      // Modern white panel with black border (matching weapon notification style)
-      const panel = this.add.graphics();
-      panel.fillStyle(0xFFFFFF, 1); // White background
-      panel.fillRoundedRect(width / 2 - 250, height / 2 - 100, 500, 200, 12);
-      panel.lineStyle(4, 0x000000, 1); // Black border
-      panel.strokeRoundedRect(width / 2 - 250, height / 2 - 100, 500, 200, 12);
-      panel.setDepth(9999);
-
-      // Title - clean black text
-      const title = this.add.text(width / 2, height / 2 - 60, '🦌 VESPER0X APPEARS! 🦌', {
-        fontSize: '32px',
-        color: '#000000',
-        fontFamily: 'Impact, Arial Black, Arial',
-        fontStyle: 'bold',
-        letterSpacing: 2
-      }).setOrigin(0.5);
-      title.setDepth(10000);
-
-      // Red underline accent (matching weapon notification)
-      const underline = this.add.graphics();
-      underline.fillStyle(0xE63946, 1);
-      underline.fillRect(width / 2 - 140, height / 2 - 35, 280, 4);
-      underline.setDepth(10000);
-
-      // Message - red accent
-      const message = this.add.text(width / 2, height / 2 + 5, 'Extra Life Granted! ❤️', {
-        fontSize: '28px',
-        color: '#E63946', // Red accent
-        fontFamily: 'Impact, Arial Black, Arial',
-        fontStyle: 'bold',
-        letterSpacing: 2
-      }).setOrigin(0.5);
-      message.setDepth(10000);
-
-      // America.Fun Team label - black text
-      const team = this.add.text(width / 2, height / 2 + 50, 'America.Fun Team Member', {
-        fontSize: '18px',
-        color: '#000000',
-        fontFamily: 'Arial',
-        fontStyle: 'bold'
-      }).setOrigin(0.5);
-      team.setDepth(10000);
-
-      // Fade out after 2.5 seconds
-      this.time.delayedCall(2500, () => {
-        this.tweens.add({
-          targets: [panel, underline, title, message, team],
-          alpha: 0,
-          duration: 500,
-          onComplete: () => {
-            panel.destroy();
-            underline.destroy();
-            title.destroy();
-            message.destroy();
-            team.destroy();
-          }
-        });
+      // v4.2: Use NotificationManager (same as other bonus items)
+      this.notificationManager.showNotification({
+        title: this.i18n.t('powerup.vesper0x'),
+        message: '',
+        icon: '🦌',
+        color: '#FF69B4', // Pink color for Vesper
+        priority: NotificationPriority.HIGH,
+        duration: 3000
       });
 
       // Play sound
@@ -5831,6 +5902,11 @@ export class GameScene extends Phaser.Scene {
 
     this.cryptoActingActive = true;
     this.cryptoActingDamageTaken = false; // Reset damage tracker
+
+    // Show CryptoActing icon in bottom bar
+    this.cryptoActingIcon?.setVisible(true);
+    this.cryptoActingTimerText?.setVisible(true);
+    (this as any).cryptoActingBg?.setVisible(true);
 
     // Play collection sound
     this.sound.play('cryptoacting-collect', { volume: 0.7 });
@@ -5868,6 +5944,11 @@ export class GameScene extends Phaser.Scene {
 
   private deactivateCryptoActing(): void {
     if (!this.cryptoActingActive) return;
+
+    // Hide CryptoActing icon in bottom bar
+    this.cryptoActingIcon?.setVisible(false);
+    this.cryptoActingTimerText?.setVisible(false);
+    (this as any).cryptoActingBg?.setVisible(false);
 
     // Check for Perfect Entry bonus
     if (!this.cryptoActingDamageTaken) {
@@ -5907,6 +5988,11 @@ export class GameScene extends Phaser.Scene {
     if (this.danxxProtocolActive) return;
 
     this.danxxProtocolActive = true;
+
+    // Show Danxx icon in bottom bar
+    this.danxxIcon?.setVisible(true);
+    this.danxxTimerText?.setVisible(true);
+    (this as any).danxxBg?.setVisible(true);
 
     // Play collection sound
     this.sound.play('danxx-collect', { volume: 0.7 });
@@ -5959,6 +6045,11 @@ export class GameScene extends Phaser.Scene {
   private deactivateDanxxProtocol(): void {
     if (!this.danxxProtocolActive) return;
 
+    // Hide Danxx icon in bottom bar
+    this.danxxIcon?.setVisible(false);
+    this.danxxTimerText?.setVisible(false);
+    (this as any).danxxBg?.setVisible(false);
+
     // Restore coin speed
     if (this.originalCoinSpeedBeforeDanxx > 0) {
       this.coinSpeed = this.originalCoinSpeedBeforeDanxx;
@@ -6010,6 +6101,11 @@ export class GameScene extends Phaser.Scene {
     if (this.roseModModeActive) return;
 
     this.roseModModeActive = true;
+
+    // Show Rose icon in bottom bar
+    this.roseIcon?.setVisible(true);
+    this.roseTimerText?.setVisible(true);
+    (this as any).roseBg?.setVisible(true);
 
     // Play collection sound
     this.sound.play('rose-collect', { volume: 0.7 });
@@ -6067,6 +6163,11 @@ export class GameScene extends Phaser.Scene {
 
   private deactivateRoseModMode(): void {
     if (!this.roseModModeActive) return;
+
+    // Hide Rose icon in bottom bar
+    this.roseIcon?.setVisible(false);
+    this.roseTimerText?.setVisible(false);
+    (this as any).roseBg?.setVisible(false);
 
     // Unfreeze all enemies
     for (const enemy of this.frozenEnemies) {
@@ -6524,8 +6625,20 @@ export class GameScene extends Phaser.Scene {
     this.newsTickerBg.fillRect(width - frameThickness, 0, frameThickness, height); // Right bar
     this.newsTickerBg.fillRect(0, height - frameThickness, width, frameThickness); // Bottom bar
 
-    // Update ticker message on all 4 sides
-    const tickerMessage = `  ${phase.tickerMessage}  •  `.repeat(10);
+    // Map phase keys to translation keys for dynamic translation
+    const phaseTranslationKeys: { [key: string]: string } = {
+      'BULL_RUN': 'marketPhase.bullRun',
+      'CORRECTION': 'marketPhase.correction',
+      'BEAR_TRAP': 'marketPhase.bearTrap',
+      'SIDEWAYS_MARKET': 'marketPhase.sideways',
+      'VALOR_COMEBACK': 'marketPhase.valorComeback',
+      'ENDLESS_WAGMI': 'marketPhase.endlessWagmi'
+    };
+
+    // Get translated ticker message dynamically
+    const translationKey = phaseTranslationKeys[this.currentMarketPhase];
+    const translatedMessage = translationKey ? this.i18n.t(translationKey) : phase.tickerMessage;
+    const tickerMessage = `  ${translatedMessage}  •  `.repeat(10);
 
     if (this.newsTickerText) {
       this.newsTickerText.setText(tickerMessage);
@@ -6540,7 +6653,7 @@ export class GameScene extends Phaser.Scene {
       this.newsTickerTextBottom.setText(tickerMessage);
     }
 
-    console.log(`📰 Ticker updated on all 4 sides: ${phase.tickerMessage}`);
+    console.log(`📰 Ticker updated on all 4 sides: ${translatedMessage}`);
   }
 
   // ========== v3.4: SPEED & DIFFICULTY SCALING SYSTEM ==========
@@ -6642,23 +6755,23 @@ export class GameScene extends Phaser.Scene {
   private playMicroEventSound(eventName: string): void {
     switch (eventName) {
       case 'Elon Tweet':
-        this.sound.play('elon-tweet', { volume: 1.0 });
+        this.sound.play('elon-tweet', { volume: 2.0 });
         break;
       case 'SEC Down':
-        this.sound.play('sec-down', { volume: 1.0 });
+        this.sound.play('sec-down', { volume: 2.0 });
         break;
       case 'Market Pump':
-        this.sound.play('market-pump', { volume: 1.0 });
+        this.sound.play('market-pump', { volume: 2.0 });
         break;
       case 'Burger Friday':
-        this.sound.play('burger-friday', { volume: 1.0 });
+        this.sound.play('burger-friday', { volume: 2.0 });
         break;
       case 'Valor Drop':
-        this.sound.play('valor-drop', { volume: 1.0 });
+        this.sound.play('valor-drop', { volume: 2.0 });
         break;
       default:
         // Fallback sound for any new events
-        this.sound.play('belle-collect', { volume: 0.6 });
+        this.sound.play('belle-collect', { volume: 1.0 });
         break;
     }
   }
@@ -6785,19 +6898,23 @@ export class GameScene extends Phaser.Scene {
   // Removed: deductCoinsForWeapon (no longer needed with energy system)
 
   private updateWeaponUI(): void {
-    if (!this.weaponManager.hasWeapon()) return;
+    const uiScene = this.scene.get('UIScene') as any;
+    if (!uiScene || !uiScene.updateWeapon) return;
+
+    if (!this.weaponManager.hasWeapon()) {
+      // No weapon - show "No Weapon" message
+      const noWeaponText = this.i18n.t('ui.noWeapon');
+      uiScene.updateWeapon(noWeaponText, '❌', '');
+      return;
+    }
 
     const energy = this.weaponManager.getEnergy();
     const weaponName = this.weaponManager.getWeaponName();
     const weaponLevel = this.weaponManager.getWeaponLevel();
 
-    // Send to UIScene
-    const uiScene = this.scene.get('UIScene') as any;
-    if (uiScene && uiScene.updateWeapon) {
-      const weaponIcon = '🔫'; // You can change based on weapon type
-      const info = `Lv${weaponLevel} | Energy: ${Math.floor(energy)}%`;
-      uiScene.updateWeapon(weaponName, weaponIcon, info);
-    }
+    const weaponIcon = '🔫'; // You can change based on weapon type
+    const info = `Lv${weaponLevel} | Energy: ${Math.floor(energy)}%`;
+    uiScene.updateWeapon(weaponName, weaponIcon, info);
   }
 
   private createWeaponUI(): void {
