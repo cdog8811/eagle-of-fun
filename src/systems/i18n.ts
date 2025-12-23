@@ -153,8 +153,8 @@ const translations = {
     'intro.cdog.line11': "Yeah, it's buggy. It's messy.",
     'intro.cdog.line12': "But it's real, and made with love for this community.",
     'intro.cdog.line13': "Let's make memes, not excuses. 🦅",
-    'intro.skip': 'Press SPACE or CLICK to skip',
-    'intro.continue': 'Press SPACE or CLICK to continue',
+    'intro.skip': 'Tap anywhere to skip',
+    'intro.continue': 'Tap anywhere to continue',
 
     // Intro Scenes - Ogle
     'intro.ogle.line1': 'Ogle: Hi, Degen.',
@@ -171,7 +171,7 @@ const translations = {
     'intro.ogle.line12': 'Save the market.',
     'intro.ogle.line13': "Let's rebuild America.Fun together.",
     'intro.ogle.line14': 'Ready to fly?',
-    'intro.launch': '[PRESS SPACE TO LAUNCH 🚀]',
+    'intro.launch': '[TAP TO LAUNCH 🚀]',
     'intro.connecting': 'Connecting to America.fun RPC...',
     'intro.error': 'Error 404 – FUD detected.',
     'intro.startFlight': 'Start Flight',
@@ -558,8 +558,8 @@ const translations = {
     'intro.cdog.line11': '是的，它有bug。它很乱。',
     'intro.cdog.line12': '但它是真实的，为这个社区用心制作。',
     'intro.cdog.line13': '让我们做模因，不找借口。🦅',
-    'intro.skip': '按空格或点击跳过',
-    'intro.continue': '按空格或点击继续',
+    'intro.skip': '点击任意位置跳过',
+    'intro.continue': '点击任意位置继续',
 
     // Intro Scenes - Ogle
     'intro.ogle.line1': 'Ogle：嗨，Degen。',
@@ -576,7 +576,7 @@ const translations = {
     'intro.ogle.line12': '拯救市场。',
     'intro.ogle.line13': '让我们一起重建 America.Fun。',
     'intro.ogle.line14': '准备飞了吗？',
-    'intro.launch': '[按空格启动 🚀]',
+    'intro.launch': '[点击启动 🚀]',
     'intro.connecting': '连接到 America.fun RPC...',
     'intro.error': '错误 404 – 检测到 FUD。',
     'intro.startFlight': '开始飞行',

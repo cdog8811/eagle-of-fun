@@ -799,7 +799,7 @@ export class GameScene extends Phaser.Scene {
     let instructions: Phaser.GameObjects.Text | null = null;
 
     if (!shouldAutoStart) {
-      instructions = this.add.text(width / 2, height / 2 + 150, 'Press SPACE to start\n\nP = Pause', {
+      instructions = this.add.text(width / 2, height / 2 + 150, 'Tap to start', {
         fontSize: '36px',
         color: GameConfig.colors.secondary,
         fontFamily: 'Arial',
@@ -809,7 +809,7 @@ export class GameScene extends Phaser.Scene {
       instructions.setDepth(500);
     }
 
-    // Input handlers
+    // Input handlers - Touch/Click (mirrors SPACE key behavior for gliding)
     this.input.on('pointerdown', () => {
       if (!this.hasStarted && !this.countdownStarted) {
         this.sound.play('ui-confirm', { volume: 0.3 });
@@ -820,8 +820,21 @@ export class GameScene extends Phaser.Scene {
           instructions = null;
         }
       } else if (!this.isPaused && this.hasStarted && !this.controlBlocked) {
-        const playerStats = this.upgradeSystem.getPlayerStats();
-        this.eagle.flap(playerStats.flapBoost);
+        if (!this.spacePressed) {
+          // First touch - immediate flap (same as SPACE)
+          const playerStats = this.upgradeSystem.getPlayerStats();
+          this.eagle.flap(playerStats.flapBoost);
+          this.spacePressed = true;
+          this.spaceStartTime = this.time.now;
+        }
+      }
+    });
+
+    // Touch/Click release - stop gliding (mirrors SPACE key up)
+    this.input.on('pointerup', () => {
+      if (this.spacePressed) {
+        this.spacePressed = false;
+        // DON'T set isGliding to false here - let update() handle the fly-back logic
       }
     });
 
@@ -6932,6 +6945,7 @@ export class GameScene extends Phaser.Scene {
 
     // 1. REMOVE ALL EVENT LISTENERS (CRITICAL!)
     this.input.off('pointerdown');
+    this.input.off('pointerup');
     this.input.keyboard?.off('keydown-SPACE');
     this.input.keyboard?.off('keyup-SPACE');
     this.input.keyboard?.off('keydown-P');

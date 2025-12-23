@@ -107,6 +107,11 @@ ${this.i18n.t('intro.cdog.line13')}`;
       this.input.keyboard?.on('keydown-SPACE', () => {
         this.handleSpacePress();
       });
+
+      // Listen for click/touch anywhere on screen - same as SPACE
+      this.input.on('pointerdown', () => {
+        this.handleSpacePress();
+      });
     });
   }
 
@@ -240,6 +245,7 @@ ${this.i18n.t('intro.cdog.line13')}`;
    */
   shutdown(): void {
     this.input.keyboard?.off('keydown-SPACE');
+    this.input.off('pointerdown');
     this.tweens.killAll();
     this.sound.stopAll();
   }

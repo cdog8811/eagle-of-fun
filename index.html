@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="description" content="Eagle of Fun - Avoid the FUD. Stack the $AOL. Be the Meme.">
   <title>🦅 Eagle of Fun</title>
   <!-- Google Fonts: Noto Sans SC for Chinese -->
@@ -20,6 +23,21 @@
       background: linear-gradient(180deg, #E8F4FF 0%, #FFFFFF 100%);
       overflow: hidden;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      /* Mobile touch fixes */
+      touch-action: manipulation;
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+      /* Prevent pull-to-refresh on mobile */
+      overscroll-behavior: none;
+      /* No padding - game handles safe areas internally */
+      padding: 0;
+      margin: 0;
+      /* Fill entire screen */
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
     }
 
     #game-container {
@@ -28,17 +46,163 @@
       align-items: center;
       width: 100vw;
       height: 100vh;
+      height: 100dvh; /* Dynamic viewport height for mobile browsers */
+      position: fixed;
+      top: 0;
+      left: 0;
     }
 
     canvas {
       display: block;
       margin: 0 auto;
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+      /* Remove shadow on mobile for cleaner fullscreen look */
+      box-shadow: none;
+      /* Mobile touch fixes */
+      touch-action: none;
+      /* Fill container */
+      max-width: 100%;
+      max-height: 100%;
+    }
+    /* Rotate device warning for portrait mode */
+    #rotate-warning {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: linear-gradient(180deg, #E8F4FF 0%, #FFFFFF 100%);
+      z-index: 9999;
+      justify-content: center;
+      align-items: center;
+      flex-direction: column;
+      text-align: center;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    #rotate-warning .rotate-icon {
+      font-size: 80px;
+      animation: rotate-phone 2s ease-in-out infinite;
+    }
+    #rotate-warning .rotate-text {
+      font-size: 24px;
+      color: #333;
+      margin-top: 20px;
+    }
+    @keyframes rotate-phone {
+      0%, 100% { transform: rotate(0deg); }
+      25% { transform: rotate(-20deg); }
+      75% { transform: rotate(20deg); }
+    }
+    /* Show warning only on mobile portrait */
+    @media screen and (max-width: 900px) and (orientation: portrait) {
+      #rotate-warning {
+        display: flex;
+      }
+      #game-container {
+        display: none;
+      }
+      #fullscreen-prompt {
+        display: none !important;
+      }
+    }
+
+    /* Fullscreen prompt */
+    #fullscreen-prompt {
+      display: none;
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 9998;
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 15px 30px;
+      border-radius: 30px;
+      flex-direction: row;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      animation: pulse-fullscreen 2s ease-in-out infinite;
+    }
+    #fullscreen-prompt .fullscreen-icon {
+      font-size: 24px;
+    }
+    #fullscreen-prompt .fullscreen-text {
+      font-size: 16px;
+      font-weight: bold;
+    }
+    @keyframes pulse-fullscreen {
+      0%, 100% { opacity: 0.9; transform: translateX(-50%) scale(1); }
+      50% { opacity: 1; transform: translateX(-50%) scale(1.05); }
     }
   </style>
 </head>
 <body>
+  <div id="rotate-warning">
+    <div class="rotate-icon">📱↪️</div>
+    <div class="rotate-text">Please rotate your device<br>to landscape mode 🦅</div>
+  </div>
+  <div id="fullscreen-prompt" onclick="goFullscreen()">
+    <div class="fullscreen-icon">⛶</div>
+    <div class="fullscreen-text">Tap for Fullscreen</div>
+  </div>
   <div id="game-container"></div>
+  <script>
+    // Fullscreen functionality - try canvas first, then document
+    function goFullscreen() {
+      const prompt = document.getElementById('fullscreen-prompt');
+      const canvas = document.querySelector('canvas');
+      const container = document.getElementById('game-container');
+
+      // Try canvas fullscreen first (works better on some devices)
+      const elem = canvas || container || document.documentElement;
+
+      // Try different fullscreen methods
+      if (elem.requestFullscreen) {
+        elem.requestFullscreen();
+      } else if (elem.webkitRequestFullscreen) { // Safari/Chrome
+        elem.webkitRequestFullscreen();
+      } else if (elem.webkitEnterFullscreen) { // iOS Safari (video-like)
+        elem.webkitEnterFullscreen();
+      } else if (elem.msRequestFullscreen) { // IE11
+        elem.msRequestFullscreen();
+      } else if (document.documentElement.requestFullscreen) {
+        // Fallback to document
+        document.documentElement.requestFullscreen();
+      }
+
+      // Try to lock screen orientation to landscape
+      if (screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock('landscape').catch(() => {});
+      }
+
+      // Hide the prompt
+      prompt.style.display = 'none';
+    }
+
+    // Show fullscreen prompt on mobile (including iOS now)
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+    // Wait for canvas to be created, then show prompt
+    if (isMobile) {
+      setTimeout(() => {
+        document.getElementById('fullscreen-prompt').style.display = 'flex';
+      }, 500);
+    }
+
+    // Hide prompt when entering fullscreen
+    document.addEventListener('fullscreenchange', () => {
+      if (document.fullscreenElement) {
+        document.getElementById('fullscreen-prompt').style.display = 'none';
+      }
+    });
+    document.addEventListener('webkitfullscreenchange', () => {
+      if (document.webkitFullscreenElement) {
+        document.getElementById('fullscreen-prompt').style.display = 'none';
+      }
+    });
+  </script>
   <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

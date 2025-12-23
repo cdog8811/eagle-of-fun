@@ -14,6 +14,9 @@ import UIScene from './scenes/UIScene';
 import UpgradeScene from './scenes/UpgradeScene';
 import { GameConfig } from './config/GameConfig';
 
+// Detect mobile device
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
 const config: Phaser.Types.Core.GameConfig = {
   type: Phaser.AUTO,  // Let Phaser choose best renderer
   width: GameConfig.width,
@@ -31,15 +34,31 @@ const config: Phaser.Types.Core.GameConfig = {
   render: {
     pixelArt: false,
     roundPixels: false,
-    antialias: true,
+    antialias: !isMobile,  // Disable antialiasing on mobile for performance
     powerPreference: 'high-performance',  // Force Chrome to use dedicated GPU
-    batchSize: 4096,  // v3.9.2: Increase batch size (default 2048) for more sprites per draw call
-    maxTextures: 16,  // v3.9.2: Allow more textures (default 8) to reduce texture swaps
+    batchSize: isMobile ? 2048 : 4096,  // Lower batch size on mobile
+    maxTextures: isMobile ? 8 : 16,  // Fewer textures on mobile
     mipmapFilter: 'LINEAR'  // Better texture filtering
   },
   scale: {
-    mode: Phaser.Scale.FIT,
-    autoCenter: Phaser.Scale.CENTER_BOTH
+    mode: Phaser.Scale.ENVELOP,  // Fill entire screen, may crop edges
+    autoCenter: Phaser.Scale.CENTER_BOTH,
+    expandParent: true,
+    width: GameConfig.width,
+    height: GameConfig.height,
+    min: {
+      width: 480,
+      height: 270
+    },
+    max: {
+      width: 1920,
+      height: 1080
+    }
+  },
+  input: {
+    // Enable touch input
+    touch: true,
+    activePointers: 3  // Support multi-touch (up to 3 fingers)
   },
   physics: {
     default: 'arcade',
